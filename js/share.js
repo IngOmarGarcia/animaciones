@@ -1,0 +1,49 @@
+// Los datos de la tarjeta viajan dentro del enlace (base64url de un JSON),
+// así no se necesita base de datos y el mensaje no se ve a simple vista en el chat.
+const LIMITS = { p: 40, m: 140, d: 40 };
+
+function toBase64Url(text) {
+  let binary = '';
+  for (const byte of new TextEncoder().encode(text)) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(value) {
+  let b64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+export function cleanCard(raw) {
+  const card = { a: typeof raw?.a === 'string' ? raw.a.slice(0, 60) : '' };
+  for (const key of Object.keys(LIMITS)) {
+    const value = raw?.[key];
+    card[key] = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, LIMITS[key]) : '';
+  }
+  return card;
+}
+
+export function encodeCard(card) {
+  const clean = cleanCard(card);
+  const payload = { a: clean.a };
+  for (const key of Object.keys(LIMITS)) if (clean[key]) payload[key] = clean[key];
+  return toBase64Url(JSON.stringify(payload));
+}
+
+export function decodeCard(value) {
+  if (!value) return null;
+  try {
+    return cleanCard(JSON.parse(fromBase64Url(value)));
+  } catch {
+    return null;
+  }
+}
+
+export function buildShareUrl(card) {
+  const url = new URL('v.html', location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('s', encodeCard(card));
+  return url.toString();
+}

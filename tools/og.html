@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <title>Imagen de vista previa (1200x630)</title>
+  <style>
+    body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #0d0a1f; font-family: "Segoe UI", system-ui, sans-serif; }
+    .wrap { position: relative; width: 1200px; height: 630px; background: radial-gradient(circle at 25% 50%, #2a1f55, #0d0a1f 70%); }
+    canvas { position: absolute; right: 0; top: 0; width: 620px; height: 630px; -webkit-mask-image: linear-gradient(to right, transparent, #000 30%); mask-image: linear-gradient(to right, transparent, #000 30%); }
+    .text { position: absolute; left: 70px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; color: #fff; }
+    .kicker { color: #ffc300; font-size: 34px; font-weight: 700; }
+    h1 { margin: 10px 0 14px; font-size: 76px; line-height: 1.02; }
+    p { margin: 0; color: #cfc8ef; font-size: 30px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="c" width="620" height="630"></canvas>
+    <div class="text">
+      <div class="kicker">💌 Tienes una sorpresa</div>
+      <h1>Ábrela para verla</h1>
+      <p>Flores amarillas y animaciones para dedicar</p>
+    </div>
+  </div>
+  <script type="module">
+    import create from '../js/anim/ramo.js';
+    const ctx = document.getElementById('c').getContext('2d');
+    create(ctx, 620, 630, 1)(8, 0.016);
+  </script>
+</body>
+</html>

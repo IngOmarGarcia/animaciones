@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tienes una sorpresa 💛</title>
+  <meta name="description" content="Alguien te envió una sorpresa animada. Ábrela para verla.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0d0a1f">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Detallito">
+  <meta property="og:title" content="💌 Tienes una sorpresa">
+  <meta property="og:description" content="Alguien te envió algo especial. Ábrelo para verlo 💛">
+  <meta property="og:image" content="https://tu-dominio.com/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- AdSense: script de tu cuenta aquí (los anuncios van debajo de la animación, nunca encima) -->
+</head>
+<body>
+  <main>
+    <section class="scene scene-full" id="scene">
+      <canvas aria-hidden="true"></canvas>
+      <div class="overlay" id="overlay" aria-live="polite">
+        <p class="ov-to"></p>
+        <p class="ov-msg"></p>
+        <p class="ov-from"></p>
+      </div>
+
+      <div class="gate" id="gate">
+        <div class="gate-card">
+          <div class="envelope" aria-hidden="true">💌</div>
+          <p class="gate-to" id="gateTo">Tienes una sorpresa</p>
+          <p class="gate-from" id="gateFrom"></p>
+          <button class="btn btn-primary" id="openBtn" type="button">Abrir sorpresa</button>
+        </div>
+      </div>
+
+      <a class="hint" id="hint" href="#after" hidden>Crea la tuya ↓</a>
+      <button class="replay" id="replay" type="button" hidden>↻ Ver de nuevo</button>
+    </section>
+
+    <section class="container after" id="after">
+      <h2>¿Te gustó? Sorprende a alguien especial</h2>
+      <a class="btn btn-primary" id="cta" href="crear.html">Crear la mía gratis</a>
+      <div class="ad-slot" data-ad-slot="viewer"></div>
+      <h3>Más animaciones</h3>
+      <div class="grid" id="more"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <nav>
+      <a href="./">Inicio</a>
+      <a href="acerca.html">Acerca y contacto</a>
+      <a href="privacidad.html">Aviso de privacidad</a>
+    </nav>
+    <p>© 2026 Detallito</p>
+  </footer>
+
+  <script type="module" src="js/viewer.js"></script>
+</body>
+</html>

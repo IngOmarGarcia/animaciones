@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <title>Hoja de revisión de animaciones</title>
+  <style>
+    body { margin: 0; padding: 10px; background: #222; color: #ddd; font: 12px system-ui, sans-serif; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; }
+    figure { margin: 0; }
+    canvas { display: block; width: 225px; height: 400px; background: #000; }
+  </style>
+</head>
+<body>
+  <div id="out"></div>
+  <script type="module">
+    // Uso: tools/preview.html?t=1,3,6  — renderiza cada escena en varios tiempos, de forma determinista.
+    import { ANIMATIONS } from '../js/catalog.js';
+    const times = (new URLSearchParams(location.search).get('t') || '1,3,6').split(',').map(Number);
+    const out = document.getElementById('out');
+    for (const anim of ANIMATIONS) {
+      const create = (await anim.load()).default;
+      const row = document.createElement('div');
+      row.className = 'row';
+      for (const target of times) {
+        const fig = document.createElement('figure');
+        const canvas = document.createElement('canvas');
+        canvas.width = 225; canvas.height = 400;
+        const caption = document.createElement('figcaption');
+        caption.textContent = `${anim.id} @ ${target}s`;
+        fig.append(canvas, caption);
+        row.append(fig);
+        const ctx = canvas.getContext('2d');
+        const frame = create(ctx, 225, 400, 1);
+        const dt = 1 / 30;
+        for (let t = dt; t <= target + 1e-6; t += dt) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.globalAlpha = 1;
+          ctx.globalCompositeOperation = 'source-over';
+          frame(t, dt);
+        }
+      }
+      out.append(row);
+    }
+    document.body.dataset.done = '1';
+  </script>
+</body>
+</html>
