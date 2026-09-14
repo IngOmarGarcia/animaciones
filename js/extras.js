@@ -17,6 +17,22 @@ const shuffle = (list) => list
   .sort((a, b) => a[0] - b[0])
   .map(([, item]) => item);
 
+// Foto del producto; si no hay o no carga, se queda el emoji.
+function giftVisual(gift) {
+  const emoji = el('span', 'gift-emoji', gift.emoji);
+  if (!gift.image) return emoji;
+  const frame = el('span', 'gift-img');
+  const img = document.createElement('img');
+  img.src = gift.image;
+  img.alt = '';
+  img.loading = 'lazy';
+  img.decoding = 'async';
+  img.referrerPolicy = 'no-referrer';
+  img.addEventListener('error', () => frame.replaceWith(emoji), { once: true });
+  frame.append(img);
+  return frame;
+}
+
 // Bloque de regalos con enlaces de afiliado: 4 al azar, primero los de la categoría de la animación.
 export function renderGifts(container, category) {
   const items = [
@@ -33,7 +49,7 @@ export function renderGifts(container, category) {
     link.href = gift.url;
     link.target = '_blank';
     link.rel = 'sponsored noopener';
-    link.append(el('span', 'gift-emoji', gift.emoji), el('span', 'gift-title', gift.title), el('span', 'gift-cta', 'Ver en Mercado Libre →'));
+    link.append(giftVisual(gift), el('span', 'gift-title', gift.title), el('span', 'gift-cta', 'Ver en Mercado Libre →'));
     grid.append(link);
   }
   container.replaceChildren(
