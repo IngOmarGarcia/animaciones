@@ -1,5 +1,8 @@
 import { ANIMATIONS, CATEGORIES } from './catalog.js';
 import { renderGallery } from './gallery.js';
+import { renderSupport } from './extras.js';
+
+renderSupport(document.getElementById('support'));
 
 const grid = document.getElementById('grid');
 const chips = document.getElementById('chips');

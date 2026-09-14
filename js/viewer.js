@@ -3,6 +3,7 @@ import { decodeCard } from './share.js';
 import { fillOverlay } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
+import { renderGifts, renderSupport } from './extras.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -19,6 +20,8 @@ document.title = card.p ? `Una sorpresa para ${card.p} 💛` : 'Tienes una sorpr
 $('gateTo').textContent = card.p ? `Para ${card.p}` : 'Tienes una sorpresa';
 $('gateFrom').textContent = card.d ? `${card.d} te envió algo especial` : 'Alguien te envió algo especial';
 $('cta').href = `crear.html?a=${encodeURIComponent(anim.id)}`;
+// Sin el mensaje de quien la envió: solo la animación.
+$('codeLink').href = `codigo.html?a=${encodeURIComponent(anim.id)}`;
 
 const modulePromise = anim.load();
 let player = null;
@@ -64,4 +67,6 @@ if (params.has('autoplay')) {
   start();
 }
 
+renderSupport($('support'));
+renderGifts($('gifts'), anim.category);
 renderGallery($('more'), ANIMATIONS.filter((a) => a.id !== anim.id));

@@ -1,8 +1,9 @@
 import { ANIMATIONS, getAnimation } from './catalog.js';
-import { buildShareUrl, cleanCard } from './share.js';
+import { buildShareUrl, cleanCard, encodeCard } from './share.js';
 import { fillOverlay } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
+import { renderGifts, renderSupport } from './extras.js';
 
 const DRAFT_KEY = 'detallito-borrador';
 
@@ -37,7 +38,12 @@ const readCard = () => cleanCard({ a: anim.id, p: fields.p.value, m: fields.m.va
 let shareText = '';
 
 function update() {
-  fillOverlay(overlay, readCard(), anim);
+  const card = readCard();
+  fillOverlay(overlay, card, anim);
+  // El código descargable lleva el nombre y mensaje que ya escribieron.
+  $('codeLink').href = card.p || card.m || card.d
+    ? `codigo.html?s=${encodeCard(card)}`
+    : `codigo.html?a=${encodeURIComponent(anim.id)}`;
   $('counter').textContent = `${fields.m.value.length}/140`;
   result.hidden = true;
   try {
@@ -78,4 +84,6 @@ nativeBtn.addEventListener('click', () => {
   navigator.share({ title: 'Una sorpresa para ti', text: shareText, url: link.value }).catch(() => {});
 });
 
+renderSupport($('support'));
+renderGifts($('gifts'), anim.category);
 renderGallery($('more'), ANIMATIONS.filter((a) => a.id !== anim.id));

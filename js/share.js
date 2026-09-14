@@ -41,7 +41,9 @@ export function decodeCard(value) {
 }
 
 export function buildShareUrl(card) {
-  const url = new URL('v.html', location.href);
+  // Cloudflare Pages sirve las páginas sin ".html"; en local se necesita la extensión.
+  const isLocal = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname) || location.protocol === 'file:';
+  const url = new URL(isLocal ? 'v.html' : 'v', location.href);
   url.search = '';
   url.hash = '';
   url.searchParams.set('s', encodeCard(card));

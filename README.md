@@ -24,25 +24,42 @@ Luego abre http://localhost:8080
 index.html        Portada con galería y texto SEO
 crear.html        Vista previa + formulario + enlace para compartir
 v.html            Página que abre quien recibe la sorpresa
+codigo.html       Código HTML de una animación para copiar o descargar (?a=id o ?s=... con mensaje)
 acerca.html, privacidad.html   Requeridas para solicitar AdSense
 css/styles.css
 js/catalog.js     Lista de animaciones (agrega aquí las nuevas)
 js/share.js       Codifica/decodifica la tarjeta en el enlace (base64url)
+js/standalone.js  Genera el HTML autónomo a partir de js/anim/<file>.js y lo que usa de util.js
 js/gallery.js     Tarjetas con vista previa animada (se pausan fuera de pantalla)
 js/anim/engine.js Reproductor: tamaño, devicePixelRatio, bucle
 js/anim/*.js      Una escena por archivo
 tools/            og.html (imagen para WhatsApp) y preview.html (revisión)
 ```
 
+## Monetización sin dominio
+
+Todo se configura en `js/config.js`:
+
+- `GIFTS`: regalos de Mercado Libre por categoría. Reemplaza cada `url` por tu enlace de afiliado.
+- `whatsapp`: número para recibir encargos (vacío = se piden por correo).
+- `donationUrl`: enlace de Mercado Pago o Ko-fi (vacío = no se muestra el botón).
+- `customOrderPrice` / `customOrderDelivery`: precio y tiempo de entrega de `encargos.html`.
+
+## Videos para TikTok / Reels
+
+Abre `tools/grabar.html` (en local o en https://animaciones.pages.dev/tools/grabar.html) con Chrome o Edge en PC,
+elige animación y texto, y descarga un video vertical de 1080×1920 con la marca «Crea la tuya gratis».
+
 ## Agregar una animación
 
 1. Crea `js/anim/mi-escena.js` exportando por defecto `create(ctx, w, h, dpr)` que devuelva `frame(t, dt)`.
    Dibuja en función de `t` (segundos) y usa medidas relativas a `w`/`h` para que se vea bien en celular y en PC.
-2. Agrégala a `ANIMATIONS` en `js/catalog.js` con su mensaje por defecto, posición del texto y retraso.
+2. Agrégala a `ANIMATIONS` en `js/catalog.js` con `file: 'mi-escena'`, su mensaje por defecto, posición del texto y retraso.
+3. Para que su código se pueda descargar, la escena solo debe importar de `./util.js` (en una sola sentencia `import { ... }`).
 
 ## Antes de publicar
 
-1. Reemplaza `tu-dominio.com` en todos los HTML por tu dominio real (las imágenes `og:image` deben ser URL absolutas para que WhatsApp muestre la vista previa).
+1. El sitio está en `https://animaciones.pages.dev`. Si conectas un dominio propio, reemplaza esa dirección en los HTML (las imágenes `og:image` deben ser URL absolutas para que WhatsApp muestre la vista previa).
 2. Si cambias el nombre "Detallito", búscalo y reemplázalo en los HTML.
 3. Regenera `img/og.png` si cambias el diseño: abre `tools/og.html` y toma una captura de 1200x630.
 
