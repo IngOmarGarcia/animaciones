@@ -33,29 +33,71 @@ function giftVisual(gift) {
   return frame;
 }
 
-// Bloque de regalos con enlaces de afiliado: 4 al azar, primero los de la categoría de la animación.
+function mlIcon(size) {
+  const img = document.createElement('img');
+  img.src = 'img/mercadolibre.svg';
+  img.alt = '';
+  img.width = size;
+  img.height = size;
+  return img;
+}
+
+function arrow(label, symbol) {
+  const button = el('button', 'gifts-arrow', symbol);
+  button.type = 'button';
+  button.setAttribute('aria-label', label);
+  return button;
+}
+
+// Carrusel de regalos con enlaces de afiliado: todos al azar, primero los de la categoría de la animación.
+// Se marca claramente como Mercado Libre para que no se confunda con las funciones del sitio.
 export function renderGifts(container, category) {
   const items = [
     ...shuffle(GIFTS.filter((g) => g.category === category)),
     ...shuffle(GIFTS.filter((g) => g.category === 'todas')),
-  ].slice(0, 4);
+  ];
   if (!items.length) {
     container.hidden = true;
     return;
   }
-  const grid = el('div', 'gifts');
+
+  const track = el('div', 'gifts');
   for (const gift of items) {
     const link = el('a', 'gift');
     link.href = gift.url;
     link.target = '_blank';
     link.rel = 'sponsored noopener';
-    link.append(giftVisual(gift), el('span', 'gift-title', gift.title), el('span', 'gift-cta', 'Ver en Mercado Libre →'));
-    grid.append(link);
+    const cta = el('span', 'gift-cta');
+    cta.append(mlIcon(16), 'Ver en Mercado Libre →');
+    link.append(giftVisual(gift), el('span', 'gift-title', gift.title), cta);
+    track.append(link);
   }
+
+  const prev = arrow('Productos anteriores', '‹');
+  const next = arrow('Más productos', '›');
+  const page = (dir) => track.scrollBy({ left: dir * track.clientWidth * 0.9, behavior: 'smooth' });
+  const updateArrows = () => {
+    prev.disabled = track.scrollLeft <= 4;
+    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+  };
+  prev.addEventListener('click', () => page(-1));
+  next.addEventListener('click', () => page(1));
+  track.addEventListener('scroll', updateArrows, { passive: true });
+  new ResizeObserver(updateArrows).observe(track);
+
+  const title = el('h2', 'gifts-title');
+  title.append(mlIcon(28), 'Mira estos productos de Mercado Libre');
+  const heading = el('div');
+  heading.append(el('p', 'gifts-kicker', '🎁 ¿Quieres regalar algo de verdad?'), title);
+  const nav = el('div', 'gifts-nav');
+  nav.append(prev, next);
+  const head = el('div', 'gifts-head');
+  head.append(heading, nav);
+
   container.replaceChildren(
-    el('h2', 'gifts-title', '🎁 ¿Quieres regalar algo de verdad?'),
-    grid,
-    el('p', 'gifts-note', 'Enlaces de afiliado: si compras, podemos recibir una pequeña comisión sin costo extra para ti.'),
+    head,
+    track,
+    el('p', 'gifts-note', 'Productos vendidos en Mercado Libre, no por ViralCss. Son enlaces de afiliado: si compras, podemos recibir una pequeña comisión sin costo extra para ti.'),
   );
 }
 

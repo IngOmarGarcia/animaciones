@@ -1,4 +1,4 @@
-# Detallito — animaciones para dedicar
+# ViralCss — animaciones para dedicar
 
 Sitio estático (HTML + CSS + JavaScript con módulos ES, sin compilación). Las animaciones se dibujan en `<canvas>` y los datos personalizados viajan dentro del enlace, así que **no hay backend ni base de datos**.
 
@@ -60,7 +60,7 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 ## Antes de publicar
 
 1. El sitio está en `https://animaciones.pages.dev`. Si conectas un dominio propio, reemplaza esa dirección en los HTML (las imágenes `og:image` deben ser URL absolutas para que WhatsApp muestre la vista previa).
-2. Si cambias el nombre "Detallito", búscalo y reemplázalo en los HTML.
+2. Si cambias el nombre "ViralCss", búscalo y reemplázalo en los HTML.
 3. Regenera `img/og.png` si cambias el diseño: abre `tools/og.html` y toma una captura de 1200x630.
 
 ## Publicar gratis (Cloudflare Pages)

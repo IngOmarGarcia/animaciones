@@ -17,7 +17,7 @@ const link = $('link');
 const copyBtn = $('copy');
 const nativeBtn = $('native');
 
-document.title = `${anim.title} · Personaliza y comparte | Detallito`;
+document.title = `${anim.title} · Personaliza y comparte | ViralCss`;
 $('title').textContent = anim.title;
 $('desc').textContent = anim.description;
 fields.m.placeholder = anim.defaultMessage;

@@ -10,7 +10,7 @@ const anim = getAnimation(card.a) || ANIMATIONS[0];
 const fileName = `${anim.id}.html`;
 const createHref = `crear.html?a=${encodeURIComponent(anim.id)}`;
 
-document.title = `Código HTML de ${anim.title} para copiar | Detallito`;
+document.title = `Código HTML de ${anim.title} para copiar | ViralCss`;
 $('title').textContent = `Código de «${anim.title}»`;
 $('back').href = createHref;
 $('cta').href = createHref;

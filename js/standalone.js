@@ -68,7 +68,7 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(anim.title)}</title>
 <!--
-  ${anim.title} · animación original de Detallito
+  ${anim.title} · animación original de ViralCss
   Crea la tuya y mándala por WhatsApp con un enlace: ${SITE.url}
 
   Cómo abrirla: guarda este archivo como ${anim.id}.html y ábrelo con doble clic.
