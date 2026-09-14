@@ -11,16 +11,20 @@ export const SITE = {
   customOrderDelivery: '24 horas',
 };
 
-// Regalos con enlace de afiliado de Mercado Libre.
-// Reemplaza cada `url` por el enlace que genera el programa de afiliados (meli.la/...).
-// category: 'flores' | 'mexico' | 'todas'
+// Regalos con enlace de afiliado de Mercado Libre (cuenta gaom3053613).
+// Genera cada `url` desde el programa de afiliados (meli.la/...); un enlace normal no da comisión.
+// category: 'flores' | 'mexico' | 'todas'. En cada página se muestran 4 al azar, primero los de su categoría.
 export const GIFTS = [
-  { category: 'flores', emoji: '🌻', title: 'Ramo de girasoles', url: 'https://listado.mercadolibre.com.mx/ramo-de-girasoles' },
-  { category: 'flores', emoji: '💛', title: 'Flores amarillas eternas', url: 'https://listado.mercadolibre.com.mx/flores-amarillas-eternas' },
-  { category: 'flores', emoji: '🧸', title: 'Peluche con flores', url: 'https://listado.mercadolibre.com.mx/peluche-con-flores' },
-  { category: 'flores', emoji: '🍫', title: 'Chocolates para regalar', url: 'https://listado.mercadolibre.com.mx/caja-de-chocolates-para-regalo' },
-  { category: 'mexico', emoji: '🎉', title: 'Decoración de fiestas patrias', url: 'https://listado.mercadolibre.com.mx/decoracion-fiestas-patrias' },
-  { category: 'mexico', emoji: '🎏', title: 'Papel picado tricolor', url: 'https://listado.mercadolibre.com.mx/papel-picado-tricolor' },
-  { category: 'mexico', emoji: '🪅', title: 'Kit mexicano para fiesta', url: 'https://listado.mercadolibre.com.mx/kit-fiesta-mexicana' },
-  { category: 'mexico', emoji: '🌮', title: 'Accesorios para la noche mexicana', url: 'https://listado.mercadolibre.com.mx/accesorios-noche-mexicana' },
+  { category: 'flores', emoji: '🌻', title: '15 girasoles artificiales eternos', url: 'https://meli.la/1oqiJ2M' },
+  { category: 'flores', emoji: '💛', title: 'Girasoles eternos con collar y bufanda', url: 'https://meli.la/2HmAjD2' },
+  { category: 'flores', emoji: '🌙', title: 'Lámpara de noche de girasol', url: 'https://meli.la/1fcvy9m' },
+  { category: 'flores', emoji: '🌹', title: 'Rosa dorada en caja de regalo', url: 'https://meli.la/1Z6W2sw' },
+  { category: 'flores', emoji: '🌷', title: '20 tulipanes artificiales', url: 'https://meli.la/24wdmad' },
+  { category: 'flores', emoji: '🌹', title: '25 rosas artificiales', url: 'https://meli.la/2KNHKeV' },
+  { category: 'flores', emoji: '💐', title: '12 flores amarillas de wisteria', url: 'https://meli.la/11h8isk' },
+  { category: 'todas', emoji: '🕯️', title: 'Canasta de regalo con velas para ella', url: 'https://meli.la/2m25Erc' },
+  { category: 'todas', emoji: '👜', title: 'Bolso tejido con perlas', url: 'https://meli.la/1t2uXTv' },
+  { category: 'todas', emoji: '🎁', title: 'Kit personalizado: termo, libreta y pluma', url: 'https://meli.la/1gi6yNX' },
+  { category: 'todas', emoji: '👔', title: 'Set de cartera para caballero', url: 'https://meli.la/1gqRPAo' },
+  { category: 'todas', emoji: '🎁', title: 'Kit de cumpleaños para él: cartera y cinturón', url: 'https://meli.la/2U2ra26' },
 ];

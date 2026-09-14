@@ -12,9 +12,17 @@ export function contactHref(message) {
   return `mailto:${SITE.email}?subject=${encodeURIComponent('Animación personalizada')}&body=${encodeURIComponent(message)}`;
 }
 
-// Bloque de regalos con enlaces de afiliado, filtrado por categoría de la animación.
+const shuffle = (list) => list
+  .map((item) => [Math.random(), item])
+  .sort((a, b) => a[0] - b[0])
+  .map(([, item]) => item);
+
+// Bloque de regalos con enlaces de afiliado: 4 al azar, primero los de la categoría de la animación.
 export function renderGifts(container, category) {
-  const items = GIFTS.filter((g) => g.category === category || g.category === 'todas').slice(0, 4);
+  const items = [
+    ...shuffle(GIFTS.filter((g) => g.category === category)),
+    ...shuffle(GIFTS.filter((g) => g.category === 'todas')),
+  ].slice(0, 4);
   if (!items.length) {
     container.hidden = true;
     return;
