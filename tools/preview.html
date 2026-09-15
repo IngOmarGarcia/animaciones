@@ -19,6 +19,8 @@
     const params = new URLSearchParams(location.search);
     const times = (params.get('t') || '1,3,6').split(',').map(Number);
     const only = params.get('ids')?.split(',');
+    // ?fps=10 simula menos cuadros (más rápido para escenas pesadas).
+    const fps = Number(params.get('fps')) || 30;
     const out = document.getElementById('out');
     for (const anim of ANIMATIONS.filter((a) => !only || only.includes(a.id))) {
       const create = (await anim.load()).default;
@@ -34,7 +36,7 @@
         row.append(fig);
         const ctx = canvas.getContext('2d');
         const frame = create(ctx, 225, 400, 1);
-        const dt = 1 / 30;
+        const dt = 1 / fps;
         for (let t = dt; t <= target + 1e-6; t += dt) {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;

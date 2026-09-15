@@ -1,8 +1,16 @@
 // Reproductor de escenas en <canvas>.
-// Una escena es `create(ctx, w, h, dpr)` que devuelve `frame(t, dt)`;
+// Una escena es `create(ctx, w, h, dpr, stage)` que devuelve `frame(t, dt)`;
 // `t` son los segundos transcurridos y `dt` el delta del cuadro.
-export function createPlayer(canvas, create, { loop = 0 } = {}) {
+// `stage.taps` recibe los toques sobre el canvas ({ x, y } en píxeles CSS) y una escena
+// interactiva pone `stage.revealed = true` cuando ya debe aparecer el mensaje.
+// `stage.card` ({ p, m, d }) permite que una escena dibuje el nombre.
+export function createPlayer(canvas, create, { loop = 0, card = null } = {}) {
   const ctx = canvas.getContext('2d');
+  const stage = { taps: [], revealed: false, card };
+  canvas.addEventListener('pointerdown', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    stage.taps.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+  });
   let frame = null;
   let w = 0;
   let h = 0;
@@ -26,7 +34,9 @@ export function createPlayer(canvas, create, { loop = 0 } = {}) {
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    frame = create(ctx, w, h, dpr);
+    stage.taps.length = 0;
+    stage.revealed = false;
+    frame = create(ctx, w, h, dpr, stage);
     return true;
   }
 
@@ -35,6 +45,8 @@ export function createPlayer(canvas, create, { loop = 0 } = {}) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
+    // Limpiar evita que la luz aditiva se acumule donde una escena no pinta opaco
+    ctx.clearRect(0, 0, w, h);
     frame(t, dt);
   }
 
@@ -84,6 +96,7 @@ export function createPlayer(canvas, create, { loop = 0 } = {}) {
     pause,
     restart,
     destroy,
+    stage,
     get time() { return t; },
   };
 }

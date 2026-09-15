@@ -403,3 +403,154 @@ export function drawSoccerBall(ctx, ball, x, y, spin, r = ball.radius) {
   ctx.drawImage(ball.light, -size / 2, -size / 2, size, size);
   ctx.restore();
 }
+
+// ---- Utilidades de escena ----
+export const easeInOut = (x) => x * x * (3 - 2 * x);
+
+export const rgbaOf = ([r, g, b], a) => `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, a))})`;
+
+// Número pseudoaleatorio estable (0..1) para el mismo `n`.
+export const hash01 = (n) => {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+
+// Fondo pintado a baja resolución y ampliado: queda desenfocado como bokeh de cámara.
+export function softBackdrop(w, h, dpr, paint, blur = 6) {
+  const scale = Math.min(2, Math.max(1, dpr));
+  const pad = 2; // margen con los bordes repetidos para que al ampliar no se mezclen con transparente
+  const cw = Math.max(2, Math.ceil((w * scale) / blur));
+  const ch = Math.max(2, Math.ceil((h * scale) / blur));
+  const small = document.createElement('canvas');
+  small.width = cw + pad * 2;
+  small.height = ch + pad * 2;
+  const s = small.getContext('2d');
+  s.save();
+  s.translate(pad, pad);
+  // Escala exacta para que la pintura cubra todo el canvas chico (sin columna transparente al borde)
+  s.scale(cw / w, ch / h);
+  paint(s);
+  s.restore();
+  s.drawImage(small, pad, 0, 1, small.height, 0, 0, pad, small.height);
+  s.drawImage(small, pad + cw - 1, 0, 1, small.height, pad + cw, 0, pad, small.height);
+  s.drawImage(small, 0, pad, small.width, 1, 0, 0, small.width, pad);
+  s.drawImage(small, 0, pad + ch - 1, small.width, 1, 0, pad + ch, small.width, pad);
+  const out = document.createElement('canvas');
+  out.width = Math.ceil(w * scale);
+  out.height = Math.ceil(h * scale);
+  const o = out.getContext('2d');
+  o.imageSmoothingQuality = 'high';
+  o.drawImage(small, pad, pad, cw, ch, 0, 0, out.width, out.height);
+  return out;
+}
+
+// Capa nítida pre-renderizada; `paint` dibuja en píxeles CSS.
+export function makeLayer(w, h, dpr, paint) {
+  const scale = Math.min(2, Math.max(1, dpr));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(w * scale);
+  canvas.height = Math.ceil(h * scale);
+  const g = canvas.getContext('2d');
+  g.scale(scale, scale);
+  paint(g);
+  return canvas;
+}
+
+export function makeVignette(ctx, w, h, strength = 0.65, cx = w / 2, cy = h / 2) {
+  const g = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.25, cx, cy, Math.max(w, h) * 0.8);
+  g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  g.addColorStop(1, `rgba(0, 0, 0, ${strength})`);
+  return g;
+}
+
+// Resplandor radial (se ve mejor con globalCompositeOperation = 'lighter').
+export function glow(ctx, x, y, r, rgb, a) {
+  if (r <= 0 || a <= 0) return;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgbaOf(rgb, a));
+  g.addColorStop(1, rgbaOf(rgb, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+}
+
+// Traza (sin rellenar) un corazón centrado en (x, y) de ancho `size`.
+export function heartPath(ctx, x, y, size, rotation = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.scale(size, size);
+  ctx.beginPath();
+  ctx.moveTo(0, -0.22);
+  ctx.bezierCurveTo(0, -0.52, -0.5, -0.52, -0.5, -0.17);
+  ctx.bezierCurveTo(-0.5, 0.13, 0, 0.38, 0, 0.6);
+  ctx.bezierCurveTo(0, 0.38, 0.5, 0.13, 0.5, -0.17);
+  ctx.bezierCurveTo(0.5, -0.52, 0, -0.52, 0, -0.22);
+  ctx.closePath();
+  ctx.restore();
+}
+
+// Punto del contorno de un corazón para u en 0..1 (alto aproximado = size).
+export function heartPoint(u, size) {
+  const a = u * TAU;
+  return {
+    x: (size * 16 * Math.sin(a) ** 3) / 32,
+    y: (-size * (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a))) / 32,
+  };
+}
+
+// Destello en cruz con halo.
+export function sparkle(ctx, x, y, size, rgb, a) {
+  if (size <= 0 || a <= 0) return;
+  glow(ctx, x, y, size * 1.6, rgb, a * 0.5);
+  ctx.strokeStyle = rgbaOf([255, 255, 255], a);
+  ctx.lineWidth = Math.max(0.8, size * 0.12);
+  ctx.beginPath();
+  ctx.moveTo(x - size, y);
+  ctx.lineTo(x + size, y);
+  ctx.moveTo(x, y - size);
+  ctx.lineTo(x, y + size);
+  ctx.stroke();
+}
+
+// Cámara 3D: y hacia arriba, mira hacia +z. cam = { cx, cy, U, D, yaw, pitch }.
+export function project3D(cam, x, y, z) {
+  const x1 = x * Math.cos(cam.yaw) + z * Math.sin(cam.yaw);
+  const z1 = -x * Math.sin(cam.yaw) + z * Math.cos(cam.yaw);
+  const y2 = y * Math.cos(cam.pitch) - z1 * Math.sin(cam.pitch);
+  const z2 = y * Math.sin(cam.pitch) + z1 * Math.cos(cam.pitch);
+  const f = cam.D / (cam.D + z2 * cam.U);
+  return { x: cam.cx + x1 * cam.U * f, y: cam.cy - y2 * cam.U * f, z: z2, f };
+}
+
+// Puntos dentro de un texto, centrados en (0, 0), para formarlo con partículas.
+// `weight` ligero (ej. 200) deja trazos de un solo punto de ancho, útil para constelaciones.
+export function textPoints(text, width, height, gap, weight = 900) {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.ceil(width));
+  canvas.height = Math.max(1, Math.ceil(height));
+  const g = canvas.getContext('2d', { willReadFrequently: true });
+  const family = weight >= 700 ? '"Arial Black", system-ui, sans-serif' : 'system-ui, "Segoe UI", sans-serif';
+  let size = height * 0.8;
+  g.font = `${weight} ${size}px ${family}`;
+  const measured = g.measureText(text).width;
+  if (measured > width * 0.92) size *= (width * 0.92) / measured;
+  g.font = `${weight} ${size}px ${family}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#ffffff';
+  g.fillText(text, canvas.width / 2, canvas.height / 2);
+  const data = g.getImageData(0, 0, canvas.width, canvas.height).data;
+  const pts = [];
+  for (let y = 0; y < canvas.height; y += gap) {
+    for (let x = 0; x < canvas.width; x += gap) {
+      if (data[(y * canvas.width + x) * 4 + 3] > 128) pts.push({ x: x - canvas.width / 2, y: y - canvas.height / 2 });
+    }
+  }
+  return pts;
+}
+
+// Nombre para escenas que lo dibujan (el reproductor lo pasa en stage.card).
+export function cardName(stage, fallback) {
+  const name = stage && stage.card && stage.card.p;
+  return (name || fallback).toUpperCase().slice(0, 12);
+}

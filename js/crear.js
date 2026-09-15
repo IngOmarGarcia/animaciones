@@ -29,8 +29,12 @@ try {
   // sessionStorage no disponible: se empieza en blanco
 }
 
+let player = null;
 anim.load()
-  .then((mod) => createPlayer($('scene').querySelector('canvas'), mod.default, { loop: anim.previewLoop }).play())
+  .then((mod) => {
+    player = createPlayer($('scene').querySelector('canvas'), mod.default, { loop: anim.previewLoop, card: readCard() });
+    player.play();
+  })
   .catch((err) => console.error('No se pudo cargar la animación', err));
 
 const readCard = () => cleanCard({ a: anim.id, p: fields.p.value, m: fields.m.value, d: fields.d.value });
@@ -40,6 +44,7 @@ let shareText = '';
 function update() {
   const card = readCard();
   fillOverlay(overlay, card, anim);
+  if (player) player.stage.card = card;
   // El código descargable lleva el nombre y mensaje que ya escribieron.
   $('codeLink').href = card.p || card.m || card.d
     ? `codigo.html?s=${encodeCard(card)}`

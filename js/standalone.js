@@ -72,7 +72,7 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
   Crea la tuya y mándala por WhatsApp con un enlace: ${SITE.url}
 
   Cómo abrirla: guarda este archivo como ${anim.id}.html y ábrelo con doble clic.
-  Toca la pantalla para verla de nuevo.
+  ${anim.interactive ? 'Toca la pantalla para abrirla.' : 'Toca la pantalla para verla de nuevo.'}
   Para cambiar el nombre o el mensaje, edita PARA, MENSAJE y DE al inicio del <script>.
 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
@@ -125,6 +125,7 @@ ${code}
 const lienzo = document.querySelector('canvas');
 const pincel = lienzo.getContext('2d');
 const mensaje = document.getElementById('mensaje');
+const escena = { taps: [], revealed: false, card: { p: PARA, m: MENSAJE, d: DE } };
 
 for (const [id, texto] of [['para', PARA && 'Para ' + PARA], ['texto', MENSAJE], ['de', DE && 'Con cariño, ' + DE]]) {
   const nodo = document.getElementById(id);
@@ -146,7 +147,9 @@ function preparar() {
   lienzo.width = Math.round(ancho * escala);
   lienzo.height = Math.round(alto * escala);
   pincel.setTransform(escala, 0, 0, escala, 0, 0);
-  dibujar = create(pincel, ancho, alto, escala);
+  escena.taps.length = 0;
+  escena.revealed = false;
+  dibujar = create(pincel, ancho, alto, escala, escena);
 }
 
 function cuadro(ahora) {
@@ -157,18 +160,21 @@ function cuadro(ahora) {
   pincel.globalAlpha = 1;
   pincel.globalCompositeOperation = 'source-over';
   dibujar(tiempo, dt);
-  mensaje.classList.toggle('visible', tiempo >= TEXTO_APARECE);
+  mensaje.classList.toggle('visible', ${anim.interactive ? 'escena.revealed' : 'tiempo >= TEXTO_APARECE'});
   requestAnimationFrame(cuadro);
 }
 
 addEventListener('resize', () => {
   if (innerWidth !== ancho || innerHeight !== alto) preparar();
 });
-addEventListener('click', (event) => {
+${anim.interactive ? `addEventListener('pointerdown', (event) => {
+  if (event.target.closest('a')) return;
+  escena.taps.push({ x: event.clientX, y: event.clientY });
+});` : `addEventListener('click', (event) => {
   if (event.target.closest('a')) return;
   tiempo = 0;
   preparar();
-});
+});`}
 
 preparar();
 requestAnimationFrame(cuadro);

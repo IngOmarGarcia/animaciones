@@ -57,6 +57,12 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
    Dibuja en función de `t` (segundos) y usa medidas relativas a `w`/`h` para que se vea bien en celular y en PC.
 2. Agrégala a `ANIMATIONS` en `js/catalog.js` con `file: 'mi-escena'`, su mensaje por defecto, posición del texto y retraso.
 3. Para que su código se pueda descargar, la escena solo debe importar de `./util.js` (en una sola sentencia `import { ... }`).
+4. Utilidades para escenas en `util.js`: `softBackdrop` (fondo desenfocado), `makeLayer`, `glow`, `sparkle`, `heartPath`/`heartPoint`,
+   `project3D`, `textPoints` y `cardName` (nombre del destinatario desde `stage.card`, para escenas que lo escriben).
+   Revisa varias escenas rápido con `tools/preview.html?ids=a,b&t=2,5&fps=10`.
+5. Escenas interactivas (ej. `regalo.js`): `create` recibe un quinto parámetro `stage` con `stage.taps` (toques sobre el canvas).
+   Pon `interactive: true` en el catálogo y marca `stage.revealed = true` cuando deba aparecer el mensaje.
+   Si `stage` no existe (grabador de video) la escena debe avanzar sola, y `textDelay` debe coincidir con ese momento.
 
 ## Antes de publicar
 

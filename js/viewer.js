@@ -41,14 +41,19 @@ async function start() {
   if (player) {
     player.restart();
   } else {
-    player = createPlayer($('scene').querySelector('canvas'), mod.default);
+    player = createPlayer($('scene').querySelector('canvas'), mod.default, { card });
     player.play();
   }
   // Se sigue el tiempo de la animación (no el reloj) para que en celulares lentos
-  // el mensaje no aparezca antes de que florezca.
+  // el mensaje no aparezca antes de que florezca. Las interactivas avisan con stage.revealed.
+  let shownAt = null;
   watcher = setInterval(() => {
-    if (player.time >= anim.textDelay) overlay.classList.add('show');
-    if (player.time >= anim.textDelay + 2.5) {
+    const ready = anim.interactive ? player.stage.revealed : player.time >= anim.textDelay;
+    if (ready && shownAt === null) {
+      overlay.classList.add('show');
+      shownAt = player.time;
+    }
+    if (shownAt !== null && player.time >= shownAt + 2.5) {
       replay.hidden = false;
       hint.hidden = false;
       clearInterval(watcher);

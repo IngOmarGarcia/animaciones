@@ -137,7 +137,8 @@
       await document.fonts.load('700 36px "Dancing Script"');
       const create = (await anim.load()).default;
       ctx.setTransform(K, 0, 0, K, 0, 0);
-      const frame = create(ctx, W, H, K);
+      // auto: las escenas interactivas avanzan solas porque en el video nadie toca.
+      const frame = create(ctx, W, H, K, { taps: [], revealed: false, card, auto: true });
 
       let recorder = null;
       if (record) {
