@@ -125,7 +125,8 @@ img { max-width: 100%; }
   border: 1px dashed var(--line); border-radius: 12px;
   color: rgba(255, 255, 255, 0.25); font-size: 0.75rem;
 }
-.ad-slot:empty::before { content: "Publicidad"; }
+/* Mientras no haya bloque de anuncio dentro, el espacio no se muestra */
+.ad-slot:empty { display: none; }
 
 /* Textos */
 .prose { max-width: 760px; padding-block: 16px 24px; }

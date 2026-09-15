@@ -1,0 +1,7 @@
+# Cloudflare Pages: JS y CSS se revalidan en cada visita (responde 304 si no cambiaron).
+# Evita que un navegador mezcle módulos nuevos con un util.js viejo y deje animaciones en negro.
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/css/*
+  Cache-Control: public, max-age=0, must-revalidate

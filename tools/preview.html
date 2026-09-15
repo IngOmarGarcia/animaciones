@@ -15,9 +15,12 @@
   <script type="module">
     // Uso: tools/preview.html?t=1,3,6  — renderiza cada escena en varios tiempos, de forma determinista.
     import { ANIMATIONS } from '../js/catalog.js';
-    const times = (new URLSearchParams(location.search).get('t') || '1,3,6').split(',').map(Number);
+    // Opcional: ?ids=rosa-amarilla,chilena-bajo-la-lluvia para revisar solo esas escenas.
+    const params = new URLSearchParams(location.search);
+    const times = (params.get('t') || '1,3,6').split(',').map(Number);
+    const only = params.get('ids')?.split(',');
     const out = document.getElementById('out');
-    for (const anim of ANIMATIONS) {
+    for (const anim of ANIMATIONS.filter((a) => !only || only.includes(a.id))) {
       const create = (await anim.load()).default;
       const row = document.createElement('div');
       row.className = 'row';

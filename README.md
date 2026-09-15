@@ -7,9 +7,10 @@ Sitio estático (HTML + CSS + JavaScript con módulos ES, sin compilación). Las
 Los módulos ES necesitan un servidor (abrir con doble clic no funciona):
 
 ```bash
-python -m http.server 8080
-# o: npx serve .
+python tools/serve.py
 ```
+
+Usa este servidor y no `python -m http.server`: el de Python no manda cabeceras de caché y el navegador puede quedarse con módulos viejos (animaciones en negro después de cambiar `util.js`).
 
 Luego abre http://localhost:8080
 
@@ -74,7 +75,7 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 
 - Solicítalo con el dominio propio ya publicado y con las páginas de privacidad y contacto.
 - El script de la cuenta (`ca-pub-3061014711786485`) ya está en el `<head>` de cada página y `ads.txt` está en la raíz.
-- Cuando aprueben la cuenta, pega los bloques de anuncio dentro de los `div.ad-slot` (ya reservan altura para no mover el diseño).
+- Cuando aprueben la cuenta, pega los bloques de anuncio dentro de los `div.ad-slot` (ya reservan altura para no mover el diseño). Vacíos se ocultan solos.
 - No pongas anuncios encima de la animación ni botones de descarga falsos: Google lo penaliza.
 
 ## Pendientes sugeridos
