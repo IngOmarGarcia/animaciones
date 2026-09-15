@@ -1,6 +1,7 @@
 import { ANIMATIONS, getAnimation } from './catalog.js';
 import { decodeCard } from './share.js';
 import { buildStandaloneHtml } from './standalone.js';
+import { renderSupport } from './extras.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -15,6 +16,7 @@ $('title').textContent = `Código de «${anim.title}»`;
 $('back').href = createHref;
 $('cta').href = createHref;
 $('fileName').textContent = fileName;
+renderSupport($('support'));
 
 $('others').replaceChildren(...ANIMATIONS.filter((a) => a.id !== anim.id).map((a) => {
   const item = document.createElement('li');

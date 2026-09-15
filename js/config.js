@@ -1,12 +1,18 @@
 // Datos del sitio que cambian con frecuencia. Edita solo este archivo.
 export const SITE = {
-  url: 'https://animaciones.pages.dev',
+  url: 'https://viralcss.com',
   email: 'viralcss11@gmail.com',
   // Número de WhatsApp con código de país y sin espacios, ej. '5215512345678'.
   // Si está vacío, los encargos se piden por correo.
   whatsapp: '',
-  // Enlace de Mercado Pago, Ko-fi, etc. Si está vacío, no se muestra el botón.
-  donationUrl: '',
+  // Donaciones voluntarias. Usa tu CLABE de Mercado Pago (18 dígitos), NUNCA el número de tu tarjeta.
+  // En la app: Tu dinero → Ingresar dinero → Transferencia. Si `clabe` y `url` están vacíos, no se muestra.
+  donation: {
+    clabe: '722969010315264490',
+    holder: '', // nombre del titular, como aparece en Mercado Pago
+    bank: 'Mercado Pago',
+    url: '', // opcional: link de pago de Mercado Pago, Ko-fi, etc.
+  },
   customOrderPrice: '$49 MXN',
   customOrderDelivery: '24 horas',
 };

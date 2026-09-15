@@ -36,18 +36,18 @@ js/anim/*.js      Una escena por archivo
 tools/            og.html (imagen para WhatsApp) y preview.html (revisión)
 ```
 
-## Monetización sin dominio
+## Monetización
 
 Todo se configura en `js/config.js`:
 
 - `GIFTS`: regalos de Mercado Libre por categoría. Reemplaza cada `url` por tu enlace de afiliado.
 - `whatsapp`: número para recibir encargos (vacío = se piden por correo).
-- `donationUrl`: enlace de Mercado Pago o Ko-fi (vacío = no se muestra el botón).
+- `donation`: CLABE de Mercado Pago, titular y link de pago opcional para donaciones voluntarias (vacío = no se muestra). Nunca pongas el número de tu tarjeta.
 - `customOrderPrice` / `customOrderDelivery`: precio y tiempo de entrega de `encargos.html`.
 
 ## Videos para TikTok / Reels
 
-Abre `tools/grabar.html` (en local o en https://animaciones.pages.dev/tools/grabar.html) con Chrome o Edge en PC,
+Abre `tools/grabar.html` (en local o en https://viralcss.com/tools/grabar.html) con Chrome o Edge en PC,
 elige animación y texto, y descarga un video vertical de 1080×1920 con la marca «Crea la tuya gratis».
 
 ## Agregar una animación
@@ -59,7 +59,7 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 
 ## Antes de publicar
 
-1. El sitio está en `https://animaciones.pages.dev`. Si conectas un dominio propio, reemplaza esa dirección en los HTML (las imágenes `og:image` deben ser URL absolutas para que WhatsApp muestre la vista previa).
+1. El sitio está en `https://viralcss.com` (también responde en `animaciones.pages.dev`). Si cambias de dominio, reemplaza la dirección en `js/config.js` y en los HTML (las imágenes `og:image` deben ser URL absolutas para que WhatsApp muestre la vista previa).
 2. Si cambias el nombre "ViralCss", búscalo y reemplázalo en los HTML.
 3. Regenera `img/og.png` si cambias el diseño: abre `tools/og.html` y toma una captura de 1200x630.
 
@@ -73,7 +73,8 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 ## AdSense
 
 - Solicítalo con el dominio propio ya publicado y con las páginas de privacidad y contacto.
-- Pega el script de tu cuenta en el `<head>` y los bloques de anuncio dentro de los `div.ad-slot` (ya reservan altura para no mover el diseño).
+- El script de la cuenta (`ca-pub-3061014711786485`) ya está en el `<head>` de cada página y `ads.txt` está en la raíz.
+- Cuando aprueben la cuenta, pega los bloques de anuncio dentro de los `div.ad-slot` (ya reservan altura para no mover el diseño).
 - No pongas anuncios encima de la animación ni botones de descarga falsos: Google lo penaliza.
 
 ## Pendientes sugeridos
