@@ -152,6 +152,8 @@ details p { margin: 8px 0 0; }
 .overlay.show { opacity: 1; transform: none; }
 .overlay.pos-top { justify-content: flex-start; }
 .overlay.pos-center { justify-content: center; }
+/* Debajo de una figura centrada (el centro del texto queda al ~61% del alto) */
+.overlay.pos-below { justify-content: center; top: 22%; }
 .overlay p { margin: 0; overflow-wrap: anywhere; }
 .ov-to {
   color: var(--accent); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;

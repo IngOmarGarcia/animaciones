@@ -17,6 +17,19 @@ export const CATEGORIES = [
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
   {
+    id: 'corazon-de-energia',
+    file: 'corazon-energia',
+    category: 'amor',
+    title: 'Corazón de energía',
+    description: 'Miles de partículas de luz construyen un corazón 3D que late. Tócalo y escribe su nombre.',
+    defaultMessage: 'Esto es para ti ❤️',
+    textPosition: 'below',
+    nameInScene: true,
+    interactive: true,
+    textDelay: 13.1,
+    previewLoop: 22,
+  },
+  {
     id: 'anillo-de-propuesta',
     file: 'anillo-propuesta',
     category: 'amor',

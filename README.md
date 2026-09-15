@@ -63,6 +63,9 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 5. Escenas interactivas (ej. `regalo.js`): `create` recibe un quinto parámetro `stage` con `stage.taps` (toques sobre el canvas).
    Pon `interactive: true` en el catálogo y marca `stage.revealed = true` cuando deba aparecer el mensaje.
    Si `stage` no existe (grabador de video) la escena debe avanzar sola, y `textDelay` debe coincidir con ese momento.
+6. Escenas que forman el nombre ellas mismas (ej. `corazon-energia.js`): pon `nameInScene: true` para no repetir «Para …»
+   y `textPosition: 'below'` para que el mensaje quede debajo de la figura central.
+   `corazon-energia.js` usa WebGL en un canvas propio que se copia al canvas 2D del reproductor (sin dependencias, sirve para el código descargable).
 
 ## Antes de publicar
 

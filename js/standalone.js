@@ -82,7 +82,7 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
   .mensaje {
     position: fixed; inset: 0;
     display: flex; flex-direction: column; align-items: center;
-    justify-content: ${anim.textPosition === 'center' ? 'center' : 'flex-start'};
+    justify-content: ${anim.textPosition === 'top' ? 'flex-start' : 'center'};${anim.textPosition === 'below' ? ' top: 22%;' : ''}
     padding: clamp(24px, 9vw, 72px) 7vw; text-align: center; pointer-events: none;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 0, 0, 0.8);
@@ -127,7 +127,7 @@ const pincel = lienzo.getContext('2d');
 const mensaje = document.getElementById('mensaje');
 const escena = { taps: [], revealed: false, card: { p: PARA, m: MENSAJE, d: DE } };
 
-for (const [id, texto] of [['para', PARA && 'Para ' + PARA], ['texto', MENSAJE], ['de', DE && 'Con cariño, ' + DE]]) {
+for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', DE && 'Con cariño, ' + DE]]) {
   const nodo = document.getElementById(id);
   nodo.textContent = texto;
   nodo.hidden = !texto;
