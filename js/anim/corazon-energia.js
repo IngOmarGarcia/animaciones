@@ -1,4 +1,7 @@
-import { TAU, clamp, lerp, easeInOut, textPoints, cardName } from './util.js';
+import {
+  TAU, clamp, lerp, easeInOut, textPoints, cardName,
+  PARTICLE_TAN, particleQuality, getParticleRenderer, viewProjection, drawParticles2D,
+} from './util.js';
 
 // ✏️ Colores de la energía (r, g, b de 0 a 1) y texto por defecto (sin nombre)
 const BLUE = [0.12, 0.36, 1.0];
@@ -19,22 +22,7 @@ const SCATTER = 1.0; // tiempo que el corazón parece desaparecer
 const REVEAL = 2.1; // tras la explosión, cuándo aparece el mensaje
 const BEAT_PERIOD = 1.05;
 
-const FOV = (38 * Math.PI) / 180;
-const TAN = Math.tan(FOV / 2);
-
-// ---------- Calidad según el dispositivo ----------
-
-function pickQuality(w, h) {
-  const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-  const cores = navigator.hardwareConcurrency || 4;
-  const memory = navigator.deviceMemory || 4;
-  let count;
-  if (coarse) count = cores >= 8 && memory >= 4 ? 16000 : cores >= 6 ? 11000 : 7000;
-  else count = cores >= 8 ? 28000 : 18000;
-  const area = (w * h) / (390 * 844);
-  count = Math.round(count * clamp(Math.sqrt(area), 0.35, 1));
-  return { count: Math.max(2500, count), scale: coarse ? 0.8 : 1 };
-}
+const TAN = PARTICLE_TAN;
 
 // ---------- Geometría del corazón (superficie implícita de Taubin, y hacia arriba) ----------
 
@@ -74,379 +62,11 @@ function sliceRadius(y, cx, cz) {
 
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
 
-// ---------- Matrices de cámara (column-major, como WebGL) ----------
-
-function viewProjection(out, eye, target, aspect) {
-  let fx = eye[0] - target[0];
-  let fy = eye[1] - target[1];
-  let fz = eye[2] - target[2];
-  let len = Math.hypot(fx, fy, fz);
-  fx /= len; fy /= len; fz /= len;
-  let sx = fz;
-  let sy = 0;
-  let sz = -fx;
-  len = Math.hypot(sx, sy, sz) || 1;
-  sx /= len; sy /= len; sz /= len;
-  const ux = fy * sz - fz * sy;
-  const uy = fz * sx - fx * sz;
-  const uz = fx * sy - fy * sx;
-  const tx = -(sx * eye[0] + sy * eye[1] + sz * eye[2]);
-  const ty = -(ux * eye[0] + uy * eye[1] + uz * eye[2]);
-  const tz = -(fx * eye[0] + fy * eye[1] + fz * eye[2]);
-  const f = 1 / TAN;
-  const near = 0.1;
-  const far = 80;
-  const nf = 1 / (near - far);
-  const a = f / aspect;
-  const c = (far + near) * nf;
-  const d = 2 * far * near * nf;
-  out[0] = a * sx; out[1] = f * ux; out[2] = c * fx; out[3] = -fx;
-  out[4] = a * sy; out[5] = f * uy; out[6] = c * fy; out[7] = -fy;
-  out[8] = a * sz; out[9] = f * uz; out[10] = c * fz; out[11] = -fz;
-  out[12] = a * tx; out[13] = f * ty; out[14] = c * tz + d; out[15] = -tz;
-  return out;
-}
-
-// ---------- Render WebGL (un solo contexto para todas las instancias) ----------
-
-const POINT_VS = `
-attribute vec4 aPos;
-attribute vec4 aCol;
-uniform mat4 uVP;
-uniform float uPx;
-uniform float uFocus;
-uniform float uAperture;
-uniform float uMaxSize;
-varying vec3 vCol;
-varying float vSharp;
-void main() {
-  vec4 clip = uVP * vec4(aPos.xyz, 1.0);
-  if (clip.w < 0.15 || aPos.w <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 0.0; return; }
-  gl_Position = clip;
-  float size = aCol.w * uPx / clip.w;
-  float coc = uAperture * uPx * abs(clip.w - uFocus) / (clip.w * uFocus);
-  float total = clamp(sqrt(size * size + coc * coc), 2.0, uMaxSize);
-  vSharp = clamp(size / total, 0.0, 1.0);
-  float energy = min(1.0, (size * size) / (total * total) * mix(3.5, 1.0, vSharp));
-  vCol = aCol.rgb * aPos.w * energy;
-  gl_PointSize = total;
-}`;
-
-const POINT_FS = `
-precision mediump float;
-varying vec3 vCol;
-varying float vSharp;
-void main() {
-  vec2 d = gl_PointCoord * 2.0 - 1.0;
-  float r2 = dot(d, d);
-  if (r2 > 1.0) discard;
-  float sharp = exp(-r2 * 10.0) + 0.16 * exp(-r2 * 2.6);
-  float disc = smoothstep(1.0, 0.6, r2) * (0.4 + 0.25 * r2);
-  float a = mix(disc, sharp, vSharp);
-  float hot = exp(-r2 * 34.0) * vSharp * dot(vCol, vec3(0.45));
-  gl_FragColor = vec4(vCol * a + vec3(hot), 1.0);
-}`;
-
-const QUAD_VS = `
-attribute vec2 aXY;
-varying vec2 vUv;
-void main() { vUv = aXY * 0.5 + 0.5; gl_Position = vec4(aXY, 0.0, 1.0); }`;
-
-// Copia con reducción (4 muestras) y atenuación para las estelas.
-const COPY_FS = `
-precision mediump float;
-varying vec2 vUv;
-uniform sampler2D uTex;
-uniform vec2 uTexel;
-uniform float uGain;
-uniform float uFloor;
-void main() {
-  vec3 c = texture2D(uTex, vUv + uTexel * vec2(-1.0, -1.0)).rgb
-    + texture2D(uTex, vUv + uTexel * vec2(1.0, -1.0)).rgb
-    + texture2D(uTex, vUv + uTexel * vec2(-1.0, 1.0)).rgb
-    + texture2D(uTex, vUv + uTexel * vec2(1.0, 1.0)).rgb;
-  gl_FragColor = vec4(max(c * 0.25 * uGain - uFloor, 0.0), 1.0);
-}`;
-
-const BLUR_FS = `
-precision mediump float;
-varying vec2 vUv;
-uniform sampler2D uTex;
-uniform vec2 uDir;
-void main() {
-  vec3 c = texture2D(uTex, vUv).rgb * 0.227027;
-  c += (texture2D(uTex, vUv + uDir * 1.3846).rgb + texture2D(uTex, vUv - uDir * 1.3846).rgb) * 0.3162162;
-  c += (texture2D(uTex, vUv + uDir * 3.2308).rgb + texture2D(uTex, vUv - uDir * 3.2308).rgb) * 0.0702703;
-  gl_FragColor = vec4(c, 1.0);
-}`;
-
-const COMPOSITE_FS = `
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-#else
-precision mediump float;
-#endif
-varying vec2 vUv;
-uniform sampler2D uScene;
-uniform sampler2D uBloomA;
-uniform sampler2D uBloomB;
-uniform vec2 uRes;
-uniform float uTime;
-uniform float uAspect;
-uniform vec3 uGlow;
-uniform vec3 uBeam;
-uniform float uFlash;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-void main() {
-  vec3 scene = texture2D(uScene, vUv).rgb;
-  vec3 bloom = texture2D(uBloomA, vUv).rgb * 1.1 + texture2D(uBloomB, vUv).rgb * 1.5;
-  vec2 p = (vUv - uGlow.xy) * vec2(uAspect, 1.0);
-  vec3 bg = vec3(0.001, 0.002, 0.006) + vec3(0.006, 0.025, 0.07) * uGlow.z * exp(-dot(p, p) * 5.0);
-  vec2 q = vUv - uBeam.xy;
-  q.x *= uAspect;
-  float beam = exp(-q.x * q.x * 55.0) * smoothstep(-0.015, 0.02, q.y) * exp(-max(q.y, 0.0) * 2.4);
-  float base = exp(-(q.x * q.x * 6.0 + q.y * q.y * 260.0));
-  bg += vec3(0.03, 0.2, 0.45) * (beam * 0.28 + base * 0.4) * uBeam.z;
-  vec3 col = bg + scene * 1.15 + bloom + vec3(0.12, 0.4, 0.8) * uFlash;
-  col = vec3(1.0) - exp(-col * 1.5);
-  vec2 v = (vUv - 0.5) * vec2(uAspect * 0.9 + 0.3, 1.0);
-  col *= 1.0 - smoothstep(0.25, 0.95, length(v)) * 0.75;
-  col += (hash(vUv * uRes + fract(uTime * 7.13) * 91.0) - 0.5) * 0.014;
-  gl_FragColor = vec4(col, 1.0);
-}`;
-
-let shared;
-
-function createRenderer() {
-  const canvas = document.createElement('canvas');
-  const gl = canvas.getContext('webgl', {
-    alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, powerPreference: 'high-performance',
-  });
-  if (!gl) return null;
-
-  const program = (vs, fs, attribs) => {
-    const p = gl.createProgram();
-    for (const [src, type] of [[vs, gl.VERTEX_SHADER], [fs, gl.FRAGMENT_SHADER]]) {
-      const s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-      gl.attachShader(p, s);
-    }
-    attribs.forEach((name, i) => gl.bindAttribLocation(p, i, name));
-    gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-    const u = {};
-    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
-    for (let i = 0; i < n; i++) {
-      const name = gl.getActiveUniform(p, i).name;
-      u[name] = gl.getUniformLocation(p, name);
-    }
-    return { p, u };
-  };
-
-  let points;
-  let copy;
-  let blur;
-  let composite;
-  try {
-    points = program(POINT_VS, POINT_FS, ['aPos', 'aCol']);
-    copy = program(QUAD_VS, COPY_FS, ['aXY']);
-    blur = program(QUAD_VS, BLUR_FS, ['aXY']);
-    composite = program(QUAD_VS, COMPOSITE_FS, ['aXY']);
-  } catch (err) {
-    console.warn('Corazón de energía: WebGL no disponible', err);
-    return null;
-  }
-
-  const quad = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  const posBuf = gl.createBuffer();
-  const colBuf = gl.createBuffer();
-  let capacity = 0;
-  const maxPoint = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1] || 64;
-
-  const makeTarget = () => ({ tex: gl.createTexture(), fb: gl.createFramebuffer(), w: 0, h: 0 });
-  const sizeTarget = (t, w, h) => {
-    if (t.w === w && t.h === h) return;
-    t.w = w;
-    t.h = h;
-    gl.bindTexture(gl.TEXTURE_2D, t.tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t.tex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb);
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-  };
-  const scenes = [makeTarget(), makeTarget()];
-  const bloomA = makeTarget();
-  const tmpA = makeTarget();
-  const bloomB = makeTarget();
-  const tmpB = makeTarget();
-  let current = 0;
-
-  const bindTarget = (t) => {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fb : null);
-    gl.viewport(0, 0, t ? t.w : canvas.width, t ? t.h : canvas.height);
-  };
-  const drawQuad = () => {
-    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-    gl.enableVertexAttribArray(0);
-    gl.disableVertexAttribArray(1);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  };
-  const texture = (unit, tex, loc) => {
-    gl.activeTexture(gl.TEXTURE0 + unit);
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.uniform1i(loc, unit);
-  };
-  const copyPass = (src, dst, gain, texel, floor = 0) => {
-    bindTarget(dst);
-    gl.useProgram(copy.p);
-    texture(0, src.tex, copy.u.uTex);
-    gl.uniform2f(copy.u.uTexel, texel ? 1 / src.w : 0, texel ? 1 / src.h : 0);
-    gl.uniform1f(copy.u.uGain, gain);
-    gl.uniform1f(copy.u.uFloor, floor);
-    drawQuad();
-  };
-  const blurPass = (src, dst, dx, dy) => {
-    bindTarget(dst);
-    gl.useProgram(blur.p);
-    texture(0, src.tex, blur.u.uTex);
-    gl.uniform2f(blur.u.uDir, dx / src.w, dy / src.h);
-    drawQuad();
-  };
-
-  return {
-    gl,
-    canvas,
-    maxPoint,
-    render(o) {
-      const { width, height } = o;
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-      }
-      sizeTarget(scenes[0], width, height);
-      sizeTarget(scenes[1], width, height);
-      const aw = Math.max(1, Math.round(width / 4));
-      const ah = Math.max(1, Math.round(height / 4));
-      sizeTarget(bloomA, aw, ah);
-      sizeTarget(tmpA, aw, ah);
-      sizeTarget(bloomB, Math.max(1, Math.round(aw / 2)), Math.max(1, Math.round(ah / 2)));
-      sizeTarget(tmpB, bloomB.w, bloomB.h);
-      if (o.reset) {
-        for (const t of scenes) {
-          bindTarget(t);
-          gl.clearColor(0, 0, 0, 1);
-          gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-      }
-
-      // 1. Escena: estela del cuadro anterior + partículas aditivas
-      gl.disable(gl.BLEND);
-      const prev = scenes[current];
-      const next = scenes[1 - current];
-      if (o.trail > 0.01) {
-        copyPass(prev, next, o.trail, false, 2 / 255);
-      } else {
-        bindTarget(next);
-        gl.clearColor(0, 0, 0, 1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-      }
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.ONE, gl.ONE);
-      gl.useProgram(points.p);
-      gl.uniformMatrix4fv(points.u.uVP, false, o.vp);
-      gl.uniform1f(points.u.uPx, o.px);
-      gl.uniform1f(points.u.uFocus, o.focus);
-      gl.uniform1f(points.u.uAperture, o.aperture);
-      gl.uniform1f(points.u.uMaxSize, Math.min(maxPoint, o.maxSize));
-      if (capacity !== o.pos.byteLength) {
-        capacity = o.pos.byteLength;
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, capacity, gl.DYNAMIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, capacity, gl.DYNAMIC_DRAW);
-      }
-      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, o.pos.subarray(0, o.count * 4));
-      gl.enableVertexAttribArray(0);
-      gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, o.col.subarray(0, o.count * 4));
-      gl.enableVertexAttribArray(1);
-      gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
-      gl.drawArrays(gl.POINTS, 0, o.count);
-      gl.disable(gl.BLEND);
-      current = 1 - current;
-
-      // 2. Bloom en dos niveles
-      copyPass(next, bloomA, 1, true);
-      blurPass(bloomA, tmpA, 1, 0);
-      blurPass(tmpA, bloomA, 0, 1);
-      copyPass(bloomA, bloomB, 1, true);
-      blurPass(bloomB, tmpB, 1, 0);
-      blurPass(tmpB, bloomB, 0, 1);
-      blurPass(bloomB, tmpB, 2, 0);
-      blurPass(tmpB, bloomB, 0, 2);
-
-      // 3. Composición final
-      bindTarget(null);
-      gl.useProgram(composite.p);
-      texture(0, next.tex, composite.u.uScene);
-      texture(1, bloomA.tex, composite.u.uBloomA);
-      texture(2, bloomB.tex, composite.u.uBloomB);
-      gl.uniform2f(composite.u.uRes, width, height);
-      gl.uniform1f(composite.u.uTime, o.time);
-      gl.uniform1f(composite.u.uAspect, width / height);
-      gl.uniform3fv(composite.u.uGlow, o.glow);
-      gl.uniform3fv(composite.u.uBeam, o.beam);
-      gl.uniform1f(composite.u.uFlash, o.flash);
-      drawQuad();
-    },
-  };
-}
-
-function getRenderer() {
-  if (shared === undefined) {
-    try {
-      shared = createRenderer();
-    } catch (err) {
-      shared = null;
-    }
-  }
-  return shared && !shared.gl.isContextLost() ? shared : null;
-}
-
-// Respaldo sin WebGL: puntos luminosos en Canvas 2D.
-function makeDot(rgb) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 32;
-  const g = c.getContext('2d');
-  const grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
-  const [r, gg, b] = rgb.map((v) => Math.round(v * 255));
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.18, `rgba(${r},${gg},${b},0.9)`);
-  grad.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 32, 32);
-  return c;
-}
-
 // ---------- Escena ----------
 
 export default function create(ctx, w, h, dpr = 1, stage) {
-  const quality = pickQuality(w, h);
-  const renderer = getRenderer();
+  const quality = particleQuality(w, h);
+  const renderer = getParticleRenderer();
   const N = renderer ? quality.count : Math.min(quality.count, 3000);
   const AMB = Math.round(clamp(N * 0.09, 300, 2400));
   const POR = Math.round(clamp(N * 0.08, 500, 1800));
@@ -694,7 +314,6 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   const look = [0, lookY, 0];
   const glowU = new Float32Array(3);
   const beamU = new Float32Array(3);
-  const dots = renderer ? null : [makeDot(BLUE), makeDot(CYAN), makeDot(WHITE)];
 
   const beatShape = (x) => {
     if (x < 0) return 0;
@@ -1130,30 +749,11 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         beam: beamU,
         time: t,
         reset,
+        owner: pos,
       });
       ctx.drawImage(renderer.canvas, 0, 0, w, h);
     } else {
-      ctx.fillStyle = '#010207';
-      ctx.fillRect(0, 0, w, h);
-      ctx.globalCompositeOperation = 'lighter';
-      const focus = Math.hypot(eye[0], eye[1], eye[2]);
-      const cssPx = h / (2 * TAN);
-      for (let k = 0; k < o; k++) {
-        const q = k * 4;
-        const I = pos[q + 3];
-        if (I <= 0.02) continue;
-        const x = pos[q]; const y = pos[q + 1]; const z = pos[q + 2];
-        const cw = vp[3] * x + vp[7] * y + vp[11] * z + vp[15];
-        if (cw < 0.15) continue;
-        const sx = ((vp[0] * x + vp[4] * y + vp[8] * z + vp[12]) / cw) * 0.5 + 0.5;
-        const syy = 0.5 - ((vp[1] * x + vp[5] * y + vp[9] * z + vp[13]) / cw) * 0.5;
-        const sizePx = Math.max(2, (col[q + 3] * cssPx) / cw + (0.07 * cssPx * Math.abs(cw - focus)) / (cw * focus)) * 2;
-        ctx.globalAlpha = Math.min(1, I * 0.8);
-        const dot = dots[col[q] > 0.8 ? 2 : col[q + 1] > 0.7 ? 1 : 0];
-        ctx.drawImage(dot, sx * w - sizePx / 2, syy * h - sizePx / 2, sizePx, sizePx);
-      }
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = 'source-over';
+      drawParticles2D(ctx, w, h, vp, pos, col, o, Math.hypot(eye[0], eye[1], eye[2]));
     }
 
     // Indicación discreta para tocar
