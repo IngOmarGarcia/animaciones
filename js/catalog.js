@@ -17,6 +17,18 @@ export const CATEGORIES = [
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
   {
+    id: 'retrato-de-particulas',
+    file: 'neymar-portrait',
+    category: 'futbol',
+    hidden: true, // en desarrollo: el retrato aún no pasa el listón de legibilidad facial
+    title: 'Retrato de energía',
+    description: 'Miles de partículas construyen un rostro en 3D, explotan y vuelven a unirse para escribir su nombre.',
+    defaultMessage: 'O jogo nunca para ⚽',
+    textPosition: 'below',
+    textDelay: 9.8,
+    previewLoop: 13,
+  },
+  {
     id: 'corazon-de-energia',
     file: 'corazon-energia',
     category: 'amor',

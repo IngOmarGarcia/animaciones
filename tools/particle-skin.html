@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Particle Skin (prueba) | ViralCss</title>
+  <style>
+    :root { color-scheme: dark; --cyan: #22e4ff; --line: rgba(34, 228, 255, 0.25); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #000; color: #e8fbff; font: 13px/1.3 system-ui, sans-serif; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100dvh; touch-action: none; }
+    .hud { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; pointer-events: none; font-variant-numeric: tabular-nums; opacity: 0.85; white-space: pre-wrap; }
+    .bar { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(720px, calc(100vw - 16px)); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0, 10, 14, 0.72); backdrop-filter: blur(8px); }
+    .modes { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    button, select { font: inherit; color: inherit; background: transparent; border: 0; padding: 8px 12px; min-height: 36px; cursor: pointer; }
+    select { border: 1px solid var(--line); border-radius: 10px; background: #001015; }
+    .modes button[aria-pressed="true"] { background: var(--cyan); color: #001015; font-weight: 700; }
+    #play { border: 1px solid var(--line); border-radius: 10px; min-width: 44px; }
+    #scrub { flex: 1 1 160px; accent-color: var(--cyan); }
+    .error { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="hud" id="hud">Cargando personaje…</div>
+  <div class="bar">
+    <div class="modes" role="group" aria-label="Representación">
+      <button type="button" data-mode="mesh">MESH</button>
+      <button type="button" data-mode="particles">PARTICLES</button>
+      <button type="button" data-mode="both">BOTH</button>
+    </div>
+    <button type="button" id="play" aria-label="Pausa">⏸</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Tiempo de la animación">
+    <select id="speed" aria-label="Velocidad">
+      <option value="1">1×</option>
+      <option value="0.5">0.5×</option>
+      <option value="0.25">0.25×</option>
+    </select>
+    <select id="quality" aria-label="Partículas">
+      <option value="auto">Auto</option>
+      <option value="4000">4k</option>
+      <option value="8000">8k</option>
+      <option value="12000">12k</option>
+      <option value="15000">15k</option>
+    </select>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { ParticleSkin } from './particle-skin.js';
+
+    const GLB_URL = '../assets/football/test-player.glb';
+    const TARGET_HEIGHT = 1.8;
+    const FPS_SOURCE = 30; // cuadros por segundo de la animación en Blender
+    const MAX_PARTICLES = 15000;
+
+    const params = new URLSearchParams(location.search);
+    const isMobile = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hud = document.getElementById('hud');
+    const canvas = document.getElementById('c');
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference: 'high-performance' });
+    } catch (error) {
+      document.body.innerHTML = '<p class="error">Este navegador no tiene WebGL disponible, así que no se puede mostrar la prueba 3D.</p>';
+      throw error;
+    }
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.5 : 2));
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    scene.fog = new THREE.Fog(0x000000, 5, 15);
+
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+
+    // Luces solo para el modo MESH / BOTH
+    scene.add(new THREE.HemisphereLight(0xbfefff, 0x101418, 1.2));
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(3, 4, 3);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x66e8ff, 1.6);
+    rim.position.set(-3, 2.5, -3);
+    scene.add(rim);
+
+    // Suelo de referencia: rejilla de puntos que da profundidad y deja ver el avance real
+    {
+      const pts = [];
+      for (let x = -10; x <= 10; x += 0.25) for (let z = -10; z <= 10; z += 0.25) pts.push(x, 0, z);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x0f5563, size: 0.018, sizeAttenuation: true })));
+    }
+    const contact = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.4, 2.4),
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+        fragmentShader: 'varying vec2 vUv; void main(){ float d = length(vUv - 0.5) * 2.0; float a = pow(max(0.0, 1.0 - d), 2.5) * 0.22; gl_FragColor = vec4(0.13, 0.89, 1.0, a); }',
+      }),
+    );
+    contact.rotation.x = -Math.PI / 2;
+    contact.position.y = 0.002;
+    scene.add(contact);
+
+    const MESH_COLORS = [
+      [/eyelash/i, 0x1d1d1d],
+      [/eye/i, 0xf0f0f0],
+      [/hair/i, 0xc49a62],
+      [/shoe/i, 0xe6e6e6],
+      [/bottom/i, 0x8b866f],
+      [/top/i, 0x3b3e44],
+      [/body/i, 0xc89878],
+    ];
+
+    const gltf = await new GLTFLoader().loadAsync(GLB_URL);
+    const character = gltf.scene;
+    scene.add(character);
+
+    const skinnedMeshes = [];
+    character.traverse((obj) => {
+      if (!obj.isSkinnedMesh) return;
+      const name = obj.name || obj.parent?.name || '';
+      const color = (MESH_COLORS.find(([re]) => re.test(name)) || [null, 0xaaaaaa])[1];
+      // polygonOffset aleja un poco la malla en profundidad para que en BOTH las partículas
+      // que están exactamente sobre la superficie no parpadeen contra ella.
+      obj.material = new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+      obj.frustumCulled = false;
+      skinnedMeshes.push(obj);
+    });
+
+    const clip = gltf.animations[0];
+    const mixer = new THREE.AnimationMixer(character);
+    const action = mixer.clipAction(clip);
+    action.play();
+    mixer.update(0);
+
+    // Normaliza a 1.8 m con los pies en y = 0 y la cadera en el origen al inicio
+    character.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(character, true);
+    const scale = TARGET_HEIGHT / (box.max.y - box.min.y);
+    character.scale.multiplyScalar(scale);
+    character.updateMatrixWorld(true);
+    const hips = [];
+    character.traverse((obj) => { if (obj.isBone && /hips/i.test(obj.name)) hips.push(obj); });
+    const hipsBone = hips[0];
+    const box2 = new THREE.Box3().setFromObject(character, true);
+    const hipsStart = hipsBone.getWorldPosition(new THREE.Vector3());
+    character.position.x -= hipsStart.x;
+    character.position.z -= hipsStart.z;
+    character.position.y -= box2.min.y;
+    character.updateMatrixWorld(true);
+
+    const skin = new ParticleSkin(skinnedMeshes, { maxCount: MAX_PARTICLES });
+    scene.add(skin.points);
+    const uniforms = skin.material.uniforms;
+    uniforms.uSize.value = TARGET_HEIGHT * 0.0105;
+    uniforms.uTwinkle.value = reducedMotion ? 0 : 1;
+
+    // ---- Controles ----
+    let mode = ['mesh', 'particles', 'both'].includes(params.get('mode')) ? params.get('mode') : 'particles';
+    let playing = true;
+    let speed = 1;
+    let quality = 'auto';
+    let autoCount = isMobile ? 7000 : 12000;
+    skin.setCount(autoCount);
+
+    const modeButtons = [...document.querySelectorAll('[data-mode]')];
+    function setMode(next) {
+      mode = next;
+      for (const b of modeButtons) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+      for (const m of skinnedMeshes) m.visible = mode !== 'particles';
+      skin.points.visible = mode !== 'mesh';
+      // En BOTH se apaga el micro movimiento: así se valida la coincidencia exacta con la superficie
+      uniforms.uJitter.value = mode === 'particles' && !reducedMotion ? TARGET_HEIGHT * 0.0012 : 0;
+      uniforms.uOpacity.value = mode === 'both' ? 0.9 : 1;
+    }
+    for (const b of modeButtons) b.addEventListener('click', () => setMode(b.dataset.mode));
+    setMode(mode);
+
+    const playBtn = document.getElementById('play');
+    const scrub = document.getElementById('scrub');
+    function setPlaying(next) {
+      playing = next;
+      playBtn.textContent = playing ? '⏸' : '▶';
+      playBtn.setAttribute('aria-label', playing ? 'Pausa' : 'Reproducir');
+    }
+    playBtn.addEventListener('click', () => setPlaying(!playing));
+    scrub.addEventListener('input', () => {
+      setPlaying(false);
+      action.time = (scrub.value / 1000) * clip.duration;
+      mixer.update(0);
+    });
+    document.getElementById('speed').addEventListener('change', (e) => { speed = Number(e.target.value); });
+    document.getElementById('quality').addEventListener('change', (e) => {
+      quality = e.target.value;
+      skin.setCount(quality === 'auto' ? autoCount : Number(quality));
+    });
+    addEventListener('keydown', (e) => {
+      if (e.key === '1') setMode('mesh');
+      if (e.key === '2') setMode('particles');
+      if (e.key === '3') setMode('both');
+      if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
+    });
+
+    // ---- Cámara cinematográfica: sigue la cadera, ligero contrapicado y órbita lenta ----
+    const target = new THREE.Vector3();
+    const hipsPos = new THREE.Vector3();
+    const lookAt = new THREE.Vector3();
+    let camReady = false;
+    let lastActionTime = 0;
+
+    function resize() {
+      const w = innerWidth;
+      const h = innerHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      uniforms.uScale.value = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    }
+    addEventListener('resize', resize);
+    resize();
+
+    function updateCamera(t, dt) {
+      hipsBone.getWorldPosition(hipsPos);
+      // Al reiniciar el ciclo la cadera vuelve al origen: se salta el suavizado para no barrer la escena
+      if (!camReady || action.time < lastActionTime - 0.1) {
+        target.set(hipsPos.x, 0, hipsPos.z);
+        camReady = true;
+      } else {
+        const k = 1 - Math.exp(-dt * 5);
+        target.x += (hipsPos.x - target.x) * k;
+        target.z += (hipsPos.z - target.z) * k;
+      }
+      lastActionTime = action.time;
+
+      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+      const dist = Math.max(1.2 / tanV, 1.1 / (tanV * camera.aspect));
+      const az = THREE.MathUtils.degToRad(55) + (reducedMotion ? 0 : Math.sin(t * 0.22) * 0.35);
+      camera.position.set(target.x + Math.sin(az) * dist, 0.75, target.z + Math.cos(az) * dist);
+      lookAt.set(target.x, 0.95, target.z);
+      camera.lookAt(lookAt);
+      contact.position.x = hipsPos.x;
+      contact.position.z = hipsPos.z;
+      uniforms.uFadeNear.value = dist - 1;
+      uniforms.uFadeFar.value = dist + 4;
+    }
+
+    // ---- Bucle ----
+    const clock = new THREE.Clock();
+    let elapsed = 0;
+    let frames = 0;
+    let fpsTime = 0;
+    let fps = 0;
+    let maxErr = 0;
+    let errTick = 0;
+
+    function tick() {
+      const dt = Math.min(clock.getDelta(), 0.1);
+      elapsed += dt;
+      if (playing) {
+        mixer.update(dt * speed);
+        scrub.value = String(Math.round((action.time / clip.duration) * 1000));
+      }
+      scene.updateMatrixWorld();
+      if (skin.points.visible) {
+        skin.update();
+        if (++errTick % 30 === 0) maxErr = skin.measureError();
+      }
+      uniforms.uTime.value = elapsed;
+      updateCamera(elapsed, dt);
+      renderer.render(scene, camera);
+
+      frames++;
+      fpsTime += dt;
+      if (fpsTime >= 2) {
+        const measured = frames;
+        fps = measured / fpsTime;
+        frames = 0;
+        fpsTime = 0;
+        // Solo baja la calidad si de verdad se dibujaron cuadros: con la pestaña oculta
+        // requestAnimationFrame se detiene y el fps medido sería falso.
+        if (quality === 'auto' && fps < 50 && measured > 40 && skin.count > 2500 && !document.hidden) {
+          autoCount = Math.round(skin.count * 0.8);
+          skin.setCount(autoCount);
+        }
+      }
+      const frame = Math.min(clip.duration * FPS_SOURCE + 1, Math.floor(action.time * FPS_SOURCE) + 1);
+      hud.textContent =
+        `cuadro ${frame}/${Math.round(clip.duration * FPS_SOURCE) + 1} · ${mode.toUpperCase()}\n` +
+        `${skin.count.toLocaleString('es-MX')} partículas · ${fps ? fps.toFixed(0) : '—'} fps\n` +
+        `Δ superficie máx ${(maxErr * 1000).toFixed(3)} mm`;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // Acceso para pruebas desde la consola
+    Object.assign(window, { __ps: { THREE, scene, camera, renderer, mixer, action, clip, skin, skinnedMeshes, setMode, setPlaying } });
+  </script>
+</body>
+</html>

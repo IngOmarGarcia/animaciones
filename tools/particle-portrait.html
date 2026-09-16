@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Particle Portrait (depuración) | ViralCss</title>
+  <style>
+    :root { color-scheme: dark; --line: rgba(120, 190, 255, 0.28); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #01030a; color: #dce9ff; font: 13px/1.35 system-ui, sans-serif; overflow: hidden; }
+    .escena { position: fixed; inset: 0; display: grid; place-items: center; }
+    .lienzos { position: relative; width: min(100vw, calc(100dvh * 9 / 16)); height: 100dvh; max-height: 100dvh; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    /* La malla va debajo; las partículas encima en modo pantalla, así el negro no la tapa */
+    #particulas { mix-blend-mode: screen; }
+    .hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 10px; pointer-events: none; white-space: pre; font-variant-numeric: tabular-nums; opacity: 0.85; text-shadow: 0 1px 3px #000; }
+    .barra { position: fixed; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; width: min(760px, calc(100vw - 12px)); padding: 7px; border: 1px solid var(--line); border-radius: 13px; background: rgba(2, 8, 20, 0.78); backdrop-filter: blur(8px); }
+    button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; min-height: 34px; cursor: pointer; }
+    button[aria-pressed="true"] { background: #2ea8ff; color: #001020; font-weight: 700; border-color: #2ea8ff; }
+    .sep { width: 1px; background: var(--line); margin: 2px 4px; }
+    .error { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="escena">
+    <div class="lienzos">
+      <canvas id="malla"></canvas>
+      <canvas id="particulas"></canvas>
+    </div>
+  </div>
+  <div class="hud" id="hud">Cargando…</div>
+  <div class="barra">
+    <button type="button" data-modo="mesh">MESH</button>
+    <button type="button" data-modo="particles">PARTICLES</button>
+    <button type="button" data-modo="both">BOTH</button>
+    <div class="sep"></div>
+    <button type="button" data-fase="formation">FORMATION</button>
+    <button type="button" data-fase="hero">HERO</button>
+    <button type="button" data-fase="explode">EXPLODE</button>
+    <button type="button" data-fase="morph">MORPH</button>
+    <button type="button" data-fase="reveal">REVEAL</button>
+    <div class="sep"></div>
+    <button type="button" id="pausa">⏸</button>
+    <button type="button" id="reiniciar">RESTART</button>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { createParticlePortrait, TIMELINE } from '../js/anim/particle-portrait.js';
+    import { experienceConfig } from '../js/anim/neymar-portrait.js';
+
+    const MODELO = '../assets/football/parts/head-tripo.glb';
+    const hud = document.getElementById('hud');
+    const lienzoMalla = document.getElementById('malla');
+    const lienzoPart = document.getElementById('particulas');
+    const ctx = lienzoPart.getContext('2d');
+
+    let ancho = 0;
+    let alto = 0;
+    let dpr = 1;
+    let reintentoTam = 0;
+    let escena = null;       // función frame() del motor
+    let malla = null;        // Object3D del GLB
+    let modo = 'particles';
+    let t = 0;
+    let corriendo = true;
+    const stage = { taps: [], revealed: false, card: null, pointer: { x: 0.5, y: 0.5 } };
+
+    // --- Three.js solo para la malla de referencia (no entra en el sitio) ---
+    const renderer3 = new THREE.WebGLRenderer({ canvas: lienzoMalla, antialias: true, alpha: true });
+    const escena3 = new THREE.Scene();
+    const camara3 = new THREE.PerspectiveCamera(38, 1, 0.05, 200);
+    escena3.add(new THREE.HemisphereLight(0x9fd0ff, 0x0a1020, 1.6));
+    const luz = new THREE.DirectionalLight(0xffffff, 1.7);
+    luz.position.set(2, 3, 4);
+    escena3.add(luz);
+
+    new GLTFLoader().loadAsync(MODELO).then((gltf) => {
+      const grupo = gltf.scene;
+      grupo.traverse((o) => {
+        if (o.isMesh || o.isSkinnedMesh) {
+          o.material = new THREE.MeshStandardMaterial({ color: 0x9bb6d8, roughness: 0.75, metalness: 0 });
+          o.frustumCulled = false;
+        }
+      });
+      malla = new THREE.Group();
+      malla.add(grupo);
+      escena3.add(malla);
+      colocarMalla();
+    }).catch((e) => { hud.textContent = 'No se pudo cargar el modelo: ' + e.message; });
+
+    // Coloca la malla igual que el motor coloca los puntos: alto normalizado a 1, escalado
+    // por escalaCabeza, centrado en X/Z y desplazado a centroY.
+    function colocarMalla() {
+      if (!malla || !escena) return;
+      const info = escena.info();
+      malla.scale.setScalar(1);
+      malla.position.set(0, 0, 0);
+      malla.updateMatrixWorld(true);
+      const caja = new THREE.Box3().setFromObject(malla);
+      const tam = caja.getSize(new THREE.Vector3());
+      const centro = caja.getCenter(new THREE.Vector3());
+      const s = info.escalaCabeza / tam.y;
+      malla.scale.setScalar(s);
+      malla.position.set(
+        -centro.x * s,
+        -caja.min.y * s - info.alturaCabeza * info.escalaCabeza * 0.5 + info.centroY,
+        -centro.z * s,
+      );
+    }
+
+    function redimensionar(forzar = false) {
+      const caja = lienzoPart.getBoundingClientRect();
+      const nuevoAncho = Math.round(caja.width);
+      const nuevoAlto = Math.round(caja.height);
+      // Con la ventana minimizada o colapsada el lienzo mide 0 o 1 px. Si se crea la escena
+      // con ese tamaño queda inservible (lienzo de 1×1) y la guarda de más abajo la congela
+      // ahí para siempre. Mejor no crear nada y reintentar cuando haya tamaño real.
+      if (nuevoAncho < 40 || nuevoAlto < 40) {
+        clearTimeout(reintentoTam);
+        reintentoTam = setTimeout(() => redimensionar(forzar), 250);
+        return;
+      }
+      // Recrear la escena descarta la nube ya cargada: solo se hace si el tamaño cambió de verdad.
+      if (!forzar && escena && nuevoAncho === ancho && nuevoAlto === alto) return;
+      ancho = nuevoAncho;
+      alto = nuevoAlto;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      lienzoPart.width = Math.round(ancho * dpr);
+      lienzoPart.height = Math.round(alto * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderer3.setPixelRatio(dpr);
+      renderer3.setSize(ancho, alto, false);
+      camara3.aspect = ancho / alto;
+      camara3.updateProjectionMatrix();
+      escena = createParticlePortrait(ctx, ancho, alto, dpr, stage, experienceConfig);
+      escena.setMode(modo);
+      colocarMalla();
+    }
+    addEventListener('resize', redimensionar);
+
+    // --- Controles ---
+    const botonesModo = [...document.querySelectorAll('[data-modo]')];
+    function ponerModo(m) {
+      modo = m;
+      for (const b of botonesModo) b.setAttribute('aria-pressed', String(b.dataset.modo === m));
+      if (escena) escena.setMode(m);
+      lienzoMalla.style.display = m === 'particles' ? 'none' : 'block';
+      lienzoPart.style.display = m === 'mesh' ? 'none' : 'block';
+    }
+    for (const b of botonesModo) b.addEventListener('click', () => ponerModo(b.dataset.modo));
+    for (const b of document.querySelectorAll('[data-fase]')) {
+      b.addEventListener('click', () => { if (escena) escena.jumpTo(b.dataset.fase, t); });
+    }
+    document.getElementById('pausa').addEventListener('click', (e) => {
+      corriendo = !corriendo;
+      e.target.textContent = corriendo ? '⏸' : '▶';
+    });
+    document.getElementById('reiniciar').addEventListener('click', () => {
+      t = 0;
+      redimensionar();
+    });
+    lienzoPart.addEventListener('pointerdown', (e) => {
+      const caja = lienzoPart.getBoundingClientRect();
+      stage.taps.push({ x: e.clientX - caja.left, y: e.clientY - caja.top });
+    });
+    addEventListener('pointermove', (e) => {
+      stage.pointer.x = e.clientX / innerWidth;
+      stage.pointer.y = e.clientY / innerHeight;
+    });
+
+    // --- Bucle ---
+    let anterior = performance.now();
+    let cuadros = 0;
+    let acumulado = 0;
+    let fps = 0;
+    function bucle(ahora) {
+      const dt = Math.min((ahora - anterior) / 1000, 0.05);
+      anterior = ahora;
+      if (corriendo) t += dt;
+
+      if (escena) {
+        if (modo !== 'mesh') escena(t, dt);
+        else ctx.clearRect(0, 0, ancho, alto);
+        if (modo !== 'particles' && malla) {
+          const cam = escena.camera();
+          camara3.position.set(cam.eye[0], cam.eye[1], cam.eye[2]);
+          camara3.lookAt(cam.target[0], cam.target[1], cam.target[2]);
+          renderer3.render(escena3, camara3);
+        }
+        const info = escena.info();
+        cuadros++;
+        acumulado += dt;
+        if (acumulado >= 0.5) { fps = cuadros / acumulado; cuadros = 0; acumulado = 0; }
+        hud.textContent =
+          `t ${t.toFixed(2)}s · ${info.fase.toUpperCase()} · ${modo.toUpperCase()}\n` +
+          `cabeza ${info.activas}/${info.cabeza} · anillo ${info.anillo} · ambiente ${info.ambiente}\n` +
+          `nube ${info.listo ? 'cargada' : 'cargando…'} · webgl ${info.webgl ? 'sí' : 'no (respaldo 2D)'} · ${fps.toFixed(0)} fps`;
+      }
+      requestAnimationFrame(bucle);
+    }
+    redimensionar();
+    ponerModo('particles');
+    requestAnimationFrame(bucle);
+
+    // Espera a que la nube esté cargada y dibujando: las mediciones lanzadas justo tras
+    // recargar daban ceros porque la página llevaba 0.1 s de vida.
+    window.listoParaMedir = async (msMax = 15000) => {
+      const t0 = performance.now();
+      while (performance.now() - t0 < msMax) {
+        // Con la pestaña oculta requestAnimationFrame no dispara, la escena nunca dibuja y
+        // esperar a que avance el reloj no sirve de nada. Se la hace avanzar a mano.
+        if (escena) {
+          escena(t, 0.016);
+          if (escena.info().listo) return true;
+          t += 0.016;
+        }
+        await new Promise((r) => setTimeout(r, 60));
+      }
+      return false;
+    };
+
+    Object.assign(window, { __pp: { get escena() { return escena; }, get malla() { return malla; }, THREE, escena3, camara3, TIMELINE, ponerModo, stage } });
+  </script>
+</body>
+</html>

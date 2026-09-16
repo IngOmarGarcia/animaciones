@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>PlayerIdentitySystem (prueba) | ViralCss</title>
+  <style>
+    :root { color-scheme: dark; --cyan: #22e4ff; --line: rgba(34, 228, 255, 0.25); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #000; color: #e8fbff; font: 13px/1.35 system-ui, sans-serif; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100dvh; touch-action: none; }
+    .hud { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; pointer-events: none; font-variant-numeric: tabular-nums; opacity: 0.85; white-space: pre-wrap; }
+    .bar { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(860px, calc(100vw - 16px)); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0, 10, 14, 0.72); backdrop-filter: blur(8px); }
+    .group { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    button, select { font: inherit; color: inherit; background: transparent; border: 0; padding: 8px 11px; min-height: 36px; cursor: pointer; }
+    select { border: 1px solid var(--line); border-radius: 10px; background: #001015; }
+    .group button[aria-pressed="true"] { background: var(--cyan); color: #001015; font-weight: 700; }
+    #play { border: 1px solid var(--line); border-radius: 10px; min-width: 44px; }
+    #scrub { flex: 1 1 140px; accent-color: var(--cyan); }
+    .error { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="hud" id="hud">Cargando personaje base…</div>
+  <div class="bar">
+    <div class="group" role="group" aria-label="Representación">
+      <button type="button" data-mode="mesh">MESH</button>
+      <button type="button" data-mode="particles">PARTICLES</button>
+      <button type="button" data-mode="both">BOTH</button>
+    </div>
+    <select id="profile" aria-label="Futbolista"></select>
+    <button type="button" id="play" aria-label="Pausa">⏸</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Tiempo de la animación">
+    <select id="palette" aria-label="Paleta">
+      <option value="cyan">Cyan</option>
+      <option value="identity">Uniforme</option>
+    </select>
+    <select id="quality" aria-label="Partículas">
+      <option value="auto">Auto</option>
+      <option value="4000">4k</option>
+      <option value="8000">8k</option>
+      <option value="12000">12k</option>
+      <option value="15000">15k</option>
+    </select>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { PlayerIdentitySystem } from '../js/anim/player/PlayerIdentitySystem.js';
+    import { PROFILES, PROFILE_IDS } from '../js/anim/player/identity.js';
+
+    const FPS_SOURCE = 30;
+    const isMobile = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hud = document.getElementById('hud');
+    const canvas = document.getElementById('c');
+    const params = new URLSearchParams(location.search);
+
+    // Marcas de arranque: si algo se cuelga o falla, el HUD dice en qué paso se quedó.
+    const boot = [];
+    window.__boot = boot;
+    const mark = (label) => {
+      boot.push(`${label} · ${Math.round(performance.now())} ms`);
+      hud.textContent = boot.join('\n');
+      console.log('[PIS]', label, Math.round(performance.now()));
+    };
+    addEventListener('error', (e) => { hud.textContent = `Error: ${e.message}`; });
+    addEventListener('unhandledrejection', (e) => { hud.textContent = `Error: ${e.reason?.message || e.reason}`; });
+    mark('inicio');
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference: 'high-performance' });
+    } catch (error) {
+      document.body.innerHTML = '<p class="error">Este navegador no tiene WebGL disponible, así que no se puede mostrar la prueba 3D.</p>';
+      throw error;
+    }
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.5 : 2));
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    scene.fog = new THREE.Fog(0x000000, 5, 15);
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+
+    scene.add(new THREE.HemisphereLight(0xbfefff, 0x101418, 1.2));
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(3, 4, 3);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x66e8ff, 1.6);
+    rim.position.set(-3, 2.5, -3);
+    scene.add(rim);
+
+    {
+      const pts = [];
+      for (let x = -10; x <= 10; x += 0.25) for (let z = -10; z <= 10; z += 0.25) pts.push(x, 0, z);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x0f5563, size: 0.018, sizeAttenuation: true })));
+    }
+
+    // ?max=4000 baja el muestreo y ?sin-particulas=1 lo salta: sirven para aislar costes al depurar.
+    const MAX_PARTICLES = Number(params.get('max') || 15000);
+    const skipParticles = params.get('sin-particulas') === '1';
+    mark('escena lista');
+
+    // 1.75 m es la altura del perfil base de character.js: así heightRatio da metros reales
+    // (Messi 1.64, Neymar 1.80, Cristiano 1.94).
+    const system = new PlayerIdentitySystem({ basePath: '../', maxParticles: skipParticles ? 1 : MAX_PARTICLES, targetHeight: 1.75 });
+    mark('cargando GLB base');
+    await system.loadBase();
+    mark('GLB base cargado');
+    let player = await system.createPlayer(params.get('perfil') || 'generic');
+    mark('jugador construido');
+    scene.add(player.group);
+
+    const select = document.getElementById('profile');
+    for (const id of PROFILE_IDS) {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = PROFILES[id].label;
+      select.append(option);
+    }
+    select.value = player.identity.id;
+
+    let mode = 'particles';
+    let playing = true;
+    let quality = 'auto';
+    let autoCount = isMobile ? 7000 : 12000;
+    let paletteMode = 'cyan';
+    player.particles.setCount(autoCount);
+
+    const modeButtons = [...document.querySelectorAll('[data-mode]')];
+    function setMode(next) {
+      mode = next;
+      for (const b of modeButtons) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+      player.setMode(mode);
+      const u = player.particles.uniforms;
+      u.uJitter.value = mode === 'particles' && !reducedMotion ? 0.0022 : 0;
+      u.uOpacity.value = mode === 'both' ? 0.9 : 1;
+      u.uTwinkle.value = reducedMotion ? 0 : 1;
+      u.uSize.value = 0.019;
+    }
+    for (const b of modeButtons) b.addEventListener('click', () => setMode(b.dataset.mode));
+    setMode(mode);
+
+    const playBtn = document.getElementById('play');
+    const scrub = document.getElementById('scrub');
+    function setPlaying(next) {
+      playing = next;
+      player.animation.setPlaying(next);
+      playBtn.textContent = playing ? '⏸' : '▶';
+    }
+    playBtn.addEventListener('click', () => setPlaying(!playing));
+    scrub.addEventListener('input', () => {
+      setPlaying(false);
+      player.animation.setTime((scrub.value / 1000) * player.animation.duration);
+      player.update(0);
+    });
+    document.getElementById('quality').addEventListener('change', (e) => {
+      quality = e.target.value;
+      player.particles.setCount(quality === 'auto' ? autoCount : Number(quality));
+    });
+    document.getElementById('palette').addEventListener('change', (e) => {
+      paletteMode = e.target.value;
+      player.paletteMode = paletteMode;
+      player.particles.setPaletteMode(paletteMode);
+    });
+    select.addEventListener('change', async () => {
+      const time = player.animation.time;
+      const count = player.particles.count;
+      hud.textContent = 'Cambiando de futbolista…';
+      await player.setIdentity(select.value);
+      player.particles.setCount(count);
+      player.animation.setTime(time);
+      player.animation.setPlaying(playing);
+      setMode(mode);
+      player.particles.setPaletteMode(paletteMode);
+    });
+    addEventListener('keydown', (e) => {
+      if (e.key === '1') setMode('mesh');
+      if (e.key === '2') setMode('particles');
+      if (e.key === '3') setMode('both');
+      if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
+    });
+
+    // Cámara: sigue la cadera, contrapicado leve y órbita lenta.
+    const target = new THREE.Vector3();
+    const hipsPos = new THREE.Vector3();
+    const lookAt = new THREE.Vector3();
+    let camReady = false;
+    let lastTime = 0;
+
+    // Si la ventana arranca oculta o con tamaño 0, el evento resize puede no llegar y la cámara
+    // se queda con un aspect viejo (el personaje sale diminuto). Por eso el bucle comprueba
+    // el tamaño en cada cuadro, que es una comparación de dos números.
+    let lastW = 0;
+    let lastH = 0;
+    function resize() {
+      if (!innerWidth || !innerHeight) return;
+      lastW = innerWidth;
+      lastH = innerHeight;
+      renderer.setSize(innerWidth, innerHeight, false);
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      player.particles.uniforms.uScale.value = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    }
+    addEventListener('resize', resize);
+    resize();
+
+    function updateCamera(t, dt) {
+      const hips = player.rig.get('hips');
+      if (hips) hips.getWorldPosition(hipsPos);
+      if (!camReady || player.animation.time < lastTime - 0.1) {
+        target.set(hipsPos.x, 0, hipsPos.z);
+        camReady = true;
+      } else {
+        const k = 1 - Math.exp(-dt * 5);
+        target.x += (hipsPos.x - target.x) * k;
+        target.z += (hipsPos.z - target.z) * k;
+      }
+      lastTime = player.animation.time;
+      // El encuadre se calcula sobre la altura real del futbolista: Cristiano mide 1.94 m
+      // y con una distancia fija pensada para 1.75 m se le salía la cabeza del cuadro.
+      const h = player.height;
+      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+      const dist = Math.max((h * 0.78) / tanV, (h * 0.7) / (tanV * camera.aspect));
+      const az = THREE.MathUtils.degToRad(55) + (reducedMotion ? 0 : Math.sin(t * 0.22) * 0.35);
+      camera.position.set(target.x + Math.sin(az) * dist, h * 0.44, target.z + Math.cos(az) * dist);
+      lookAt.set(target.x, h * 0.56, target.z);
+      camera.lookAt(lookAt);
+      const u = player.particles.uniforms;
+      u.uFadeNear.value = dist - 1;
+      u.uFadeFar.value = dist + 4;
+    }
+
+    const clock = new THREE.Clock();
+    let elapsed = 0;
+    let frames = 0;
+    let fpsTime = 0;
+    let fps = 0;
+    let maxErr = 0;
+    let errTick = 0;
+
+    let firstFrame = true;
+    function tick() {
+      if (firstFrame) { firstFrame = false; mark('primer cuadro'); }
+      if (innerWidth !== lastW || innerHeight !== lastH) resize();
+      const dt = Math.min(clock.getDelta(), 0.1);
+      elapsed += dt;
+      player.update(dt);
+      if (playing) scrub.value = String(Math.round((player.animation.time / player.animation.duration) * 1000));
+      player.particles.uniforms.uTime.value = elapsed;
+      if (mode !== 'mesh' && ++errTick % 30 === 0) maxErr = player.particles.measureError();
+      updateCamera(elapsed, dt);
+      renderer.render(scene, camera);
+
+      frames++;
+      fpsTime += dt;
+      if (fpsTime >= 2) {
+        const measured = frames;
+        fps = measured / fpsTime;
+        frames = 0;
+        fpsTime = 0;
+        if (quality === 'auto' && fps < 50 && measured > 40 && player.particles.count > 2500 && !document.hidden) {
+          autoCount = Math.round(player.particles.count * 0.8);
+          player.particles.setCount(autoCount);
+        }
+      }
+      const m = player.shaper.metrics();
+      if (select.value !== player.identity.id) select.value = player.identity.id;
+      const frame = Math.floor(player.animation.time * FPS_SOURCE) + 1;
+      hud.textContent =
+        `${player.identity.label} · ${mode.toUpperCase()} · cuadro ${frame}/${Math.round(player.animation.duration * FPS_SOURCE) + 1}\n` +
+        `altura ${player.height.toFixed(2)} m · hombros ×${m.shoulderWidth.toFixed(2)} · torso ×${m.torsoVolume.toFixed(2)} · piernas ×${m.legLength.toFixed(2)} · cuello ×${m.neckLength.toFixed(2)}\n` +
+        `${player.particles.count.toLocaleString('es-MX')} partículas · ${fps ? fps.toFixed(0) : '—'} fps · Δ superficie ${(maxErr * 1000).toFixed(3)} mm`;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    Object.assign(window, { __pis: { THREE, scene, camera, renderer, system, get player() { return player; }, setMode, setPlaying, PROFILES } });
+  </script>
+</body>
+</html>
