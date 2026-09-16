@@ -74,4 +74,5 @@ if (params.has('autoplay')) {
 
 renderSupport($('support'));
 renderGifts($('gifts'), anim.category);
-renderGallery($('more'), VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id));
+const related = VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id && a.category === anim.category);
+renderGallery($('more'), (related.length ? related : VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id)).slice(0, 8));

@@ -5,3 +5,12 @@
 
 /css/*
   Cache-Control: public, max-age=0, must-revalidate
+
+/tools/*
+  X-Robots-Tag: noindex, nofollow
+
+/v
+  X-Robots-Tag: noindex, follow
+
+/v.html
+  X-Robots-Tag: noindex, follow

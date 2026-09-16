@@ -5,16 +5,16 @@ export const SITE = {
   // Número de WhatsApp con código de país y sin espacios, ej. '5215512345678'.
   // Si está vacío, los encargos se piden por correo.
   whatsapp: '',
-  // Donaciones voluntarias. Usa tu CLABE de Mercado Pago (18 dígitos), NUNCA el número de tu tarjeta.
-  // En la app: Tu dinero → Ingresar dinero → Transferencia. Si `clabe` y `url` están vacíos, no se muestra.
-  donation: {
-    clabe: '722969010315264490',
-    holder: '', // nombre del titular, como aparece en Mercado Pago
-    bank: 'Mercado Pago',
-    url: '', // opcional: link de pago de Mercado Pago, Ko-fi, etc.
-  },
   customOrderPrice: '$49 MXN',
   customOrderDelivery: '24 horas',
+};
+
+// Aportación voluntaria. Si paymentUrl está vacío, se ofrece la CLABE existente.
+// No mezclar este apoyo con el servicio de animación personalizada de SITE.
+export const supportConfig = {
+  paymentUrl: '',
+  clabe: '722969010315264490',
+  provider: 'Mercado Pago',
 };
 
 // Regalos con enlace de afiliado de Mercado Libre (cuenta gaom3053613).

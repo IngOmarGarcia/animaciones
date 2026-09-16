@@ -3,14 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="canonical" href="https://viralcss.com/crear.html">
   <title>Personaliza tu animación | ViralCss</title>
   <meta name="description" content="Escribe el nombre y un mensaje, crea tu enlace y compártelo por WhatsApp.">
   <meta name="theme-color" content="#0d0a1f">
   <meta property="og:title" content="Crea una sorpresa animada 💛">
   <meta property="og:description" content="Flores amarillas y animaciones para dedicar, gratis.">
   <meta property="og:image" content="https://viralcss.com/img/og.jpg">
+  <meta property="og:url" content="https://viralcss.com/crear.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ViralCss">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Crea una sorpresa animada 💛">
+  <meta name="twitter:description" content="Flores amarillas y animaciones para dedicar, gratis.">
   <link rel="icon" href="img/icon.png" type="image/png">
   <link rel="apple-touch-icon" href="img/icon.png">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
@@ -59,6 +67,21 @@
           <label>¿De parte de quién? <span class="muted">(opcional)</span>
             <input name="d" maxlength="40" placeholder="Ej. Juan">
           </label>
+          <div id="galaxyFields" hidden>
+            <label>Título de la carta
+              <input name="lt" maxlength="65" placeholder="Para mi persona favorita">
+            </label>
+            <label>Carta
+              <textarea name="l" maxlength="650" rows="5" placeholder="Escribe aquí lo que quieres decirle..."></textarea>
+            </label>
+            <label>Frases de las flores <span class="muted">(separa con |)</span>
+              <textarea name="mem" maxlength="240" rows="3" placeholder="Te amo | Mi vida | Siempre contigo"></textarea>
+            </label>
+            <div class="galaxy-colors">
+              <label>Color principal <input name="c1" type="color" value="#ffd75a"></label>
+              <label>Color secundario <input name="c2" type="color" value="#ff9d3c"></label>
+            </div>
+          </div>
           <button class="btn btn-primary btn-block" type="submit">Crear enlace 💌</button>
         </form>
         <p class="code-link"><a class="btn btn-block" id="codeLink" href="codigo.html">&lt;/&gt; Ver o descargar el código</a></p>

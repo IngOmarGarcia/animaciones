@@ -4,13 +4,24 @@
 // `stage.taps` recibe los toques sobre el canvas ({ x, y } en píxeles CSS) y una escena
 // interactiva pone `stage.revealed = true` cuando ya debe aparecer el mensaje.
 // `stage.card` ({ p, m, d }) permite que una escena dibuje el nombre.
-export function createPlayer(canvas, create, { loop = 0, card = null } = {}) {
+export function createPlayer(canvas, create, { loop = 0, card = null, preview = false } = {}) {
   const ctx = canvas.getContext('2d');
-  const stage = { taps: [], revealed: false, card };
+  const stage = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, preview, revealed: false, card };
+  canvas.addEventListener('pointermove', (event) => {
+    if (event.pointerType === 'touch') return;
+    const rect = canvas.getBoundingClientRect();
+    stage.pointer.x = (event.clientX - rect.left) / rect.width;
+    stage.pointer.y = (event.clientY - rect.top) / rect.height;
+  });
   canvas.addEventListener('pointerdown', (event) => {
+    stage.holding = true;
     const rect = canvas.getBoundingClientRect();
     stage.taps.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
   });
+  const release = () => { stage.holding = false; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('pointerleave', release);
   let frame = null;
   let w = 0;
   let h = 0;

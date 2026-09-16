@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Demo: animación con foto | ViralCss</title>
+  <style>
+    :root { color-scheme: dark; --oro: #ffd166; --line: rgba(255, 209, 102, 0.28); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #0d0a1f; color: #f2ecff; font: 14px/1.5 system-ui, sans-serif; }
+    .envoltorio { display: grid; gap: 18px; padding: 16px; max-width: 1100px; margin: 0 auto; }
+    @media (min-width: 900px) { .envoltorio { grid-template-columns: 420px minmax(0, 1fr); align-items: start; } }
+    canvas { display: block; width: 100%; max-width: 405px; aspect-ratio: 9 / 16; margin-inline: auto; border-radius: 18px; background: #000; }
+    h1 { font-size: 1.25rem; margin: 0 0 4px; }
+    h2 { font-size: 1rem; margin: 18px 0 6px; }
+    p, li { color: #cfc6e8; }
+    .panel { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: rgba(255, 255, 255, 0.03); }
+    label { display: block; margin-bottom: 10px; font-weight: 600; color: #f2ecff; }
+    input[type="text"], select { display: block; width: 100%; margin-top: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #15112b; color: inherit; font: inherit; }
+    input[type="file"] { margin-top: 4px; font: inherit; color: inherit; }
+    .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    button { font: inherit; font-weight: 600; padding: 10px 14px; border: 0; border-radius: 10px; background: var(--oro); color: #1a1205; cursor: pointer; }
+    button.sec { background: transparent; color: inherit; border: 1px solid var(--line); }
+    .nota { font-size: 0.86rem; color: #a99fc4; }
+    .aviso { border-left: 3px solid var(--oro); padding-left: 10px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="envoltorio">
+    <div>
+      <canvas id="lienzo" width="405" height="720"></canvas>
+      <p class="nota" id="estado" style="text-align:center">Cargando foto de ejemplo…</p>
+    </div>
+
+    <div>
+      <h1>Demo: la foto convertida en animación</h1>
+      <p>Esto es una <strong>maqueta local</strong> para ver cómo podría funcionar la parte de encargos. Hoy el sitio no hace esto: la página de encargos solo manda un WhatsApp y la animación se arma a mano.</p>
+
+      <div class="panel">
+        <label>Foto
+          <input type="file" id="archivo" accept="image/*">
+        </label>
+        <label>Para
+          <input type="text" id="nombre" value="Ana" maxlength="40">
+        </label>
+        <label>Mensaje
+          <input type="text" id="mensaje" value="Feliz cumpleaños" maxlength="140">
+        </label>
+        <label>Efecto
+          <select id="efecto">
+            <option value="retrato">Retrato de partículas → nombre</option>
+            <option value="polvo">La foto se deshace en polvo</option>
+          </select>
+        </label>
+        <div class="acciones">
+          <button id="reproducir">▶ Reproducir</button>
+          <button class="sec" id="usarEjemplo">Usar tu foto de ejemplo</button>
+        </div>
+      </div>
+
+      <h2>Qué hace exactamente</h2>
+      <ol>
+        <li>Lee la foto en el navegador y la dibuja en un lienzo oculto.</li>
+        <li>Recorre sus píxeles y coloca una partícula donde hay luz, tomando el color real de la foto.</li>
+        <li>Las partículas entran desde fuera, se ordenan hasta formar la cara y luego se reorganizan para escribir el nombre.</li>
+      </ol>
+
+      <div class="aviso">
+        <p><strong>La foto nunca sale de tu dispositivo</strong> en esta demo: todo ocurre en el navegador. Ese es justo el punto que hay que decidir si se automatiza.</p>
+      </div>
+
+      <h2>Lo que faltaría para ofrecerlo de verdad</h2>
+      <ul>
+        <li><strong>Dónde se guarda la foto.</strong> El enlace para compartir lleva los datos dentro de la propia dirección y solo caben nombre, mensaje y remitente. Una imagen no cabe: haría falta almacenamiento (Cloudflare R2, por ejemplo) o que el cliente reciba un video ya renderizado.</li>
+        <li><strong>Recorte de la cara.</strong> Aquí uso la foto completa; para un retrato conviene recortar y centrar.</li>
+        <li><strong>Moderación.</strong> Si cualquiera puede subir imágenes, hay que decidir qué pasa con contenido indebido.</li>
+      </ul>
+      <p class="nota">Mientras tanto, el flujo manual actual funciona: el cliente manda la foto por WhatsApp y tú entregas el resultado.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    const lienzo = document.getElementById('lienzo');
+    const ctx = lienzo.getContext('2d');
+    const estado = document.getElementById('estado');
+    const W = lienzo.width;
+    const H = lienzo.height;
+
+    let particulas = [];
+    let inicio = 0;
+    let animando = false;
+    let raf = 0;
+
+    const aleatorio = (a, b) => a + Math.random() * (b - a);
+    const suave = (x) => (x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x));
+
+    // --- Paso 1 y 2: la foto se convierte en puntos con su color real ---
+    function puntosDeImagen(img, ancho, alto, salto = 4) {
+      const c = document.createElement('canvas');
+      c.width = ancho;
+      c.height = alto;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      // Recorte central: la foto suele ser vertical y la cara está arriba
+      const escala = Math.max(ancho / img.width, alto / img.height);
+      const dw = img.width * escala;
+      const dh = img.height * escala;
+      g.drawImage(img, (ancho - dw) / 2, (alto - dh) / 2 * 0.6, dw, dh);
+      const datos = g.getImageData(0, 0, ancho, alto).data;
+      const puntos = [];
+      for (let y = 0; y < alto; y += salto) {
+        for (let x = 0; x < ancho; x += salto) {
+          const i = (y * ancho + x) * 4;
+          const r = datos[i];
+          const v = datos[i + 1];
+          const b = datos[i + 2];
+          const luz = (r * 0.299 + v * 0.587 + b * 0.114) / 255;
+          if (luz < 0.12) continue;            // el fondo oscuro no genera partículas
+          puntos.push({ x, y, r, v, b, luz });
+        }
+      }
+      return puntos;
+    }
+
+    // Puntos de un texto, para el final
+    function puntosDeTexto(texto, ancho, alto, salto = 4) {
+      const c = document.createElement('canvas');
+      c.width = ancho;
+      c.height = alto;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      let tam = alto * 0.42;
+      g.font = `900 ${tam}px "Arial Black", system-ui, sans-serif`;
+      const medido = g.measureText(texto).width;
+      if (medido > ancho * 0.9) tam *= (ancho * 0.9) / medido;
+      g.font = `900 ${tam}px "Arial Black", system-ui, sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillStyle = '#fff';
+      g.fillText(texto, ancho / 2, alto / 2);
+      const datos = g.getImageData(0, 0, ancho, alto).data;
+      const puntos = [];
+      for (let y = 0; y < alto; y += salto) {
+        for (let x = 0; x < ancho; x += salto) {
+          if (datos[(y * ancho + x) * 4 + 3] > 128) puntos.push({ x, y });
+        }
+      }
+      return puntos;
+    }
+
+    function preparar(img, nombre) {
+      const desdeFoto = puntosDeImagen(img, W, Math.round(H * 0.62), 4);
+      const desdeTexto = puntosDeTexto(nombre.toUpperCase(), W, Math.round(H * 0.3), 4);
+      const total = Math.min(desdeFoto.length, 9000);
+
+      particulas = [];
+      for (let i = 0; i < total; i++) {
+        const f = desdeFoto[Math.floor((i / total) * desdeFoto.length)];
+        const t = desdeTexto.length ? desdeTexto[i % desdeTexto.length] : null;
+        const ang = Math.random() * Math.PI * 2;
+        const radio = aleatorio(W * 0.7, W * 1.6);
+        particulas.push({
+          // de dónde viene
+          x0: W / 2 + Math.cos(ang) * radio,
+          y0: H * 0.34 + Math.sin(ang) * radio,
+          // dónde forma la cara
+          x1: f.x,
+          y1: f.y + H * 0.06,
+          // dónde forma el nombre
+          x2: t ? t.x : W / 2 + Math.cos(ang) * W * 0.6,
+          y2: t ? t.y + H * 0.66 : H * 0.8,
+          r: f.r, v: f.v, b: f.b,
+          brillo: 0.35 + f.luz * 0.65,
+          tam: aleatorio(1, 2.2),
+          retraso: Math.random() * 0.45,
+          fase: Math.random() * Math.PI * 2,
+        });
+      }
+      estado.textContent = `${particulas.length.toLocaleString('es-MX')} partículas generadas desde la foto`;
+    }
+
+    function dibujar(t) {
+      const efecto = document.getElementById('efecto').value;
+      ctx.fillStyle = '#05030f';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+
+      for (const p of particulas) {
+        let x;
+        let y;
+        let alfa;
+        if (efecto === 'polvo') {
+          // La foto ya está formada y se deshace
+          const d = suave((t - 1.6 - p.retraso) / 2.2);
+          x = p.x1 + (p.x0 - p.x1) * d;
+          y = p.y1 + (p.y0 - p.y1) * d;
+          alfa = p.brillo * (1 - d * 0.9);
+        } else {
+          const entrada = suave((t - p.retraso) / 2.2);        // llega y forma la cara
+          const salida = suave((t - 4.4 - p.retraso) / 2.0);   // se reordena en el nombre
+          const ax = p.x0 + (p.x1 - p.x0) * entrada;
+          const ay = p.y0 + (p.y1 - p.y0) * entrada;
+          x = ax + (p.x2 - ax) * salida;
+          y = ay + (p.y2 - ay) * salida;
+          alfa = p.brillo * (0.25 + 0.75 * entrada);
+        }
+        // micro movimiento para que parezca energía viva
+        x += Math.sin(t * 1.6 + p.fase) * 0.7;
+        y += Math.cos(t * 1.4 + p.fase) * 0.7;
+        ctx.fillStyle = `rgba(${p.r}, ${p.v}, ${p.b}, ${Math.max(0, Math.min(1, alfa))})`;
+        ctx.fillRect(x, y, p.tam, p.tam);
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      const msg = document.getElementById('mensaje').value.trim();
+      if (msg && t > 6.2) {
+        ctx.globalAlpha = Math.min(1, (t - 6.2) / 0.8);
+        ctx.fillStyle = '#ffd166';
+        ctx.font = '600 18px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(msg, W / 2, H * 0.94);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function bucle(ahora) {
+      const t = (ahora - inicio) / 1000;
+      dibujar(t);
+      if (t < 9) raf = requestAnimationFrame(bucle);
+      else animando = false;
+    }
+
+    function reproducir() {
+      cancelAnimationFrame(raf);
+      preparar(imagenActual, document.getElementById('nombre').value || 'Ana');
+      inicio = performance.now();
+      animando = true;
+      raf = requestAnimationFrame(bucle);
+    }
+
+    let imagenActual = null;
+    function cargar(src) {
+      const img = new Image();
+      img.onload = () => {
+        imagenActual = img;
+        reproducir();
+      };
+      img.onerror = () => { estado.textContent = 'No se pudo cargar la imagen'; };
+      img.src = src;
+    }
+
+    document.getElementById('archivo').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) cargar(URL.createObjectURL(file));
+    });
+    document.getElementById('reproducir').addEventListener('click', () => { if (imagenActual) reproducir(); });
+    document.getElementById('usarEjemplo').addEventListener('click', () => cargar('../img/demo-foto.jpg'));
+
+    cargar('../img/demo-foto.jpg');
+  </script>
+</body>
+</html>

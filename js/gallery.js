@@ -26,7 +26,7 @@ async function activate(card) {
     const anim = getAnimation(card.dataset.id);
     try {
       const mod = await anim.load();
-      player = createPlayer(card.querySelector('canvas'), mod.default, { loop: anim.previewLoop });
+      player = createPlayer(card.querySelector('canvas'), mod.default, { loop: anim.previewLoop, preview: true });
       players.set(card, player);
     } catch (err) {
       console.error('No se pudo cargar la animación', anim.id, err);
@@ -65,12 +65,21 @@ function createCard(anim) {
   return card;
 }
 
-export function renderGallery(container, animations) {
+export function clearGallery(container) {
   for (const old of container.querySelectorAll('.card')) {
     observer.unobserve(old);
     players.get(old)?.destroy();
   }
+  container.replaceChildren();
+}
+
+export function appendGallery(container, animations) {
   const cards = animations.map(createCard);
-  container.replaceChildren(...cards);
+  container.append(...cards);
   for (const card of cards) observer.observe(card);
+}
+
+export function renderGallery(container, animations) {
+  clearGallery(container);
+  appendGallery(container, animations);
 }

@@ -16,6 +16,28 @@ export const CATEGORIES = [
 // textPosition: 'top' | 'center'. textDelay: segundos antes de mostrar el mensaje.
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
+  { id: 'corazon-de-girasoles', file: 'corazon-girasoles', category: 'flores', title: 'Corazón de girasoles', description: 'Girasoles llegan desde la profundidad, forman un corazón y se convierten en su nombre al tocarlos.', defaultMessage: 'Cada flor encuentra su camino hacia ti', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'flor-holografica', file: 'flor-holografica', category: 'flores', title: 'Flor holográfica', description: 'Un escáner de luz construye un girasol holográfico que se desmaterializa para escribir su nombre.', defaultMessage: 'Te hice una flor de luz', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'cascada-de-petalos-invertida', file: 'cascada-petalos-invertida', category: 'flores', title: 'Cascada de pétalos invertida', description: 'Pétalos caen sobre un espejo; un toque detiene el tiempo y los hace ascender.', defaultMessage: 'Contigo hasta el tiempo cambia de rumbo', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'flor-infinita-de-espejo', file: 'flor-infinita-espejo', category: 'flores', title: 'Flor infinita de espejo', description: 'Una flor y sus reflejos se extienden hacia el infinito antes de revelar su nombre.', defaultMessage: 'Te elegiría en todos los reflejos', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'reloj-de-petalos', file: 'reloj-petalos', category: 'flores', title: 'Reloj de pétalos', description: 'Un reloj floral detiene sus engranajes y hace retroceder el tiempo.', defaultMessage: 'Volvería a elegirte en cada instante', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'flor-liquida', file: 'flor-liquida', category: 'flores', title: 'Flor líquida', description: 'Una gota de oro rompe el espejo oscuro y asciende convertida en flor.', defaultMessage: 'De una gota nació algo hermoso para ti', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'origami-amarillo', file: 'origami-amarillo', category: 'flores', title: 'Origami amarillo', description: 'Una hoja dorada se pliega en flor y se abre como una tarjeta personal.', defaultMessage: 'Para ti, con todo mi cariño', textPosition: 'top', nameInScene: true, ownMessage: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'flor-de-luz-interactiva', file: 'flor-luz-interactiva', category: 'flores', title: 'Flor de luz interactiva', description: 'Mantén pulsado para hacer crecer una flor de energía desde sus raíces.', defaultMessage: 'Esta la hice para ti', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'vitral-de-flores', file: 'vitral-flores', category: 'flores', title: 'Vitral de flores', description: 'Fragmentos de cristal se ensamblan en un vitral y proyectan su nombre con luz.', defaultMessage: 'Eres mi luz favorita', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  { id: 'adn-de-flores', file: 'adn-flores', category: 'flores', title: 'ADN de flores', description: 'Dos hélices de luz florecen y se unen en un gran girasol.', defaultMessage: 'Algo en mí siempre vuelve a ti', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
+  {
+    id: 'galaxia-de-flores',
+    file: 'galaxia-flores',
+    category: 'flores',
+    title: 'Galaxia de flores',
+    description: 'Un portal de luz despierta flores y recuerdos bajo un corazón de estrellas. Toca las flores y abre la carta.',
+    defaultMessage: 'En cada estrella encuentro un motivo para quererte',
+    textPosition: 'top',
+    interactive: true,
+    textDelay: 10,
+    previewLoop: 25,
+  },
   {
     id: 'retrato-de-particulas',
     file: 'neymar-portrait',

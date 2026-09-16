@@ -24,7 +24,7 @@ fields.m.placeholder = anim.defaultMessage;
 
 try {
   const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}');
-  for (const key of ['p', 'm', 'd']) if (typeof draft[key] === 'string') fields[key].value = draft[key];
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2']) if (fields[key] && typeof draft[key] === 'string') fields[key].value = draft[key];
 } catch {
   // sessionStorage no disponible: se empieza en blanco
 }
@@ -37,7 +37,14 @@ anim.load()
   })
   .catch((err) => console.error('No se pudo cargar la animación', err));
 
-const readCard = () => cleanCard({ a: anim.id, p: fields.p.value, m: fields.m.value, d: fields.d.value });
+const readCard = () => cleanCard({
+  a: anim.id, p: fields.p.value, m: fields.m.value, d: fields.d.value,
+  ...(anim.id === 'galaxia-de-flores' ? {
+    lt: fields.lt.value, l: fields.l.value, mem: fields.mem.value,
+    c1: fields.c1.value, c2: fields.c2.value,
+  } : {}),
+});
+if (anim.id === 'galaxia-de-flores') $('galaxyFields').hidden = false;
 
 let shareText = '';
 
@@ -46,13 +53,15 @@ function update() {
   fillOverlay(overlay, card, anim);
   if (player) player.stage.card = card;
   // El código descargable lleva el nombre y mensaje que ya escribieron.
-  $('codeLink').href = card.p || card.m || card.d
+  $('codeLink').href = Object.entries(card).some(([key, value]) => key !== 'a' && value)
     ? `codigo.html?s=${encodeCard(card)}`
     : `codigo.html?a=${encodeURIComponent(anim.id)}`;
   $('counter').textContent = `${fields.m.value.length}/140`;
   result.hidden = true;
   try {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p: fields.p.value, m: fields.m.value, d: fields.d.value }));
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p: fields.p.value, m: fields.m.value, d: fields.d.value,
+      lt: fields.lt?.value, l: fields.l?.value, mem: fields.mem?.value,
+      c1: fields.c1?.value, c2: fields.c2?.value }));
   } catch {
     // ignorar
   }

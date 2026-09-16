@@ -3,6 +3,7 @@
 import { SITE } from './config.js';
 
 const IMPORT_RE = /^import\s*\{([^}]*)\}\s*from\s*'\.\/util\.js';?\s*/m;
+const PREMIUM_IMPORT_RE = /^import\s*\{([^}]*)\}\s*from\s*'\.\/flower-premium-core\.js';?\s*/m;
 
 async function fetchText(path) {
   const res = await fetch(new URL(path, import.meta.url));
@@ -50,8 +51,12 @@ function pickHelpers(decls, names) {
 export async function buildSceneCode(anim, readText = fetchText) {
   const [sceneSource, utilSource] = await Promise.all([readText(`./anim/${anim.file}.js`), readText('./anim/util.js')]);
   const names = (sceneSource.match(IMPORT_RE)?.[1] ?? '').split(',').map((n) => n.trim()).filter(Boolean);
-  const scene = sceneSource.replace(IMPORT_RE, '').replace(/^export default function create/m, 'function create').trim();
-  return [...pickHelpers(splitDeclarations(utilSource), names), scene].join('\n\n');
+  const premium = PREMIUM_IMPORT_RE.test(sceneSource)
+    ? (await readText('./anim/flower-premium-core.js')).replace(/^export /gm, '').trim()
+    : '';
+  const scene = sceneSource.replace(IMPORT_RE, '').replace(PREMIUM_IMPORT_RE, '')
+    .replace(/^export default function create/m, 'function create').trim();
+  return [...pickHelpers(splitDeclarations(utilSource), names), premium, scene].filter(Boolean).join('\n\n');
 }
 
 // JSON.stringify ya da un literal válido de JS; se escapa "<" para que un mensaje no cierre el <script>.
@@ -93,6 +98,9 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
   .para { color: #ffc300; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: clamp(0.8rem, 4vw, 1.3rem); }
   .texto { margin-block: 0.15em !important; color: #fff; font: 700 clamp(1.5rem, 9vw, 3.6rem)/1.15 "Dancing Script", "Segoe Script", cursive; text-wrap: balance; }
   .de { color: #ffe8a3; font: 700 clamp(1.05rem, 5.5vw, 2rem) "Dancing Script", "Segoe Script", cursive; }
+  ${anim.id === 'galaxia-de-flores' ? `.mensaje { gap: 8px; background: linear-gradient(to bottom, rgba(2,1,6,.72), transparent 48%); }
+  .mensaje .texto { font-size: clamp(1.35rem, 6.4vw, 2.4rem); }
+  .mensaje .texto.largo { font-size: clamp(1.1rem, 5vw, 1.8rem); }` : ''}
   .firma {
     position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
     padding: 4px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.35);
@@ -114,6 +122,11 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
 const PARA = ${jsString(card.p)};
 const MENSAJE = ${jsString(card.m || anim.defaultMessage)};
 const DE = ${jsString(card.d)};
+const CARTA_TITULO = ${jsString(card.lt)};
+const CARTA = ${jsString(card.l)};
+const FRASES = ${jsString(card.mem)};
+const COLOR_1 = ${jsString(card.c1)};
+const COLOR_2 = ${jsString(card.c2)};
 const TEXTO_APARECE = ${anim.textDelay}; // segundos antes de mostrar el mensaje
 
 // ---------- Animación ----------
@@ -125,12 +138,14 @@ ${code}
 const lienzo = document.querySelector('canvas');
 const pincel = lienzo.getContext('2d');
 const mensaje = document.getElementById('mensaje');
-const escena = { taps: [], revealed: false, card: { p: PARA, m: MENSAJE, d: DE } };
+${anim.id === 'galaxia-de-flores' ? "if (MENSAJE.length > 80) document.getElementById('texto').classList.add('largo');" : ''}
+const escena = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, revealed: false,
+  card: { p: PARA, m: MENSAJE, d: DE, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2 } };
 
 for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', DE && 'Con cariño, ' + DE]]) {
   const nodo = document.getElementById(id);
-  nodo.textContent = texto;
-  nodo.hidden = !texto;
+  nodo.textContent = id === 'texto' && ${Boolean(anim.ownMessage)} ? '' : texto;
+  nodo.hidden = !nodo.textContent;
 }
 
 let dibujar;
@@ -167,10 +182,18 @@ function cuadro(ahora) {
 addEventListener('resize', () => {
   if (innerWidth !== ancho || innerHeight !== alto) preparar();
 });
+addEventListener('pointermove', (event) => {
+  if (event.pointerType !== 'touch') {
+    escena.pointer.x = event.clientX / innerWidth;
+    escena.pointer.y = event.clientY / innerHeight;
+  }
+});
 ${anim.interactive ? `addEventListener('pointerdown', (event) => {
   if (event.target.closest('a')) return;
+  escena.holding = true;
   escena.taps.push({ x: event.clientX, y: event.clientY });
-});` : `addEventListener('click', (event) => {
+});
+for (const type of ['pointerup', 'pointercancel', 'pointerleave']) addEventListener(type, () => { escena.holding = false; });` : `addEventListener('click', (event) => {
   if (event.target.closest('a')) return;
   tiempo = 0;
   preparar();

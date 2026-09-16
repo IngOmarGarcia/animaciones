@@ -1,0 +1,14 @@
+{
+  "name": "ViralCss · animaciones para dedicar",
+  "short_name": "ViralCss",
+  "description": "Animaciones interactivas para dedicar y compartir por WhatsApp: flores amarillas, amor, cumpleaños y más.",
+  "lang": "es-MX",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#0d0a1f",
+  "theme_color": "#0d0a1f",
+  "icons": [
+    { "src": "/img/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

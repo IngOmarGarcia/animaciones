@@ -1,4 +1,5 @@
 import { SITE, GIFTS } from './config.js';
+import { createSupportCard } from './support.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -101,57 +102,6 @@ export function renderGifts(container, category) {
   );
 }
 
-// CLABE en bloques de banco, plaza, cuenta y dígito verificador.
-const formatClabe = (digits) => digits.replace(/^(\d{3})(\d{3})(\d{11})(\d)$/, '$1 $2 $3 $4');
-
-// Donación voluntaria por transferencia (CLABE) o link de pago; null si no está configurada.
-function renderDonation() {
-  const { clabe = '', holder = '', bank = '', url = '' } = SITE.donation || {};
-  const digits = clabe.replace(/\D/g, '');
-  if (!digits && !url) return null;
-
-  const box = el('section', 'donate');
-  box.id = 'apoyar';
-  box.append(
-    el('h2', 'donate-title', '☕ ¿Te gustó? Apoya a ViralCss'),
-    el('p', 'donate-text', 'Todo el sitio es gratis. Si quieres ayudarnos a seguir haciendo animaciones, puedes donar la cantidad que quieras. Es totalmente voluntario.'),
-  );
-
-  if (digits) {
-    const number = el('code', 'donate-number', formatClabe(digits));
-    const info = el('div', 'donate-info');
-    info.append(el('span', 'donate-label', `Transferencia a CLABE ${bank}`.trim()), number);
-    if (holder) info.append(el('span', 'donate-label', `A nombre de ${holder}`));
-    const copy = el('button', 'btn', 'Copiar CLABE');
-    copy.type = 'button';
-    copy.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(digits);
-      } catch {
-        const range = document.createRange();
-        range.selectNodeContents(number);
-        getSelection().removeAllRanges();
-        getSelection().addRange(range);
-        document.execCommand('copy');
-      }
-      copy.textContent = '¡Copiada!';
-      setTimeout(() => { copy.textContent = 'Copiar CLABE'; }, 2000);
-    });
-    const row = el('div', 'donate-row');
-    row.append(info, copy);
-    box.append(row);
-  }
-
-  if (url) {
-    const link = el('a', 'btn btn-primary', 'Donar con tarjeta');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    box.append(link);
-  }
-  return box;
-}
-
 // Tarjeta de encargos personalizados + donación voluntaria (si está configurada).
 export function renderSupport(container) {
   const promo = el('a', 'promo');
@@ -163,6 +113,6 @@ export function renderSupport(container) {
   );
   promo.append(el('span', 'promo-emoji', '✨'), text, el('span', 'promo-arrow', '→'));
 
-  const donation = renderDonation();
+  const donation = createSupportCard();
   container.replaceChildren(...(donation ? [promo, donation] : [promo]));
 }

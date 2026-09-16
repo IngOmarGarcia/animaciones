@@ -3,18 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Flores amarillas animadas para dedicar | ViralCss</title>
-  <meta name="description" content="Animaciones de flores amarillas, gamer, cumpleaños, amor y del 15 de septiembre para dedicar. Personaliza con nombre y mensaje y compártela por WhatsApp gratis, sin descargar nada.">
+  <title>ViralCss: animaciones para dedicar y compartir gratis</title>
+  <meta name="description" content="Crea animaciones interactivas para dedicar: flores amarillas, amor, cumpleaños y más. Personaliza nombre y mensaje y compártelas gratis por WhatsApp.">
   <meta name="theme-color" content="#0d0a1f">
   <link rel="canonical" href="https://viralcss.com/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ViralCss">
-  <meta property="og:title" content="Flores amarillas animadas para dedicar 💛">
+  <meta property="og:url" content="https://viralcss.com/">
+  <meta property="og:title" content="ViralCss: animaciones para dedicar y compartir">
   <meta property="og:description" content="Elige una animación, escribe su nombre y mándala por WhatsApp. Gratis.">
   <meta property="og:image" content="https://viralcss.com/img/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Animaciones de flores amarillas y corazones para dedicar, de ViralCss">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ViralCss: animaciones para dedicar y compartir">
+  <meta name="twitter:description" content="Elige una animación, escribe su nombre y mándala por WhatsApp. Gratis.">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ViralCss","url":"https://viralcss.com/","inLanguage":"es-MX","description":"Animaciones interactivas personalizables para dedicar y compartir."}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"ViralCss","url":"https://viralcss.com/","logo":"https://viralcss.com/img/icon.png","email":"viralcss11@gmail.com","description":"Animaciones interactivas para dedicar y compartir por enlace."}</script>
   <link rel="icon" href="img/icon.png" type="image/png">
   <link rel="apple-touch-icon" href="img/icon.png">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/styles.css">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3061014711786485" crossorigin="anonymous"></script>
 </head>
@@ -22,7 +31,7 @@
   <header class="site-header">
     <a class="brand" href="./"><img src="img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a>
     <nav>
-      <a href="#galeria">Animaciones</a>
+      <a href="animaciones.html">Animaciones</a>
       <a href="encargos.html">Encargos</a>
       <a href="acerca.html">Acerca</a>
     </nav>
@@ -46,12 +55,20 @@
     </div>
 
     <section id="galeria" class="container">
-      <div class="section-head">
+      <div class="section-head gallery-head">
         <h2>Animaciones</h2>
         <div class="chips" id="chips" role="tablist" aria-label="Categorías"></div>
       </div>
       <div class="grid" id="grid"></div>
+      <div id="gallery-sentinel" class="gallery-sentinel" aria-hidden="true" hidden></div>
+      <button id="gallery-more" class="btn gallery-more" type="button" hidden>Mostrar más animaciones</button>
     </section>
+
+    <nav class="container seo-discovery" aria-label="Explorar animaciones">
+      <a href="animaciones.html">Explorar todas las animaciones</a>
+      <a href="categorias/flores.html">Flores amarillas virtuales</a>
+      <a href="categorias/amor.html">Animaciones de amor</a>
+    </nav>
 
     <div class="container">
       <div id="support"></div>
@@ -62,28 +79,55 @@
     </div>
 
     <section class="container prose">
-      <h2>¿Por qué se regalan flores amarillas el 21 de septiembre?</h2>
-      <p>La tradición se volvió popular gracias a la canción «Flores amarillas» de la telenovela argentina <em>Floricienta</em>, que cuenta la historia de alguien que espera recibir flores amarillas un 21 de septiembre, el día en que empieza la primavera en el hemisferio sur. Con los años la costumbre se extendió por toda Latinoamérica y hoy, cada septiembre, miles de personas regalan flores amarillas como símbolo de amor, alegría y amistad.</p>
-      <p>Si no puedes entregar un ramo en persona, una animación personalizada es una forma bonita y gratuita de sorprender a esa persona especial, esté donde esté.</p>
+      <details class="topic-details">
+        <summary>¿Por qué se regalan flores amarillas el 21 de septiembre?</summary>
+        <p>La tradición se volvió popular gracias a la canción «Flores amarillas» de la telenovela argentina <em>Floricienta</em>, que cuenta la historia de alguien que espera recibir flores amarillas un 21 de septiembre, el día en que empieza la primavera en el hemisferio sur. Con los años la costumbre se extendió por toda Latinoamérica y hoy, cada septiembre, miles de personas regalan flores amarillas como símbolo de amor, alegría y amistad.</p>
+        <p>Si no puedes entregar un ramo en persona, una animación personalizada es una forma bonita y gratuita de sorprender a esa persona especial, esté donde esté.</p>
+      </details>
 
-      <h2>Animaciones para el 15 y 16 de septiembre</h2>
-      <p>La noche del 15 de septiembre México celebra el Grito de Independencia, que recuerda el llamado de Miguel Hidalgo en Dolores en 1810. Manda fuegos artificiales tricolor o papel picado con un «¡Viva México!» a tu familia y amigos, aunque estén lejos.</p>
+      <details class="topic-details">
+        <summary>Animaciones para el 15 y 16 de septiembre</summary>
+        <p>La noche del 15 de septiembre México celebra el Grito de Independencia, que recuerda el llamado de Miguel Hidalgo en Dolores en 1810. Manda fuegos artificiales tricolor o papel picado con un «¡Viva México!» a tu familia y amigos, aunque estén lejos.</p>
+      </details>
 
-      <h2>Animaciones gamer para dedicar</h2>
-      <p>¿Tu novio, tu amiga o tu hermano juegan en el celular? Sorpréndelos con animaciones al estilo de sus juegos favoritos: shooters, fútbol, carreras de autos, anime con aura de poder, cofres legendarios y el clásico «LEVEL UP». Escribe su nombre y un mensaje, y mándaselo por WhatsApp.</p>
+      <details class="topic-details">
+        <summary>Animaciones gamer para dedicar</summary>
+        <p>¿Tu novio, tu amiga o tu hermano juegan en el celular? Sorpréndelos con animaciones al estilo de sus juegos favoritos: shooters, fútbol, carreras de autos, anime con aura de poder, cofres legendarios y el clásico «LEVEL UP». Escribe su nombre y un mensaje, y mándaselo por WhatsApp.</p>
+      </details>
 
-      <h2>Cumpleaños, amor y Día de Muertos</h2>
-      <p>También hay pastel con velitas y globos para felicitar a alguien en su cumpleaños, lluvia de corazones y constelaciones para decir «te quiero», y un arco de cempasúchil con mariposas monarca para recordar a quienes ya no están.</p>
+      <details class="topic-details">
+        <summary>Cumpleaños, amor y Día de Muertos</summary>
+        <p>También hay pastel con velitas y globos para felicitar a alguien en su cumpleaños, lluvia de corazones y constelaciones para decir «te quiero», y un arco de cempasúchil con mariposas monarca para recordar a quienes ya no están.</p>
+      </details>
 
-      <h2>Espacio, paisajes, Navidad y animaciones interactivas</h2>
-      <p>Hay 50 animaciones: una luna 3D, galaxias, auroras boreales y una constelación que escribe su nombre; paisajes como un atardecer en la playa, cerezos en flor, faroles al cielo o lluvia en la ventana; fuegos artificiales que forman su nombre; y animaciones que se abren al tocarlas, como un regalo, una carta de cristal, una vela para pedir un deseo, una piñata o un anillo de propuesta.</p>
+      <details class="topic-details">
+        <summary>Espacio, paisajes, Navidad y animaciones interactivas</summary>
+        <p>Hay animaciones como una luna 3D, galaxias, auroras boreales y una constelación que escribe su nombre; paisajes como un atardecer en la playa, cerezos en flor, faroles al cielo o lluvia en la ventana; fuegos artificiales que forman su nombre; y animaciones que se abren al tocarlas, como un regalo, una carta de cristal, una vela para pedir un deseo, una piñata o un anillo de propuesta.</p>
+      </details>
 
-      <h2>Cómo enviar tu animación</h2>
-      <ol>
-        <li>Elige la animación que más te guste.</li>
-        <li>Escribe el nombre de quien la recibe, tu mensaje y tu nombre.</li>
-        <li>Toca <strong>Crear enlace</strong> y compártelo por WhatsApp, Instagram, Messenger o donde quieras.</li>
-      </ol>
+      <details class="topic-details">
+        <summary>Cómo enviar tu animación</summary>
+        <ol>
+          <li>Elige la animación que más te guste.</li>
+          <li>Escribe el nombre de quien la recibe, tu mensaje y tu nombre.</li>
+          <li>Toca <strong>Crear enlace</strong> y compártelo por WhatsApp, Instagram, Messenger o donde quieras.</li>
+        </ol>
+      </details>
+
+      <h2>Explora por categoría</h2>
+      <ul class="seo-category-list">
+        <li><a href="categorias/flores.html">Flores amarillas</a></li>
+        <li><a href="categorias/amor.html">Amor</a></li>
+        <li><a href="categorias/mexico.html">Independencia de México</a></li>
+        <li><a href="categorias/cumple.html">Cumpleaños</a></li>
+        <li><a href="categorias/navidad.html">Navidad</a></li>
+        <li><a href="categorias/espacio.html">Espacio y cielo</a></li>
+        <li><a href="categorias/paisajes.html">Paisajes</a></li>
+        <li><a href="categorias/gamer.html">Gamer</a></li>
+        <li><a href="categorias/futbol.html">Fútbol</a></li>
+        <li><a href="categorias/muertos.html">Día de Muertos</a></li>
+      </ul>
+      <p><a href="animaciones.html">Ver la lista completa de animaciones</a>.</p>
 
       <h2>Preguntas frecuentes</h2>
       <details>

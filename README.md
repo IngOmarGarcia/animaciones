@@ -19,6 +19,12 @@ Luego abre http://localhost:8080
 - Ver sorpresa: `v.html?s=...` (se genera desde crear). Para pruebas: `v.html?a=papel-picado&autoplay`
 - Revisar todas las escenas en varios tiempos: `tools/preview.html?t=1,3,6`
 
+## SEO y catálogo rastreable
+
+Las páginas públicas de `/animaciones/` y `/categorias/`, `animaciones.html` y `sitemap.xml` se generan desde `js/catalog.js`. Después de agregar, ocultar o cambiar una animación, ejecuta `node tools/generate-seo.mjs` y publica también los archivos generados. El script incluye solo `VISIBLE_ANIMATIONS`; no genera páginas para sorpresas con nombres y mensajes personales. `v.html` y las herramientas de `/tools/` llevan `noindex`. Después de generar, ejecuta `node tools/check-seo.mjs`: revisa títulos y descripciones únicos, canonical, un solo H1, Open Graph, JSON-LD válido, enlaces internos rotos, sitemap y las rutas que no deben indexarse.
+
+En Google Search Console, verifica `https://viralcss.com`, envía `https://viralcss.com/sitemap.xml` e inspecciona la portada, `/categorias/flores.html` y algunas fichas de `/animaciones/`. Comprueba que el dominio alternativo de Cloudflare Pages redirija al dominio principal.
+
 ## Estructura
 
 ```
@@ -43,7 +49,7 @@ Todo se configura en `js/config.js`:
 
 - `GIFTS`: regalos de Mercado Libre por categoría. Reemplaza cada `url` por tu enlace de afiliado.
 - `whatsapp`: número para recibir encargos (vacío = se piden por correo).
-- `donation`: CLABE de Mercado Pago, titular y link de pago opcional para donaciones voluntarias (vacío = no se muestra). Nunca pongas el número de tu tarjeta.
+- `supportConfig`: CLABE de Mercado Pago y `paymentUrl` opcional para aportaciones voluntarias (ambos vacíos = no se muestra). Nunca pongas el número de tu tarjeta.
 - `customOrderPrice` / `customOrderDelivery`: precio y tiempo de entrega de `encargos.html`.
 
 ## Videos para TikTok / Reels

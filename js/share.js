@@ -1,6 +1,6 @@
 // Los datos de la tarjeta viajan dentro del enlace (base64url de un JSON),
 // así no se necesita base de datos y el mensaje no se ve a simple vista en el chat.
-const LIMITS = { p: 40, m: 140, d: 40 };
+const LIMITS = { p: 40, m: 140, d: 40, lt: 65, l: 650, mem: 240, c1: 7, c2: 7 };
 
 function toBase64Url(text) {
   let binary = '';
@@ -19,7 +19,9 @@ export function cleanCard(raw) {
   const card = { a: typeof raw?.a === 'string' ? raw.a.slice(0, 60) : '' };
   for (const key of Object.keys(LIMITS)) {
     const value = raw?.[key];
-    card[key] = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, LIMITS[key]) : '';
+    card[key] = typeof value === 'string'
+      ? value.replace(key === 'l' ? /[\t ]+/g : /\s+/g, ' ').trim().slice(0, LIMITS[key])
+      : '';
   }
   return card;
 }
