@@ -37,7 +37,9 @@ try {
   for (const button of buttons) button.disabled = false;
 } catch (err) {
   console.error('No se pudo generar el código', err);
-  codeEl.textContent = 'No se pudo cargar el código. Recarga la página.';
+  codeEl.textContent = anim.noCode
+    ? `«${anim.title}» no tiene código descargable: necesita archivos externos que no caben en un solo HTML. Puedes verla y compartirla con su enlace.`
+    : 'No se pudo generar el código de esta animación.';
 }
 
 const htmlBlobUrl = () => URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));

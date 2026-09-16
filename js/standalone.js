@@ -3,7 +3,8 @@
 import { SITE } from './config.js';
 
 const IMPORT_RE = /^import\s*\{([^}]*)\}\s*from\s*'\.\/util\.js';?\s*/m;
-const PREMIUM_IMPORT_RE = /^import\s*\{([^}]*)\}\s*from\s*'\.\/flower-premium-core\.js';?\s*/m;
+// Cualquier import de otro módulo local de js/anim/ (una sola sentencia, puede ocupar varias líneas).
+const MODULE_IMPORT_RE = /^import\s*\{[^}]*\}\s*from\s*'\.\/([\w-]+)\.js';?[ \t]*$/gm;
 
 async function fetchText(path) {
   const res = await fetch(new URL(path, import.meta.url));
@@ -49,14 +50,34 @@ function pickHelpers(decls, names) {
 }
 
 export async function buildSceneCode(anim, readText = fetchText) {
+  // Algunas escenas cargan archivos externos (por ejemplo una nube de puntos .bin) y no caben
+  // en un solo HTML: se marcan con `noCode` en el catálogo.
+  if (anim.noCode) throw new Error(`${anim.title} necesita archivos externos y no tiene código descargable.`);
   const [sceneSource, utilSource] = await Promise.all([readText(`./anim/${anim.file}.js`), readText('./anim/util.js')]);
-  const names = (sceneSource.match(IMPORT_RE)?.[1] ?? '').split(',').map((n) => n.trim()).filter(Boolean);
-  const premium = PREMIUM_IMPORT_RE.test(sceneSource)
-    ? (await readText('./anim/flower-premium-core.js')).replace(/^export /gm, '').trim()
-    : '';
-  const scene = sceneSource.replace(IMPORT_RE, '').replace(PREMIUM_IMPORT_RE, '')
-    .replace(/^export default function create/m, 'function create').trim();
-  return [...pickHelpers(splitDeclarations(utilSource), names), premium, scene].filter(Boolean).join('\n\n');
+
+  // Módulos locales que usa la escena, y los que esos módulos usan a su vez (util.js va aparte).
+  const modules = new Map();
+  const collect = async (source) => {
+    for (const [, name] of [...source.matchAll(MODULE_IMPORT_RE)]) {
+      if (name === 'util' || modules.has(name)) continue;
+      const code = await readText(`./anim/${name}.js`);
+      modules.set(name, code);
+      await collect(code);
+    }
+  };
+  await collect(sceneSource);
+
+  const names = new Set();
+  for (const source of [sceneSource, ...modules.values()]) {
+    for (const name of (source.match(IMPORT_RE)?.[1] ?? '').split(',')) if (name.trim()) names.add(name.trim());
+  }
+  const strip = (code) => code
+    .replace(MODULE_IMPORT_RE, '')
+    .replace(/^export default function create/m, 'function create')
+    .replace(/^export /gm, '')
+    .trim();
+  return [...pickHelpers(splitDeclarations(utilSource), [...names]), ...[...modules.values()].map(strip), strip(sceneSource)]
+    .filter(Boolean).join('\n\n');
 }
 
 // JSON.stringify ya da un literal válido de JS; se escapa "<" para que un mensaje no cierre el <script>.
