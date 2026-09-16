@@ -38,7 +38,18 @@ img { max-width: 100%; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.15rem; text-decoration: none; }
-.brand img { flex: none; border-radius: 9px; }
+.brand img { flex: none; }
+/* El nombre junto al logo: "Viral" en blanco y "Css" con el degradado del logo */
+.brand-name { color: #fff; letter-spacing: 0.2px; }
+.brand-name .accent { color: #b06cf7; }
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .brand-name .accent {
+    background-image: linear-gradient(95deg, #4da6ff 0%, #a855f7 55%, #e879f9 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
 .site-header nav { display: flex; gap: 16px; }
 .site-header nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
 .site-header nav a:hover { color: var(--text); }
