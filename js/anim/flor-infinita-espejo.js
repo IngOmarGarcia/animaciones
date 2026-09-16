@@ -64,8 +64,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.strokeStyle = `rgba(255,247,207,${pulse * .7})`; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(cx, cy, w * (.2 + age * .15), h * (.08 + age * .08), 0, 0, TAU); ctx.stroke();
       const label = recipient(stage);
-      textHalo(ctx, label, cx, h * .22, Math.max(19, w * .12), reveal);
-      ctx.save(); ctx.translate(0, h * .64); ctx.scale(1, -.42);
+      // Debajo del bloque de mensaje y firma del visor, que ocupa la franja superior
+      textHalo(ctx, label, cx, h * .44, Math.max(19, w * .12), reveal);
+      ctx.save(); ctx.translate(0, h * .7); ctx.scale(1, -.42);
       textHalo(ctx, label, cx, 0, Math.max(19, w * .12), reveal * .22, '#d9b8ff'); ctx.restore();
     }
   };

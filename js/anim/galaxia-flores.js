@@ -135,10 +135,12 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.font = `${active ? 600 : 500} ${clamp(w * 0.030, 10, 15)}px system-ui, sans-serif`;
       ctx.fillStyle = '#fff2ca'; ctx.shadowColor = '#000'; ctx.shadowBlur = 9;
       const words = phrase.split(' '), mid = Math.ceil(words.length / 2);
-      if (ctx.measureText(phrase).width < w * 0.38) ctx.fillText(phrase, p.x, p.y + r + 17, w * 0.42);
+      // La frase se centra en la flor, pero sin salirse: las flores de los bordes cortaban el texto
+      const tx = clamp(p.x, w * 0.23, w * 0.77);
+      if (ctx.measureText(phrase).width < w * 0.38) ctx.fillText(phrase, tx, p.y + r + 17, w * 0.42);
       else {
-        ctx.fillText(words.slice(0, mid).join(' '), p.x, p.y + r + 14, w * 0.42);
-        ctx.fillText(words.slice(mid).join(' '), p.x, p.y + r + 27, w * 0.42);
+        ctx.fillText(words.slice(0, mid).join(' '), tx, p.y + r + 14, w * 0.42);
+        ctx.fillText(words.slice(mid).join(' '), tx, p.y + r + 27, w * 0.42);
       }
       ctx.restore();
     }
