@@ -1,4 +1,4 @@
-import { ANIMATIONS, getAnimation } from './catalog.js';
+import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { decodeCard } from './share.js';
 import { buildStandaloneHtml } from './standalone.js';
 import { renderSupport } from './extras.js';
@@ -7,7 +7,7 @@ const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // ?s= trae el nombre y mensaje que escribieron en crear; ?a= solo la animación.
 const card = decodeCard(params.get('s')) || { a: params.get('a') || '', p: '', m: '', d: '' };
-const anim = getAnimation(card.a) || ANIMATIONS[0];
+const anim = getAnimation(card.a) || VISIBLE_ANIMATIONS[0];
 const fileName = `${anim.id}.html`;
 const createHref = `crear.html?a=${encodeURIComponent(anim.id)}`;
 
@@ -18,7 +18,7 @@ $('cta').href = createHref;
 $('fileName').textContent = fileName;
 renderSupport($('support'));
 
-$('others').replaceChildren(...ANIMATIONS.filter((a) => a.id !== anim.id).map((a) => {
+$('others').replaceChildren(...VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id).map((a) => {
   const item = document.createElement('li');
   const link = document.createElement('a');
   link.href = `codigo.html?a=${encodeURIComponent(a.id)}`;

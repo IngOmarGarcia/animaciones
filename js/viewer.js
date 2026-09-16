@@ -1,4 +1,4 @@
-import { ANIMATIONS, getAnimation } from './catalog.js';
+import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { decodeCard } from './share.js';
 import { fillOverlay } from './overlay.js';
 import { renderGallery } from './gallery.js';
@@ -8,7 +8,7 @@ import { renderGifts, renderSupport } from './extras.js';
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const card = decodeCard(params.get('s')) || { a: params.get('a') || '', p: '', m: '', d: '' };
-const anim = getAnimation(card.a) || ANIMATIONS[0];
+const anim = getAnimation(card.a) || VISIBLE_ANIMATIONS[0];
 
 const overlay = $('overlay');
 const gate = $('gate');
@@ -74,4 +74,4 @@ if (params.has('autoplay')) {
 
 renderSupport($('support'));
 renderGifts($('gifts'), anim.category);
-renderGallery($('more'), ANIMATIONS.filter((a) => a.id !== anim.id));
+renderGallery($('more'), VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id));

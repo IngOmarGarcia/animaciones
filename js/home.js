@@ -1,4 +1,4 @@
-import { ANIMATIONS, CATEGORIES } from './catalog.js';
+import { VISIBLE_ANIMATIONS, CATEGORIES } from './catalog.js';
 import { renderGallery } from './gallery.js';
 import { renderSupport } from './extras.js';
 
@@ -22,7 +22,7 @@ function render() {
     });
     return chip;
   }));
-  const list = current === 'todas' ? ANIMATIONS : ANIMATIONS.filter((a) => a.category === current);
+  const list = current === 'todas' ? VISIBLE_ANIMATIONS : VISIBLE_ANIMATIONS.filter((a) => a.category === current);
   renderGallery(grid, list);
 }
 

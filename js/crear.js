@@ -1,4 +1,4 @@
-import { ANIMATIONS, getAnimation } from './catalog.js';
+import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { buildShareUrl, cleanCard, encodeCard } from './share.js';
 import { fillOverlay } from './overlay.js';
 import { renderGallery } from './gallery.js';
@@ -7,7 +7,7 @@ import { renderGifts, renderSupport } from './extras.js';
 
 const DRAFT_KEY = 'detallito-borrador';
 
-const anim = getAnimation(new URLSearchParams(location.search).get('a')) || ANIMATIONS[0];
+const anim = getAnimation(new URLSearchParams(location.search).get('a')) || VISIBLE_ANIMATIONS[0];
 const $ = (id) => document.getElementById(id);
 const form = $('form');
 const fields = form.elements;
@@ -91,4 +91,4 @@ nativeBtn.addEventListener('click', () => {
 
 renderSupport($('support'));
 renderGifts($('gifts'), anim.category);
-renderGallery($('more'), ANIMATIONS.filter((a) => a.id !== anim.id));
+renderGallery($('more'), VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id));

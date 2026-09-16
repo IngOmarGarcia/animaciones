@@ -33,6 +33,7 @@ export const ANIMATIONS = [
     id: 'adivina-el-jugador-porcentaje',
     file: 'adivina-porcentaje',
     category: 'futbol',
+    hidden: true, // fuera del sitio mientras se mejora; el enlace directo sigue funcionando
     title: '¿En qué % lo supiste?',
     description: 'Miles de puntos dorados revelan a un crack poco a poco. ¿Lo reconoces antes del 100%?',
     defaultMessage: '¿En qué % lo supiste? ⚽',
@@ -44,6 +45,7 @@ export const ANIMATIONS = [
     id: 'la-ruta-escribe-su-nombre',
     file: 'ruta-nombre',
     category: 'futbol',
+    hidden: true, // fuera del sitio mientras se mejora; el enlace directo sigue funcionando
     title: 'La ruta escribe su nombre',
     description: 'Un regate de luz entre columnas… y desde arriba se descubre su nombre.',
     defaultMessage: 'Cada jugada me lleva a ti ⚽💜',
@@ -56,6 +58,7 @@ export const ANIMATIONS = [
     id: 'atraviesa-la-pantalla',
     file: 'atraviesa-pantalla',
     category: 'futbol',
+    hidden: true, // fuera del sitio mientras se mejora; el enlace directo sigue funcionando
     title: 'Atraviesa la pantalla',
     description: 'Un disparo que estira la red hasta tu cara y la convierte en GOLAZO.',
     defaultMessage: 'Este golazo es para ti ⚽',
@@ -623,6 +626,11 @@ export const ANIMATIONS = [
 ];
 
 for (const anim of ANIMATIONS) anim.load = () => import(`./anim/${anim.file}.js`);
+
+// Las que se listan en el sitio. Una animación con `hidden: true` sigue funcionando por
+// enlace directo y en las herramientas de tools/, pero no aparece en la portada ni en las
+// galerías: así se puede retirar temporalmente sin borrarla ni romper enlaces compartidos.
+export const VISIBLE_ANIMATIONS = ANIMATIONS.filter((a) => !a.hidden);
 
 export const getAnimation = (id) => ANIMATIONS.find((a) => a.id === id);
 export const getCategory = (id) => CATEGORIES.find((c) => c.id === id);
