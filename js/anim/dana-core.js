@@ -110,6 +110,29 @@ export function createCamera() {
   return cam;
 }
 
+// ---- Intro cinematográfica ----
+// Fases: oscuridad → portal → entrada → warp → revelado escalonado → título → exploración.
+export const INTRO = { dark: 1.4, portal: 4.2, enter: 5.6, warp: 6.4, moon: 7.2, islands: 8.2, falls: 9, flowers: 9.8, title: 10.6, free: 13.4 };
+
+// Espiral dorada que gira frente a la cámara antes de atravesarla.
+export function buildPortal(budget) {
+  const rnd = seeded(404);
+  const count = Math.max(300, Math.round(budget * 0.1));
+  const pts = new Float32Array(count * 4); // ángulo, radio, z, fase
+  for (let i = 0; i < count; i++) {
+    const arm = Math.floor(rnd() * 3);
+    const k = Math.pow(rnd(), 0.7);
+    pts[i * 4] = arm * 2.09 + k * 6.2 + rnd() * 0.25;
+    pts[i * 4 + 1] = 1.2 + k * 16 + rnd() * 1.4;
+    pts[i * 4 + 2] = (rnd() - 0.5) * 3;
+    pts[i * 4 + 3] = rnd() * 6.28;
+  }
+  return { count, pts };
+}
+
+// Curva de la intro: 0 antes de empezar, 1 cuando el elemento está del todo presente.
+export const revealAt = (t, start, dur = 1.6) => ease((t - start) / dur);
+
 // ---- Giroscopio ----
 // Nunca pide permiso al cargar: solo cuando el visitante toca el botón de vista 360°.
 // Si no hay sensor o lo rechaza, la experiencia sigue completa con el arrastre.

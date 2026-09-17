@@ -5,6 +5,7 @@ import {
   DANA_FOV, readConfig, clamp01, ease, mixn,
   createCamera, createGyro, danaQuality, buildWorld, buildFlowers, flowerPoint,
   WATER_Y, buildWater, buildWaterfalls, buildPetals,
+  INTRO, buildPortal, revealAt,
 } from './dana-core.js';
 
 // UNIVERSO DE FLORES AMARILLAS (codename interno: Dana)
@@ -31,6 +32,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   let cardRef = stage?.card;
   const world = buildWorld(config, budget);
   let flowers = buildFlowers(world, config, budget);
+  const portal = buildPortal(budget);
   const water = buildWater(budget);
   const falls = buildWaterfalls(world, budget);
   const petals = buildPetals(budget);
@@ -52,7 +54,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   const total = world.stars.length + world.moon.length + world.halo.length
     + world.islands.reduce((sum, i) => sum + i.points.length, 0)
     + flowers.reduce((sum, f) => sum + f.points.length, 0)
-    + water.count + fallPoints + petals.length;
+    + water.count + fallPoints + petals.length + portal.count;
   const pos = new Float32Array(total * 4);
   const col = new Float32Array(total * 4);
   const vp = new Float32Array(16);
@@ -70,6 +72,13 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     const step = Math.min(Math.max(dt, 0), 1 / 20);
     let tapped = false;
     let tapPoint = null;
+    // Intro: cada elemento entra en su momento, no todos en el mismo cuadro
+    const showMoon = revealAt(t, INTRO.moon, 2.2);
+    const showIslands = revealAt(t, INTRO.islands, 1.8);
+    const showFalls = revealAt(t, INTRO.falls, 1.6);
+    const showFlowers = revealAt(t, INTRO.flowers, 1.8);
+    const warp = clamp01((t - INTRO.enter) / (INTRO.warp - INTRO.enter)) * (1 - clamp01((t - INTRO.warp) / 0.7));
+    const portalLife = revealAt(t, INTRO.dark, 1.4) * (1 - clamp01((t - INTRO.enter) / 0.9));
     if (governor(t)) renderScale = Math.max(0.5, renderScale * 0.82);
     if (stage && stage.card !== cardRef) { cardRef = stage.card; config = readConfig(cardRef); }
 
@@ -110,7 +119,22 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     // --- Estrellas: parpadeo lento, las cercanas más grandes ---
     for (const s of world.stars) {
       const tw = 0.55 + 0.45 * Math.sin(t * 0.7 + s.phase);
-      write(s.x, s.y, s.z, 0.75 * tw, s.warm ? STAR_WARM : STAR_COLD, s.size * 1.6);
+      // Durante el warp las estrellas se estiran en trazos
+      write(s.x, s.y, s.z, 0.75 * tw * clamp01(t / 1.2) * (1 + warp * 2.2), s.warm ? STAR_WARM : STAR_COLD, s.size * 1.6 * (1 + warp * 5));
+    }
+
+    // --- Portal: espiral dorada que gira, crece y se atraviesa ---
+    if (portalLife > 0.002) {
+      const approach = clamp01((t - INTRO.portal) / (INTRO.enter - INTRO.portal));
+      for (let i = 0; i < portal.count; i++) {
+        const a = portal.pts[i * 4] + t * (0.5 + portal.pts[i * 4 + 1] * 0.02);
+        const r = portal.pts[i * 4 + 1] * (1 + approach * 1.7);
+        const twinkle = 0.6 + 0.4 * Math.sin(t * 3 + portal.pts[i * 4 + 3]);
+        // Al acercarse, los puntos no deben crecer: se atraviesa el portal, no se pega a la cara.
+        // Con tamaños grandes la espiral se convertía en manchas amarillas a pantalla completa.
+        write(Math.cos(a) * r, 8 + Math.sin(a) * r, -46 + portal.pts[i * 4 + 2] + approach * 40,
+          portalLife * twinkle * 1.1, config.flower, 0.55);
+      }
     }
 
     // --- Luna: relieve por sombreado, no un disco plano ---
@@ -118,9 +142,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const lit = 0.3 + 0.7 * clamp01(m.nx * 0.4 + m.ny * 0.25 + m.nz * 0.85);
       const rim = Math.pow(1 - clamp01(m.nz), 3.5) * 0.35;
       // El tamaño del punto sale de la densidad de muestreo: la superficie debe quedar continua
-      write(m.x, m.y, m.z, (0.32 + m.shade * 0.5) * lit + rim * 0.35, config.moon, m.size * 3.4);
+      write(m.x, m.y, m.z, ((0.32 + m.shade * 0.5) * lit + rim * 0.35) * showMoon, config.moon, m.size * 3.4);
     }
-    for (const g of world.halo) write(g.x, g.y, g.z, g.a * 0.16, config.moon, g.size * 4);
+    for (const g of world.halo) write(g.x, g.y, g.z, g.a * 0.16 * showMoon, config.moon, g.size * 4);
 
     // --- Islas: roca oscura con luz de luna en los bordes ---
     for (const island of world.islands) {
@@ -129,7 +153,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         // La roca queda casi en silueta; la luz de luna solo dibuja el borde superior
         const lit = clamp01((p.y - island.y + island.depth * 0.2) / (island.depth * 0.6));
         const glowEdge = p.top && p.edge > 0.93 ? 0.5 : 0;
-        const intensity = p.top ? 0.12 + p.edge * 0.28 + glowEdge : 0.04 + lit * 0.22;
+        const intensity = (p.top ? 0.12 + p.edge * 0.28 + glowEdge : 0.04 + lit * 0.22) * showIslands;
         write(p.x, p.y + sway, p.z, intensity, glowEdge ? config.energy : ROCK, p.size * 1.7);
       }
     }
@@ -146,7 +170,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const glint = Math.pow(0.5 + 0.5 * Math.sin(z * 0.25 + t * 1.8 + ph * 2), 3);
       // El borde cercano se desvanece: sin esto la franja cortaba la escena con una línea recta
       const fade = clamp01((-90 - z) / 70);
-      write(x, WATER_Y + ripple, z, (0.04 + column * (0.16 + glint * 0.5)) * fade, column > 0.4 ? config.moon : config.water, (5 + column * 3.5) * sc);
+      write(x, WATER_Y + ripple, z, (0.04 + column * (0.16 + glint * 0.5)) * fade * showIslands, column > 0.4 ? config.moon : config.water, (5 + column * 3.5) * sc);
     }
 
     // --- Cascadas: aceleran al caer y rompen en espuma ---
@@ -160,7 +184,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
           f.x + f.parts[i * 3 + 1] + Math.sin(t * 1.3 + i) * spread * 0.3,
           f.top - fall * f.length,
           f.z + Math.cos(t * 1.1 + i * 0.7) * spread * 0.25,
-          0.22 + (1 - fall) * 0.35 + broke * 0.55,
+          (0.22 + (1 - fall) * 0.35 + broke * 0.55) * showFalls,
           config.energy,
           0.55 + broke * 1.1,
         );
@@ -171,7 +195,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     for (const p of petals) {
       const y = p.y + (((t * p.drift + p.phase * 20) % 130) - 65);
       const flick = 0.55 + 0.45 * Math.sin(t * p.spin + p.phase);
-      write(p.x + Math.sin(t * 0.3 + p.phase) * 7, y, p.z + Math.cos(t * 0.22 + p.phase) * 9, 0.75 * flick, config.flower, p.size * 1.8);
+      write(p.x + Math.sin(t * 0.3 + p.phase) * 7, y, p.z + Math.cos(t * 0.22 + p.phase) * 9, 0.75 * flick * showFlowers, config.flower, p.size * 1.8);
     }
 
     // --- Flores: las de recuerdo se abren al descubrirlas ---
@@ -199,14 +223,16 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       for (const p of f.points) {
         flowerPoint(f, p, f.open, t, tmp);
         const c = p.core ? config.energy : config.flower;
-        const intensity = (p.core ? 0.8 : 0.5 + f.open * 0.3) * bloom + halo * (p.core ? 0.5 : 0.2);
+        const intensity = ((p.core ? 0.8 : 0.5 + f.open * 0.3) * bloom + halo * (p.core ? 0.5 : 0.2)) * showFlowers;
         write(tmp[0], tmp[1], tmp[2], intensity, c, p.size * 1.5);
       }
     }
     aimed = bestAim;
+
     // Se ofrece tras los primeros segundos y desaparece al activarlo (o si se rechazó hace rato).
     // Debe declararse antes del toque: en un móvil real, usarlo después lanzaba ReferenceError.
-    const gyroButton = gyro.available && !gyro.active && t > 4 && !(gyro.denied && t > 12);
+    // Solo después de la intro: durante el portal y el warp todavía no hay mundo que mirar
+    const gyroButton = gyro.available && !gyro.active && t > INTRO.free && !(gyro.denied && t > INTRO.free + 8);
     // El botón de vista 360° se atiende antes que las flores
     if (tapped && tapPoint && gyroButton && !gyro.active && !gyro.denied) {
       const bx = Math.abs(tapPoint[0] - 0.5) < 0.3;
@@ -242,13 +268,41 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       drawParticles2D(ctx, w, h, vp, pos, col, o, 90, 0.02, '#03040c');
     }
 
-    // --- Interfaz mínima: contador de recuerdos y mensaje descubierto ---
+    // --- Interfaz mínima: título de la intro, contador y mensaje descubierto ---
+    // Todo el texto se dibuja DESPUÉS de componer las partículas: antes del drawImage quedaba
+    // tapado por completo, y sin el textAlign de aquí salía corrido hacia la derecha desde el
+    // centro en vez de centrado.
     const memories = memoryFlowers();
     const found = memories.filter((f) => f.found).length;
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    if (found > 0 || t > 6) {
+    // --- Título de la intro: nombre personalizable y mensaje, y luego la invitación a explorar ---
+    const titleIn = revealAt(t, INTRO.title, 0.9) * (1 - clamp01((t - INTRO.free + 0.6) / 0.8));
+    if (titleIn > 0.01) {
+      const name = (config.recipientName || '').trim();
+      const big = Math.max(20, w * 0.085);
+      ctx.font = `700 ${big}px "Dancing Script", Georgia, serif`;
+      ctx.shadowColor = 'rgba(0,0,0,.85)';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = `rgba(255,246,214,${titleIn})`;
+      ctx.fillText(name ? `Para ${name} 💛` : 'Para ti 💛', w / 2, h * 0.38, w * 0.86);
+      ctx.font = `500 ${Math.max(12, w * 0.037)}px system-ui, sans-serif`;
+      ctx.fillStyle = `rgba(226,232,255,${titleIn * 0.85})`;
+      ctx.fillText(config.introMessage, w / 2, h * 0.45, w * 0.84);
+      ctx.shadowBlur = 0;
+    }
+    const exploreIn = revealAt(t, INTRO.free, 0.8) * (1 - clamp01((t - INTRO.free - 4) / 1));
+    if (exploreIn > 0.01 && found === 0) {
+      ctx.font = `600 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,.85)';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = `rgba(255,238,190,${exploreIn * 0.9})`;
+      // Debajo de la luna: a 0.2 el texto caía sobre el borde brillante y no se leía
+      ctx.fillText('Muévete y descubre cada flor', w / 2, h * 0.47, w * 0.86);
+      ctx.shadowBlur = 0;
+    }
+    if (found > 0 || t > INTRO.free) {
       // Abajo y con sombra: arriba quedaba encima de la luna y no se leía
       ctx.font = `600 ${Math.max(11, w * 0.031)}px system-ui, sans-serif`;
       ctx.shadowColor = 'rgba(0,0,0,.95)';
