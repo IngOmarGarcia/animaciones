@@ -329,7 +329,7 @@ export function buildFlowers(world, config, budget) {
       x, y, z, scale, tilt, points,
       memory, // índice del recuerdo, o -1 si es flor de ambiente
       open: memory >= 0 ? 0.35 : 0.8, // las de recuerdo empiezan cerradas: se abren al descubrirlas
-      found: false, phase: rnd() * 6.28,
+      found: false, foundAt: 0, phase: rnd() * 6.28,
     });
   };
 
@@ -416,6 +416,86 @@ export function buildWaterfalls(world, budget) {
   }
   return falls;
 }
+
+// ---- Final: corazón de partículas frente a la luna ----
+// Se dispara al descubrir el último recuerdo; los tiempos son relativos a ese instante.
+export const FINALE = {
+  travel: 0,      // la cámara viaja hacia la luna
+  gather: 1.2,    // las flores descubiertas sueltan su luz y sube hacia el cielo
+  form: 2.6,      // el corazón se arma
+  beat: 4.6,      // late
+  letter: 6.4,    // aparece el título y el texto de la carta
+  sender: 8.6,    // y la firma
+};
+
+// Superficie implícita de Taubin (la misma del «Corazón de Energía»): da un corazón con volumen
+// real, no un icono extruido. Se copia en vez de importarse para no arrastrar aquella escena
+// entera al código descargable de Dana.
+function heartField(x, y, z) {
+  const a = x * x + 2.25 * z * z + y * y - 1;
+  return a * a * a - x * x * y * y * y - 0.1125 * z * z * y * y * y;
+}
+
+// Distancia del centro a la superficie en una dirección: marcha gruesa y luego bisección.
+function heartRadius(dx, dy, dz) {
+  let r = 0;
+  while (r < 1.8 && heartField(dx * r, dy * r, dz * r) < 0) r += 0.04;
+  let lo = Math.max(0, r - 0.04);
+  let hi = r;
+  for (let k = 0; k < 7; k++) {
+    const mid = (lo + hi) / 2;
+    if (heartField(dx * mid, dy * mid, dz * mid) < 0) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+// Corazón muestreado sobre su superficie, en coordenadas locales (centro en 0, alto ~2).
+// Cada punto guarda de dónde sale (una flor descubierta) para poder viajar hasta su sitio.
+export function buildHeart(budget) {
+  const rnd = seeded(53);
+  const count = Math.max(700, Math.round(budget * 0.22));
+  const pts = [];
+  // Muestreo por rechazo pesado con r²: con direcciones uniformes sobre la esfera, la punta
+  // (radio grande) recibía tantos puntos como la parte alta (radio pequeño), así que el área
+  // real quedaba clarísima abajo y amontonada en el centro: un montículo, no un corazón.
+  // El área de superficie por unidad de ángulo crece con r², y así se compensa.
+  const RMAX = 1.25; // radio máximo de la superficie; sobra un poco para no recortar la punta
+  let guard = 0;
+  while (pts.length < count && guard < count * 60) {
+    guard++;
+    const u = rnd() * Math.PI * 2;
+    const v = Math.acos(2 * rnd() - 1);
+    const dx = Math.sin(v) * Math.cos(u);
+    const dy = Math.cos(v);
+    const dz = Math.sin(v) * Math.sin(u);
+    const r = heartRadius(dx, dy, dz);
+    if (r <= 0) continue;
+    // Acepta con probabilidad (r/RMAX)²: reparte los puntos por superficie, no por dirección
+    if (rnd() > Math.min(1, (r / RMAX) * (r / RMAX))) continue;
+    // Un poco de grosor hacia dentro: la cáscara pura se ve hueca en los bordes
+    const shell = r * (1 - Math.pow(rnd(), 3) * 0.16);
+    pts.push({
+      // Sin invertir. Medido con la sonda de encuadre, que proyecta la nube real con la vista
+      // del final: la punta (y local negativa, el extremo largo) cae en v menor, o sea ARRIBA
+      // en pantalla. Para que la punta quede abajo, la punta debe ir en +y, que es esta forma.
+      x: dx * shell, y: dy * shell, z: dz * shell,
+      phase: rnd() * 6.28,
+      size: 0.5 + rnd() * 0.5,
+      // Las que miran al frente brillan más: da relieve sin calcular iluminación
+      face: clamp01(dz * 0.5 + 0.5),
+      delay: rnd() * 0.5, // no todas llegan a la vez
+    });
+  }
+  return pts;
+}
+
+// Posición del corazón en el mundo: entre la cámara y la luna, alto y bastante lejos.
+// Medido con la proyección del final (ver sonda de encuadre), no a ojo: con y=150/z=-430 el
+// corazón se salía por arriba (u_lado 0.86) y se comía el texto de la carta. Con estos valores
+// la silueta entera cae en la banda oscura entre la carta (hasta v≈0.34) y el borde superior
+// de la luna (v≈0.70), y el ancho se queda dentro del cuadro.
+export const HEART_POS = { x: 0, y: 70, z: -640, scale: 48 };
 
 // Pétalos sueltos: algunos pasan muy cerca de la cámara y refuerzan la profundidad.
 export function buildPetals(budget) {

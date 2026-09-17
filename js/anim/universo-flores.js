@@ -6,6 +6,7 @@ import {
   createCamera, createGyro, danaQuality, buildWorld, buildFlowers, flowerPoint,
   WATER_Y, buildWater, buildWaterfalls, buildPetals,
   INTRO, buildPortal, revealAt,
+  FINALE, buildHeart, HEART_POS,
 } from './dana-core.js';
 
 // UNIVERSO DE FLORES AMARILLAS (codename interno: Dana)
@@ -36,7 +37,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   const water = buildWater(budget);
   const falls = buildWaterfalls(world, budget);
   const petals = buildPetals(budget);
+  const heart = buildHeart(budget);
   const fallPoints = falls.reduce((sum, f) => sum + f.count, 0);
+  let doneAt = -1; // instante en que se descubrió el último recuerdo
   const memoryFlowers = () => flowers.filter((f) => f.memory >= 0);
   const gyro = createGyro();
   let gyroBase = null; // ángulos de la cámara al activar el sensor
@@ -54,7 +57,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   const total = world.stars.length + world.moon.length + world.halo.length
     + world.islands.reduce((sum, i) => sum + i.points.length, 0)
     + flowers.reduce((sum, f) => sum + f.points.length, 0)
-    + water.count + fallPoints + petals.length + portal.count;
+    + water.count + fallPoints + petals.length + portal.count + heart.length;
   const pos = new Float32Array(total * 4);
   const col = new Float32Array(total * 4);
   const vp = new Float32Array(16);
@@ -105,7 +108,8 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const tilt = Math.max(-0.3, Math.min(0.3, gyro.pitch * 0.5));
       camera.targetPitch = Math.max(-0.85, Math.min(0.5, gyroBase.pitch + tilt));
     }
-    camera.update(step, !dragging && !gyro.active);
+    // En el final la cámara se queda quieta: el vagabundeo automático sacaba el corazón de cuadro.
+    camera.update(step, !dragging && !gyro.active && doneAt < 0);
     viewProjection(vp, camera.eye, camera.target, aspect, [0, 1, 0], DANA_FOV, 0.5, 2600);
 
     let o = 0;
@@ -228,11 +232,44 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       }
     }
     aimed = bestAim;
+    // Aquí arriba porque el final las necesita antes de componer, y los textos de la interfaz
+    // las reutilizan después: declararlas abajo lanzaba ReferenceError (zona muerta temporal).
+    const memories = memoryFlowers();
+    const found = memories.filter((f) => f.found).length;
+
+    // --- Final: al descubrir el último recuerdo, un corazón se arma frente a la luna ---
+    if (doneAt >= 0) {
+      const ft = t - doneAt;
+      // Las partículas salen de las flores y suben: `gather` las lanza, `form` las asienta
+      const rise = clamp01((ft - FINALE.gather) / (FINALE.form - FINALE.gather));
+      const formed = ease(clamp01((ft - FINALE.form) / 1.8));
+      // Latido suave, solo una vez armado
+      const beat = ft > FINALE.beat ? Math.pow(0.5 + 0.5 * Math.sin((ft - FINALE.beat) * 2.4), 3) : 0;
+      const scale = HEART_POS.scale * (0.92 + formed * 0.08 + beat * 0.06);
+      if (rise > 0) {
+        for (const p of heart) {
+          // Cada punto nace en su flor y viaja hasta su sitio del corazón
+          const k = ease(clamp01((rise - p.delay) / (1 - p.delay * 0.6)));
+          const src = memories[p.phase % memories.length | 0] || memories[0];
+          const breathe = 1 + Math.sin(t * 1.6 + p.phase) * 0.012;
+          const hx = HEART_POS.x + p.x * scale * breathe;
+          const hy = HEART_POS.y + p.y * scale * breathe;
+          const hz = HEART_POS.z + p.z * scale * breathe;
+          const x = src ? mixn(src.x, hx, k) : hx;
+          const y = src ? mixn(src.y, hy, k) : hy;
+          const z = src ? mixn(src.z, hz, k) : hz;
+          const intensity = (0.35 + p.face * 0.5 + beat * 0.45) * formed + (1 - formed) * 0.5 * k;
+          write(x, y, z, intensity * clamp01(rise * 1.4), config.flower, p.size * (1.7 + beat * 0.6));
+        }
+      }
+    }
 
     // Se ofrece tras los primeros segundos y desaparece al activarlo (o si se rechazó hace rato).
     // Debe declararse antes del toque: en un móvil real, usarlo después lanzaba ReferenceError.
     // Solo después de la intro: durante el portal y el warp todavía no hay mundo que mirar
-    const gyroButton = gyro.available && !gyro.active && t > INTRO.free && !(gyro.denied && t > INTRO.free + 8);
+    // Durante el final la pantalla es de la carta: ni botón ni contador compiten con ella.
+    const gyroButton = gyro.available && !gyro.active && t > INTRO.free && doneAt < 0
+      && !(gyro.denied && t > INTRO.free + 8);
     // El botón de vista 360° se atiende antes que las flores
     if (tapped && tapPoint && gyroButton && !gyro.active && !gyro.denied) {
       const bx = Math.abs(tapPoint[0] - 0.5) < 0.3;
@@ -246,6 +283,11 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       bestTap.found = true;
       bestTap.foundAt = t;
       shown = { flower: bestTap, at: t };
+      // ¿Era el último? Entonces arranca el final y la cámara viaja hacia la luna
+      if (doneAt < 0 && memoryFlowers().every((f) => f.found)) {
+        doneAt = t;
+        camera.travelTo(0, 0.16, 2.4);
+      }
     }
 
     // --- Render ---
@@ -272,8 +314,6 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     // Todo el texto se dibuja DESPUÉS de componer las partículas: antes del drawImage quedaba
     // tapado por completo, y sin el textAlign de aquí salía corrido hacia la derecha desde el
     // centro en vez de centrado.
-    const memories = memoryFlowers();
-    const found = memories.filter((f) => f.found).length;
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -302,7 +342,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.fillText('Muévete y descubre cada flor', w / 2, h * 0.47, w * 0.86);
       ctx.shadowBlur = 0;
     }
-    if (found > 0 || t > INTRO.free) {
+    if ((found > 0 || t > INTRO.free) && doneAt < 0) {
       // Abajo y con sombra: arriba quedaba encima de la luna y no se leía
       ctx.font = `600 ${Math.max(11, w * 0.031)}px system-ui, sans-serif`;
       ctx.shadowColor = 'rgba(0,0,0,.95)';
@@ -331,6 +371,42 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       }
       ctx.fillStyle = 'rgba(226,244,255,.92)';
       ctx.fillText(label, w / 2, h * 0.88);
+    }
+    // --- Carta final: título, texto y firma, escalonados sobre el corazón ---
+    if (doneAt >= 0) {
+      const ft = t - doneAt;
+      const letterIn = revealAt(ft, FINALE.letter, 1.2);
+      if (letterIn > 0.01) {
+        ctx.font = `700 ${Math.max(18, w * 0.062)}px "Dancing Script", Georgia, serif`;
+        ctx.shadowColor = 'rgba(0,0,0,.85)';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = `rgba(255,246,214,${letterIn})`;
+        ctx.fillText(config.letterTitle, w / 2, h * 0.14, w * 0.86);
+        // El texto largo se reparte en líneas: de una sola pasada se salía de la pantalla
+        ctx.font = `500 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+        ctx.fillStyle = `rgba(226,232,255,${letterIn * 0.9})`;
+        const words = config.letterText.split(/\s+/);
+        const lines = [];
+        let line = '';
+        for (const word of words) {
+          const next = line ? `${line} ${word}` : word;
+          if (ctx.measureText(next).width > w * 0.82 && line) { lines.push(line); line = word; }
+          else line = next;
+        }
+        if (line) lines.push(line);
+        const lh = Math.max(16, w * 0.05);
+        lines.forEach((l, i) => ctx.fillText(l, w / 2, h * 0.2 + i * lh, w * 0.86));
+        ctx.shadowBlur = 0;
+      }
+      const senderIn = revealAt(ft, FINALE.sender, 1);
+      if (senderIn > 0.01 && config.senderName) {
+        ctx.font = `700 ${Math.max(14, w * 0.045)}px "Dancing Script", Georgia, serif`;
+        ctx.shadowColor = 'rgba(0,0,0,.85)';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = `rgba(255,238,190,${senderIn})`;
+        ctx.fillText(`— ${config.senderName}`, w / 2, h * 0.79, w * 0.7);
+        ctx.shadowBlur = 0;
+      }
     }
     if (aimed && !aimed.found) {
       ctx.font = `600 ${Math.max(11, w * 0.03)}px system-ui, sans-serif`;
