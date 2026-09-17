@@ -236,6 +236,8 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     // las reutilizan después: declararlas abajo lanzaba ReferenceError (zona muerta temporal).
     const memories = memoryFlowers();
     const found = memories.filter((f) => f.found).length;
+    // Cuánto se ha apagado el mundo por la carta: lo necesita el render, que va antes del texto
+    const letterDim = doneAt >= 0 ? revealAt(t - doneAt, FINALE.letter, 1.2) : 0;
 
     // --- Final: al descubrir el último recuerdo, un corazón se arma frente a la luna ---
     if (doneAt >= 0) {
@@ -253,7 +255,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
           const src = memories[p.phase % memories.length | 0] || memories[0];
           const breathe = 1 + Math.sin(t * 1.6 + p.phase) * 0.012;
           const hx = HEART_POS.x + p.x * scale * breathe;
-          const hy = HEART_POS.y + p.y * scale * breathe;
+          // Con la carta abierta el corazón sube: una carta larga crece hacia arriba y, si no,
+          // su borde superior alcanzaba el lóbulo inferior. Las cartas cortas no lo notan.
+          const hy = HEART_POS.y + letterDim * 34 + p.y * scale * breathe;
           const hz = HEART_POS.z + p.z * scale * breathe;
           const x = src ? mixn(src.x, hx, k) : hx;
           const y = src ? mixn(src.y, hy, k) : hy;
@@ -303,7 +307,10 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         px: fbH / (2 * DANA_FOV), focus: 90, aperture: 0.02, maxSize: 46 * cssScale,
         trail: 0.12, flash: 0, glow, beam,
         bg: [0.004, 0.006, 0.02], glowColor: [0.05, 0.06, 0.12], beamColor: [0.02, 0.1, 0.3], flashColor: [0.9, 0.8, 0.5],
-        exposure: 1.45, time: t, reset: false, owner: pos,
+        // El mundo se apaga al abrirse la carta: bajar la exposición del render es más limpio
+        // que superponer un rectángulo translúcido, porque el corazón también se atenúa y la
+        // carta queda como único foco.
+        exposure: 1.45 * (1 - letterDim * 0.55), time: t, reset: false, owner: pos,
       });
       ctx.drawImage(renderer.canvas, 0, 0, w, h);
     } else {
@@ -372,39 +379,64 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.fillStyle = 'rgba(226,244,255,.92)';
       ctx.fillText(label, w / 2, h * 0.88);
     }
-    // --- Carta final: título, texto y firma, escalonados sobre el corazón ---
-    if (doneAt >= 0) {
+    // --- Carta final: se abre sobre el mundo apagado, no es un texto plano encima ---
+    if (doneAt >= 0 && letterDim > 0.002) {
       const ft = t - doneAt;
       const letterIn = revealAt(ft, FINALE.letter, 1.2);
-      if (letterIn > 0.01) {
-        ctx.font = `700 ${Math.max(18, w * 0.062)}px "Dancing Script", Georgia, serif`;
-        ctx.shadowColor = 'rgba(0,0,0,.85)';
-        ctx.shadowBlur = 18;
-        ctx.fillStyle = `rgba(255,246,214,${letterIn})`;
-        ctx.fillText(config.letterTitle, w / 2, h * 0.14, w * 0.86);
-        // El texto largo se reparte en líneas: de una sola pasada se salía de la pantalla
-        ctx.font = `500 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
-        ctx.fillStyle = `rgba(226,232,255,${letterIn * 0.9})`;
-        const words = config.letterText.split(/\s+/);
-        const lines = [];
-        let line = '';
-        for (const word of words) {
-          const next = line ? `${line} ${word}` : word;
-          if (ctx.measureText(next).width > w * 0.82 && line) { lines.push(line); line = word; }
-          else line = next;
-        }
-        if (line) lines.push(line);
-        const lh = Math.max(16, w * 0.05);
-        lines.forEach((l, i) => ctx.fillText(l, w / 2, h * 0.2 + i * lh, w * 0.86));
-        ctx.shadowBlur = 0;
+      // Medidas de la hoja: se calculan antes para poder dibujar el papel y luego el texto
+      ctx.font = `500 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+      const words = config.letterText.split(/\s+/);
+      const lines = [];
+      let line = '';
+      for (const word of words) {
+        const next = line ? `${line} ${word}` : word;
+        if (ctx.measureText(next).width > w * 0.72 && line) { lines.push(line); line = word; }
+        else line = next;
       }
-      const senderIn = revealAt(ft, FINALE.sender, 1);
-      if (senderIn > 0.01 && config.senderName) {
-        ctx.font = `700 ${Math.max(14, w * 0.045)}px "Dancing Script", Georgia, serif`;
+      if (line) lines.push(line);
+      const lh = Math.max(16, w * 0.05);
+      const padY = h * 0.055;
+      const sheetW = w * 0.84;
+      const sheetH = padY * 2 + w * 0.09 + lines.length * lh + (config.senderName ? lh * 1.6 : 0);
+      const cx = w / 2;
+      // Debajo de la luna, no encima del corazón: a 0.46 la hoja caía justo sobre él
+      // (corazón en v=0.38..0.52) y el corazón se veía como una mancha a través del papel.
+      // Entre el borde inferior de la luna y la cascada queda cielo libre.
+      const cy = Math.min(h * 0.8, h - sheetH / 2 - h * 0.04);
+      // La hoja se despliega: primero una línea de luz, luego alto completo
+      const openY = ease(clamp01(letterIn * 1.3));
+      const sh = sheetH * Math.max(0.02, openY);
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.6)';
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = `rgba(14,16,34,${0.62 * letterIn})`;
+      ctx.strokeStyle = `rgba(255,236,190,${0.45 * letterIn})`;
+      ctx.lineWidth = 1;
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(cx - sheetW / 2, cy - sh / 2, sheetW, sh, Math.min(18, w * 0.045));
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+      // El texto entra cuando la hoja ya está abierta: si no, se lee sobre una rendija
+      const textIn = ease(clamp01((openY - 0.75) / 0.25)) * letterIn;
+      if (textIn > 0.01) {
+        const top = cy - sheetH / 2 + padY;
         ctx.shadowColor = 'rgba(0,0,0,.85)';
         ctx.shadowBlur = 14;
-        ctx.fillStyle = `rgba(255,238,190,${senderIn})`;
-        ctx.fillText(`— ${config.senderName}`, w / 2, h * 0.79, w * 0.7);
+        ctx.font = `700 ${Math.max(18, w * 0.062)}px "Dancing Script", Georgia, serif`;
+        ctx.fillStyle = `rgba(255,246,214,${textIn})`;
+        ctx.fillText(config.letterTitle, cx, top, sheetW * 0.88);
+        ctx.font = `500 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+        ctx.fillStyle = `rgba(226,232,255,${textIn * 0.92})`;
+        lines.forEach((l, i) => ctx.fillText(l, cx, top + w * 0.085 + i * lh, sheetW * 0.88));
+        const senderIn = revealAt(ft, FINALE.sender, 1) * textIn;
+        if (senderIn > 0.01 && config.senderName) {
+          ctx.font = `700 ${Math.max(14, w * 0.045)}px "Dancing Script", Georgia, serif`;
+          ctx.fillStyle = `rgba(255,238,190,${senderIn})`;
+          ctx.fillText(`— ${config.senderName}`, cx, top + w * 0.085 + lines.length * lh + lh * 0.7, sheetW * 0.7);
+        }
         ctx.shadowBlur = 0;
       }
     }
