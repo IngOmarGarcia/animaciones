@@ -81,7 +81,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     const showFalls = revealAt(t, INTRO.falls, 1.6);
     const showFlowers = revealAt(t, INTRO.flowers, 1.8);
     const warp = clamp01((t - INTRO.enter) / (INTRO.warp - INTRO.enter)) * (1 - clamp01((t - INTRO.warp) / 0.7));
-    const portalLife = revealAt(t, INTRO.dark, 1.4) * (1 - clamp01((t - INTRO.enter) / 0.9));
+    // El portal aguanta hasta bien entrado el warp: apagándose en enter+0.9 dejaba un hueco
+    // casi vacío entre que desaparecía y entraba la luna.
+    const portalLife = revealAt(t, INTRO.dark, 1.4) * (1 - clamp01((t - INTRO.warp) / 0.8));
     if (governor(t)) renderScale = Math.max(0.5, renderScale * 0.82);
     if (stage && stage.card !== cardRef) { cardRef = stage.card; config = readConfig(cardRef); }
 
@@ -124,7 +126,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     for (const s of world.stars) {
       const tw = 0.55 + 0.45 * Math.sin(t * 0.7 + s.phase);
       // Durante el warp las estrellas se estiran en trazos
-      write(s.x, s.y, s.z, 0.75 * tw * clamp01(t / 1.2) * (1 + warp * 2.2), s.warm ? STAR_WARM : STAR_COLD, s.size * 1.6 * (1 + warp * 5));
+      // El warp estira, no engorda: con size ×5 y brillo ×2.2 las estrellas se volvían pelotas
+      // blancas. Menos tamaño y menos intensidad dejan ver el trazo.
+      write(s.x, s.y, s.z, 0.75 * tw * clamp01(t / 1.2) * (1 + warp * 0.9), s.warm ? STAR_WARM : STAR_COLD, s.size * 1.6 * (1 + warp * 1.6));
     }
 
     // --- Portal: espiral dorada que gira, crece y se atraviesa ---
@@ -132,12 +136,18 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const approach = clamp01((t - INTRO.portal) / (INTRO.enter - INTRO.portal));
       for (let i = 0; i < portal.count; i++) {
         const a = portal.pts[i * 4] + t * (0.5 + portal.pts[i * 4 + 1] * 0.02);
-        const r = portal.pts[i * 4 + 1] * (1 + approach * 1.7);
+        // El radio casi no crece: al multiplicarlo por 2.7 los brazos salían del cuadro antes
+        // de llegar a ellos y quedaban tres arcos sueltos cruzando la pantalla. La sensación de
+        // atravesar la da el acercamiento en z, no abrir la espiral.
+        const r = portal.pts[i * 4 + 1] * (1 + approach * 0.25);
         const twinkle = 0.6 + 0.4 * Math.sin(t * 3 + portal.pts[i * 4 + 3]);
-        // Al acercarse, los puntos no deben crecer: se atraviesa el portal, no se pega a la cara.
-        // Con tamaños grandes la espiral se convertía en manchas amarillas a pantalla completa.
-        write(Math.cos(a) * r, 8 + Math.sin(a) * r, -46 + portal.pts[i * 4 + 2] + approach * 40,
-          portalLife * twinkle * 1.1, config.flower, 0.55);
+        // La sensación de atravesar sale del recorrido en z, nunca del tamaño del punto: cada
+        // vez que lo he dejado crecer, la espiral se ha convertido en manchas amarillas a
+        // pantalla completa. Tamaño fijo y acercamiento largo.
+        // El acercamiento se queda corto a propósito: con 52 el portal pasaba por detrás de la
+        // cámara a los 5.4 s y dejaba la pantalla vacía. No se apagaba: se lo pasaba de largo.
+        write(Math.cos(a) * r, 8 + Math.sin(a) * r, -46 + portal.pts[i * 4 + 2] + approach * 30,
+          portalLife * twinkle * 1.1, config.flower, 0.5);
       }
     }
 
@@ -333,10 +343,13 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.shadowColor = 'rgba(0,0,0,.85)';
       ctx.shadowBlur = 18;
       ctx.fillStyle = `rgba(255,246,214,${titleIn})`;
-      ctx.fillText(name ? `Para ${name} 💛` : 'Para ti 💛', w / 2, h * 0.38, w * 0.86);
+      // En 9:16 el título va a 0.38; en pantallas casi cuadradas la luna baja respecto a esa
+      // fracción y el texto le caía encima, así que el bloque desciende con el aspecto.
+      const titleY = aspect > 0.75 ? 0.62 : 0.38;
+      ctx.fillText(name ? `Para ${name} 💛` : 'Para ti 💛', w / 2, h * titleY, w * 0.86);
       ctx.font = `500 ${Math.max(12, w * 0.037)}px system-ui, sans-serif`;
       ctx.fillStyle = `rgba(226,232,255,${titleIn * 0.85})`;
-      ctx.fillText(config.introMessage, w / 2, h * 0.45, w * 0.84);
+      ctx.fillText(config.introMessage, w / 2, h * (titleY + 0.07), w * 0.84);
       ctx.shadowBlur = 0;
     }
     const exploreIn = revealAt(t, INTRO.free, 0.8) * (1 - clamp01((t - INTRO.free - 4) / 1));

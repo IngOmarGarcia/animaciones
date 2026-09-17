@@ -112,7 +112,9 @@ export function createCamera() {
 
 // ---- Intro cinematográfica ----
 // Fases: oscuridad → portal → entrada → warp → revelado escalonado → título → exploración.
-export const INTRO = { dark: 1.4, portal: 4.2, enter: 5.6, warp: 6.4, moon: 7.2, islands: 8.2, falls: 9, flowers: 9.8, title: 10.6, free: 13.4 };
+// La luna entra antes y se solapa con el warp: con moon=7.2 quedaba un hueco casi negro
+// alrededor de 7.5 s, ya apagado el portal y sin nada todavía en pantalla.
+export const INTRO = { dark: 1.4, portal: 4.2, enter: 5.6, warp: 6.4, moon: 6.3, islands: 7.6, falls: 8.6, flowers: 9.4, title: 10.6, free: 13.4 };
 
 // Espiral dorada que gira frente a la cámara antes de atravesarla.
 export function buildPortal(budget) {
