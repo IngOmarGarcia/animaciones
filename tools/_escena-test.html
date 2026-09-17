@@ -31,6 +31,10 @@
     const tapAt = q.has('tap') ? +q.get('tap') : 0;
     const tapX = q.has('tapx') ? +q.get('tapx') : 0.5; // fracción del ancho
     const tapY = q.has('tapy') ? +q.get('tapy') : 0.5; // fracción del alto
+    // Arrastre simulado (fracciones de pantalla): permite mirar hacia abajo o a los lados
+    const dragX = q.has('dragx') ? +q.get('dragx') : 0;
+    const dragY = q.has('dragy') ? +q.get('dragy') : 0;
+    const dragAt = q.has('dragat') ? +q.get('dragat') : 1;
     const hold = q.get('hold') === '1';
     const card = {
       p: q.get('p') ?? 'Sofía', m: q.get('m') ?? '', d: q.get('d') ?? '',
@@ -75,6 +79,14 @@
         let frames = 0;
         for (let t = dt; t <= target + 1e-6; t += dt) {
           if (tapAt && Math.abs(t - tapAt) < dt / 2) stage.taps.push({ x: W * tapX, y: H * tapY });
+          // El arrastre se reparte en 12 cuadros a partir de dragat, como un dedo real
+          if ((dragX || dragY) && t >= dragAt && t < dragAt + 12 * dt) {
+            stage.holding = true;
+            stage.pointer.x = 0.5 + dragX * ((t - dragAt) / (12 * dt));
+            stage.pointer.y = 0.5 + dragY * ((t - dragAt) / (12 * dt));
+          } else if (!hold) {
+            stage.holding = false;
+          }
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
           ctx.globalCompositeOperation = 'source-over';

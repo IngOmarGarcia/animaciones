@@ -73,7 +73,8 @@ export function createCamera() {
 
   cam.look = (dyaw, dpitch) => {
     cam.targetYaw += dyaw;
-    cam.targetPitch = Math.max(-0.55, Math.min(0.55, cam.targetPitch + dpitch));
+    // Hacia abajo se permite más recorrido: ahí están el lago y el reflejo
+    cam.targetPitch = Math.max(-0.85, Math.min(0.5, cam.targetPitch + dpitch));
     cam.travel = null; // cualquier gesto cancela el viaje automático
   };
 
@@ -297,4 +298,69 @@ export function flowerPoint(flower, p, open, t, out) {
   out[1] = flower.y + lift + Math.cos(p.a + flower.tilt) * flower.scale * 0.06;
   out[2] = flower.z + Math.sin(p.a) * r + Math.cos(p.a) * p.side * spread;
   return out;
+}
+
+// ---- Agua, cascadas y pétalos ----
+// Bastante por debajo de la isla principal (su base está en -68) para que el lago quede al fondo
+// y las cascadas tengan recorrido visible antes de llegar.
+export const WATER_Y = -128;
+
+// Lago: no es un plano de puntos sueltos (a esta distancia se leía como polvo), sino una franja
+// de niebla luminosa. Pocos puntos, grandes y tenues, que se solapan en una superficie continua.
+export function buildWater(budget) {
+  const rnd = seeded(91);
+  const count = Math.max(400, Math.round(budget * 0.12));
+  const pts = new Float32Array(count * 4); // x, z, fase, escala
+  for (let i = 0; i < count; i++) {
+    // Más densidad hacia el fondo: es donde una superficie real se comprime en perspectiva
+    const depth = Math.pow(rnd(), 0.35);
+    pts[i * 4] = (rnd() * 2 - 1) * (110 + depth * 340);
+    // Empieza por detrás de la isla principal (z = -96): así el reflejo queda al fondo, no delante
+    pts[i * 4 + 1] = -150 - depth * 430;
+    pts[i * 4 + 2] = rnd() * 6.28;
+    pts[i * 4 + 3] = 0.6 + rnd() * 0.85;
+  }
+  return { count, pts };
+}
+
+// Cascadas: chorros de partículas que aceleran al caer y rompen en espuma abajo.
+export function buildWaterfalls(world, budget) {
+  const rnd = seeded(53);
+  const falls = [];
+  for (const island of [world.islands[0], world.islands[1], world.islands[3]]) {
+    if (!island) continue;
+    const streams = island.main ? 3 : 2;
+    for (let s = 0; s < streams; s++) {
+      const a = rnd() * Math.PI * 2;
+      const top = island.y - island.depth * 0.25;
+      const count = Math.max(50, Math.round(budget * (island.main ? 0.02 : 0.011)));
+      const parts = new Float32Array(count * 3); // avance, desvío lateral, velocidad
+      for (let i = 0; i < count; i++) {
+        parts[i * 3] = rnd();
+        parts[i * 3 + 1] = (rnd() - 0.5) * island.r * 0.18;
+        parts[i * 3 + 2] = 0.05 + rnd() * 0.05;
+      }
+      // Nacen del borde del disco, no de un punto suelto del centro
+      falls.push({
+        x: island.x + Math.cos(a) * island.r * 0.94,
+        z: island.z + Math.sin(a) * island.r * 0.94,
+        top, length: top - WATER_Y, count, parts, width: island.r * 0.2,
+      });
+    }
+  }
+  return falls;
+}
+
+// Pétalos sueltos: algunos pasan muy cerca de la cámara y refuerzan la profundidad.
+export function buildPetals(budget) {
+  const rnd = seeded(17);
+  const count = Math.max(50, Math.round(budget * 0.035));
+  const petals = [];
+  for (let i = 0; i < count; i++) {
+    petals.push({
+      x: (rnd() - 0.5) * 240, y: (rnd() - 0.5) * 130 - 12, z: (rnd() - 0.5) * 260 - 40,
+      drift: 6 + rnd() * 14, phase: rnd() * 6.28, size: 0.4 + rnd() * 0.55, spin: 0.6 + rnd() * 1.6,
+    });
+  }
+  return petals;
 }

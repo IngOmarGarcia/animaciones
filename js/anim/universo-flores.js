@@ -4,6 +4,7 @@ import {
 import {
   DANA_FOV, readConfig, clamp01, ease, mixn,
   createCamera, danaQuality, buildWorld, buildFlowers, flowerPoint,
+  WATER_Y, buildWater, buildWaterfalls, buildPetals,
 } from './dana-core.js';
 
 // UNIVERSO DE FLORES AMARILLAS (codename interno: Dana)
@@ -30,6 +31,10 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   let cardRef = stage?.card;
   const world = buildWorld(config, budget);
   let flowers = buildFlowers(world, config, budget);
+  const water = buildWater(budget);
+  const falls = buildWaterfalls(world, budget);
+  const petals = buildPetals(budget);
+  const fallPoints = falls.reduce((sum, f) => sum + f.count, 0);
   const memoryFlowers = () => flowers.filter((f) => f.memory >= 0);
   let aimed = null; // flor de recuerdo que el visitante tiene en el centro de la vista
   let shown = null; // { flower, at } mensaje visible
@@ -44,7 +49,8 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   // Buffers reutilizados: ninguna reserva por cuadro
   const total = world.stars.length + world.moon.length + world.halo.length
     + world.islands.reduce((sum, i) => sum + i.points.length, 0)
-    + flowers.reduce((sum, f) => sum + f.points.length, 0);
+    + flowers.reduce((sum, f) => sum + f.points.length, 0)
+    + water.count + fallPoints + petals.length;
   const pos = new Float32Array(total * 4);
   const col = new Float32Array(total * 4);
   const vp = new Float32Array(16);
@@ -116,6 +122,46 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       }
     }
 
+    // --- Agua: franja de niebla con la columna del reflejo de la luna ---
+    for (let i = 0; i < water.count; i++) {
+      const x = water.pts[i * 4];
+      const z = water.pts[i * 4 + 1];
+      const ph = water.pts[i * 4 + 2];
+      const sc = water.pts[i * 4 + 3];
+      const ripple = Math.sin(x * 0.05 + t * 0.7 + ph) * 0.6 + Math.sin(z * 0.03 - t * 0.5) * 0.7;
+      // La columna del reflejo se rompe en destellos, como la luna sobre el agua
+      const column = Math.exp(-Math.abs(x) / 18);
+      const glint = Math.pow(0.5 + 0.5 * Math.sin(z * 0.25 + t * 1.8 + ph * 2), 3);
+      // El borde cercano se desvanece: sin esto la franja cortaba la escena con una línea recta
+      const fade = clamp01((-90 - z) / 70);
+      write(x, WATER_Y + ripple, z, (0.04 + column * (0.16 + glint * 0.5)) * fade, column > 0.4 ? config.moon : config.water, (5 + column * 3.5) * sc);
+    }
+
+    // --- Cascadas: aceleran al caer y rompen en espuma ---
+    for (const f of falls) {
+      for (let i = 0; i < f.count; i++) {
+        const u = (f.parts[i * 3] + t * f.parts[i * 3 + 2]) % 1;
+        const fall = u * u;
+        const spread = f.width * (0.4 + u * 1.7);
+        const broke = clamp01((fall - 0.84) / 0.16);
+        write(
+          f.x + f.parts[i * 3 + 1] + Math.sin(t * 1.3 + i) * spread * 0.3,
+          f.top - fall * f.length,
+          f.z + Math.cos(t * 1.1 + i * 0.7) * spread * 0.25,
+          0.22 + (1 - fall) * 0.35 + broke * 0.55,
+          config.energy,
+          0.55 + broke * 1.1,
+        );
+      }
+    }
+
+    // --- Pétalos ---
+    for (const p of petals) {
+      const y = p.y + (((t * p.drift + p.phase * 20) % 130) - 65);
+      const flick = 0.55 + 0.45 * Math.sin(t * p.spin + p.phase);
+      write(p.x + Math.sin(t * 0.3 + p.phase) * 7, y, p.z + Math.cos(t * 0.22 + p.phase) * 9, 0.75 * flick, config.flower, p.size * 1.8);
+    }
+
     // --- Flores: las de recuerdo se abren al descubrirlas ---
     let bestAim = null;
     let bestAimScore = 0.13; // solo sugiere cuando la flor está realmente cerca de la vista
@@ -182,9 +228,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     if (found > 0 || t > 6) {
       // Abajo y con sombra: arriba quedaba encima de la luna y no se leía
       ctx.font = `600 ${Math.max(11, w * 0.031)}px system-ui, sans-serif`;
-      ctx.shadowColor = 'rgba(0,0,0,.85)';
-      ctx.shadowBlur = 10;
-      ctx.fillStyle = 'rgba(255,238,190,.7)';
+      ctx.shadowColor = 'rgba(0,0,0,.95)';
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(255,238,190,.82)';
       ctx.fillText(`${found} / ${memories.length} recuerdos`, w / 2, h * 0.945);
       ctx.shadowBlur = 0;
     }
@@ -194,7 +240,14 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.fillText('toca la flor', w / 2, h * 0.62);
     }
     if (stage) {
-      stage.debugInfo = { found, total: memories.length, msg: shown ? config.memories[shown.flower.memory] || '(vacío)' : null, age: shown ? +(t - shown.at).toFixed(2) : null };
+      const waterUV = projectVP(vp, 0, WATER_Y, -170);
+      stage.debugInfo = {
+        found, total: memories.length,
+        msg: shown ? config.memories[shown.flower.memory] || '(vacío)' : null,
+        pitch: +camera.pitch.toFixed(2), yaw: +camera.yaw.toFixed(2),
+        // v > 1 o < 0 significa que el lago cae fuera de la pantalla
+        aguaV: +waterUV[1].toFixed(2), aguaDist: Math.round(waterUV[2]),
+      };
     }
     if (shown) {
       const age = t - shown.at;
