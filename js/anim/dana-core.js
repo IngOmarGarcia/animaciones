@@ -110,6 +110,49 @@ export function createCamera() {
   return cam;
 }
 
+// ---- Giroscopio ----
+// Nunca pide permiso al cargar: solo cuando el visitante toca el botón de vista 360°.
+// Si no hay sensor o lo rechaza, la experiencia sigue completa con el arrastre.
+export function createGyro() {
+  const gyro = {
+    available: typeof window !== 'undefined' && typeof window.DeviceOrientationEvent !== 'undefined',
+    active: false, asked: false, denied: false,
+    yaw: 0, pitch: 0, base: null,
+  };
+
+  const onOrientation = (event) => {
+    if (event.alpha === null && event.beta === null && event.gamma === null) return;
+    const yaw = (event.alpha || 0) * Math.PI / 180;
+    const pitch = (event.beta || 0) * Math.PI / 180;
+    // Calibración: la primera lectura tras activar (o recentrar) marca el centro de la vista
+    if (!gyro.base) { gyro.base = { yaw, pitch }; gyro.yaw = 0; gyro.pitch = 0; return; }
+    let dy = yaw - gyro.base.yaw;
+    dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    gyro.yaw = dy;
+    gyro.pitch = Math.max(-0.7, Math.min(0.7, pitch - gyro.base.pitch));
+  };
+
+  gyro.enable = async () => {
+    if (!gyro.available || gyro.asked) return gyro.active;
+    gyro.asked = true;
+    try {
+      const request = window.DeviceOrientationEvent.requestPermission;
+      if (typeof request === 'function') {
+        const answer = await request();
+        if (answer !== 'granted') { gyro.denied = true; return false; }
+      }
+      window.addEventListener('deviceorientation', onOrientation);
+      gyro.active = true;
+    } catch (error) {
+      gyro.denied = true;
+    }
+    return gyro.active;
+  };
+
+  gyro.recenter = () => { gyro.base = null; };
+  return gyro;
+}
+
 // ---- Calidad ----
 export function danaQuality(w, h) {
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;

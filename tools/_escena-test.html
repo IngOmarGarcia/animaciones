@@ -42,6 +42,27 @@
       c1: q.get('c1') ?? '', c2: q.get('c2') ?? '',
     };
     const out = document.getElementById('out');
+    // ?gyro=1 finge un teléfono con sensor: en escritorio esa rama no se puede ejercitar de otro modo.
+    // ?gyro=deny finge que el visitante rechaza el permiso.
+    const gyroMode = q.get('gyro');
+    if (gyroMode) {
+      window.DeviceOrientationEvent = class DeviceOrientationEventFake extends Event {};
+      if (gyroMode === 'deny') window.DeviceOrientationEvent.requestPermission = async () => 'denied';
+      else if (gyroMode === 'ask') window.DeviceOrientationEvent.requestPermission = async () => 'granted';
+      // Los eventos se emiten desde el propio bucle de cuadros: con setInterval apenas llegaban,
+      // porque la simulación recorre segundos de tiempo simulado en milisegundos reales.
+      window.__emitirGiro = (t) => {
+        // Una mano real oscila alrededor de una posición: no gira sin parar en una dirección.
+        // Con alpha creciendo sin freno yo estaba ajustando la escena para compensar el simulador.
+        const alpha = 20 * Math.sin(t * 0.55);
+        const e = new Event('deviceorientation');
+        // Las propiedades de Event son de solo lectura: hay que definirlas explícitamente
+        Object.defineProperties(e, {
+          alpha: { value: alpha }, beta: { value: 8 + Math.sin(t * 0.7) * 12 }, gamma: { value: 0 },
+        });
+        window.dispatchEvent(e);
+      };
+    }
     const notes = [];
     // Un fallo de la escena deja el lienzo en blanco: sin esto solo se nota por el peso del PNG
     const fail = (message) => { document.title = `ERROR ${message}`; document.body.dataset.done = '1'; };
@@ -93,6 +114,12 @@
           ctx.clearRect(0, 0, W, H);
           frame(t, dt);
           frames++;
+          // Con sensor simulado hay que ceder el control: el permiso se resuelve en una promesa
+          // y este bucle, al ser síncrono, nunca dejaría que se cumpliera.
+          if (gyroMode) {
+            window.__emitirGiro(t);
+            if (frames % 10 === 0) await new Promise((r) => setTimeout(r, 0));
+          }
         }
         overlay.classList.toggle('show', anim.interactive ? stage.revealed : target >= anim.textDelay);
         // Estado interno que la escena quiera exponer para depurar (sin afectar a producción)

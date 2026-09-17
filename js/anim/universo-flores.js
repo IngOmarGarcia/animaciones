@@ -3,7 +3,7 @@ import {
 } from './util.js';
 import {
   DANA_FOV, readConfig, clamp01, ease, mixn,
-  createCamera, danaQuality, buildWorld, buildFlowers, flowerPoint,
+  createCamera, createGyro, danaQuality, buildWorld, buildFlowers, flowerPoint,
   WATER_Y, buildWater, buildWaterfalls, buildPetals,
 } from './dana-core.js';
 
@@ -36,6 +36,8 @@ export default function create(ctx, w, h, dpr = 1, stage) {
   const petals = buildPetals(budget);
   const fallPoints = falls.reduce((sum, f) => sum + f.count, 0);
   const memoryFlowers = () => flowers.filter((f) => f.memory >= 0);
+  const gyro = createGyro();
+  let gyroBase = null; // ángulos de la cámara al activar el sensor
   let aimed = null; // flor de recuerdo que el visitante tiene en el centro de la vista
   let shown = null; // { flower, at } mensaje visible
   const tmp = [0, 0, 0];
@@ -84,7 +86,17 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       if (tapped) tapPoint = [stage.taps[0].x / w, 1 - stage.taps[0].y / h];
       stage.taps.length = 0;
     }
-    camera.update(step, !dragging);
+    // Con el sensor activo la cámara sigue al teléfono, siempre a través del amortiguado
+    if (gyro.active) {
+      if (!gyroBase) gyroBase = { yaw: camera.targetYaw, pitch: camera.targetPitch };
+      // Sensibilidad reducida y recorrido corto: el mundo ocupa un cono estrecho, así que un
+      // mapeo 1:1 dejaba la luna y la isla fuera del encuadre en cuanto se giraba el teléfono.
+      const swing = Math.max(-0.55, Math.min(0.55, gyro.yaw * 0.42));
+      camera.targetYaw = gyroBase.yaw - swing;
+      const tilt = Math.max(-0.3, Math.min(0.3, gyro.pitch * 0.5));
+      camera.targetPitch = Math.max(-0.85, Math.min(0.5, gyroBase.pitch + tilt));
+    }
+    camera.update(step, !dragging && !gyro.active);
     viewProjection(vp, camera.eye, camera.target, aspect, [0, 1, 0], DANA_FOV, 0.5, 2600);
 
     let o = 0;
@@ -192,6 +204,17 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       }
     }
     aimed = bestAim;
+    // Se ofrece tras los primeros segundos y desaparece al activarlo (o si se rechazó hace rato).
+    // Debe declararse antes del toque: en un móvil real, usarlo después lanzaba ReferenceError.
+    const gyroButton = gyro.available && !gyro.active && t > 4 && !(gyro.denied && t > 12);
+    // El botón de vista 360° se atiende antes que las flores
+    if (tapped && tapPoint && gyroButton && !gyro.active && !gyro.denied) {
+      const bx = Math.abs(tapPoint[0] - 0.5) < 0.3;
+      const by = Math.abs((1 - tapPoint[1]) - 0.88) < 0.055;
+      // Recentrar al activar: si no, la primera lectura del teléfono ya viene desviada y la
+      // vista arranca descentrada, sin forma de recuperarla.
+      if (bx && by) { gyro.recenter(); gyro.enable(); gyroBase = null; tapped = false; }
+    }
     // El toque descubre la flor más cercana al dedo: en el celular se toca la flor, no se apunta
     if (tapped && bestTap) {
       bestTap.found = true;
@@ -234,6 +257,27 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.fillText(`${found} / ${memories.length} recuerdos`, w / 2, h * 0.945);
       ctx.shadowBlur = 0;
     }
+    // Botón de vista 360°: solo en dispositivos con sensor y antes de activarlo
+    if (gyroButton) {
+      const label = gyro.denied ? 'Arrastra para mirar alrededor' : '✦ Activar vista 360° ✦';
+      const fs = Math.max(12, w * 0.036);
+      ctx.font = `600 ${fs}px system-ui, sans-serif`;
+      const pad = fs * 0.9;
+      const tw = ctx.measureText(label).width;
+      const bx = w / 2 - tw / 2 - pad;
+      const by = h * 0.88 - fs * 0.95;
+      ctx.fillStyle = 'rgba(8,10,26,.62)';
+      ctx.strokeStyle = 'rgba(190,230,255,.45)';
+      ctx.lineWidth = 1;
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(bx, by, tw + pad * 2, fs * 1.9, fs);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(226,244,255,.92)';
+      ctx.fillText(label, w / 2, h * 0.88);
+    }
     if (aimed && !aimed.found) {
       ctx.font = `600 ${Math.max(11, w * 0.03)}px system-ui, sans-serif`;
       ctx.fillStyle = `rgba(255,240,200,${0.35 + 0.25 * Math.sin(t * 3)})`;
@@ -245,6 +289,8 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         found, total: memories.length,
         msg: shown ? config.memories[shown.flower.memory] || '(vacío)' : null,
         pitch: +camera.pitch.toFixed(2), yaw: +camera.yaw.toFixed(2),
+        gyro: `${gyro.available ? 'hay' : 'no'}/${gyro.asked ? 'pedido' : '-'}/${gyro.active ? 'activo' : '-'}/${gyro.denied ? 'rechazado' : '-'}`,
+        gyroYaw: +gyro.yaw.toFixed(2),
         // v > 1 o < 0 significa que el lago cae fuera de la pantalla
         aguaV: +waterUV[1].toFixed(2), aguaDist: Math.round(waterUV[2]),
       };
