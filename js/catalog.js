@@ -27,7 +27,28 @@ export const ANIMATIONS = [
   { id: 'vitral-de-flores', file: 'vitral-flores', category: 'flores', title: 'Vitral de flores', description: 'Fragmentos de cristal se ensamblan en un vitral y proyectan su nombre con luz.', defaultMessage: 'Eres mi luz favorita', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
   { id: 'adn-de-flores', file: 'adn-flores', category: 'flores', title: 'ADN de flores', description: 'Dos hélices de luz florecen y se unen en un gran girasol.', defaultMessage: 'Algo en mí siempre vuelve a ti', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
   {
+    // Codename interno "Dana". No publicada: `hidden` la mantiene fuera de portada, galerías,
+    // categorías, fichas SEO y sitemap. Se abre en desarrollo por enlace directo:
+    // v.html?a=universo-de-flores&autoplay
+    id: 'universo-de-flores',
+    codename: 'Dana',
+    file: 'universo-flores',
+    category: 'flores',
+    hidden: true,
+    letterFields: true,
+    title: 'Universo de flores amarillas',
+    description: 'Un pequeño universo 360° con luna gigante, islas flotantes y flores que guardan recuerdos.',
+    defaultMessage: 'Porque las flores normales estaban demasiado fáciles.',
+    textPosition: 'below',
+    nameInScene: true,
+    ownMessage: true,
+    interactive: true,
+    textDelay: 12,
+    previewLoop: 30,
+  },
+  {
     id: 'galaxia-de-flores',
+    letterFields: true,
     file: 'galaxia-flores',
     category: 'flores',
     title: 'Galaxia de flores',

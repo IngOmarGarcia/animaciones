@@ -573,7 +573,9 @@ export function particleQuality(w, h, amount = 1) {
 }
 
 // Matriz vista·proyección (column-major, como WebGL). `up` permite tomas cenitales.
-export function viewProjection(out, eye, target, aspect, up = [0, 1, 0], tanHalf = PARTICLE_TAN) {
+// `near`/`far` solo hacen falta en escenas con mundos grandes (una luna a 1000 unidades se
+// recortaría con el plano lejano por defecto); el resto de animaciones no cambia.
+export function viewProjection(out, eye, target, aspect, up = [0, 1, 0], tanHalf = PARTICLE_TAN, near = 0.05, far = 200) {
   let fx = eye[0] - target[0];
   let fy = eye[1] - target[1];
   let fz = eye[2] - target[2];
@@ -591,8 +593,6 @@ export function viewProjection(out, eye, target, aspect, up = [0, 1, 0], tanHalf
   const ty = -(ux * eye[0] + uy * eye[1] + uz * eye[2]);
   const tz = -(fx * eye[0] + fy * eye[1] + fz * eye[2]);
   const f = 1 / tanHalf;
-  const near = 0.05;
-  const far = 200;
   const nf = 1 / (near - far);
   const a = f / aspect;
   const c = (far + near) * nf;

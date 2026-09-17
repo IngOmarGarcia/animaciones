@@ -1,0 +1,300 @@
+// Núcleo del universo de flores amarillas (codename interno: Dana).
+// Las partículas SON el mundo: luna, islas, cascadas, agua y flores se muestrean como puntos
+// y se dibujan con el renderizador compartido de util.js (un solo drawArrays por cuadro).
+// La personalización vive en readConfig(): el motor nunca lee la tarjeta directamente.
+
+export const DANA_FOV = Math.tan((31 * Math.PI) / 180); // vertical ~62°: un mundo 360° pide más campo que un retrato
+
+export const DANA_DEFAULTS = {
+  recipientName: '',
+  senderName: '',
+  introMessage: 'Porque las flores normales estaban demasiado fáciles.',
+  letterTitle: 'Para mi persona favorita',
+  letterText: 'Gracias por cada día, por tu risa y por estar incluso cuando todo se complica. Quería darte algo que no se marchitara.',
+  memories: ['Mi lugar favorito', 'Gracias por existir', 'Mi persona favorita', 'Nuestro primer viaje', 'Tu risa de siempre', 'Siempre contigo', 'Te amo'],
+  flower: [1.0, 0.78, 0.26],
+  energy: [0.25, 0.85, 1.0],
+  water: [0.1, 0.3, 0.75],
+  moon: [1.0, 0.93, 0.8],
+};
+
+const hex = (value, fallback) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(value || ''));
+  if (!m) return fallback;
+  const n = parseInt(m[1], 16);
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+};
+
+// Tarjeta del enlace → configuración. Fuera del motor gráfico, como pide la skill.
+export function readConfig(card) {
+  const memories = String(card?.mem || '').split('|').map((x) => x.trim().slice(0, 40)).filter(Boolean);
+  return {
+    ...DANA_DEFAULTS,
+    recipientName: (card?.p || '').trim().slice(0, 24),
+    senderName: (card?.d || '').trim().slice(0, 24),
+    introMessage: (card?.m || '').trim() || DANA_DEFAULTS.introMessage,
+    letterTitle: (card?.lt || '').trim() || DANA_DEFAULTS.letterTitle,
+    letterText: (card?.l || '').trim() || DANA_DEFAULTS.letterText,
+    memories: memories.length ? memories : DANA_DEFAULTS.memories,
+    flower: hex(card?.c1, DANA_DEFAULTS.flower),
+    energy: hex(card?.c2, DANA_DEFAULTS.energy),
+  };
+}
+
+// ---- Utilidades ----
+export const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+export const ease = (x) => { const c = clamp01(x); return c * c * (3 - 2 * c); };
+export const mixn = (a, b, t) => a + (b - a) * t;
+
+export function seeded(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Ruido barato de sumas de senos: suficiente para relieve de islas y ondas de agua.
+export const wobble = (x, y, z) => Math.sin(x * 1.7 + y * 2.3) * 0.5 + Math.sin(y * 3.1 - z * 1.9) * 0.3 + Math.sin(z * 2.7 + x * 1.3) * 0.2;
+
+// ---- Cámara 360° ----
+// La cámara vive dentro del mundo: solo gira (yaw/pitch) y puede viajar a un POI.
+export function createCamera() {
+  const cam = {
+    yaw: 0, pitch: 0.02,
+    targetYaw: 0, targetPitch: 0.02,
+    eye: [0, 0, 0], target: [0, 0, -1],
+    travel: null,
+    drift: 0,
+  };
+
+  cam.look = (dyaw, dpitch) => {
+    cam.targetYaw += dyaw;
+    cam.targetPitch = Math.max(-0.55, Math.min(0.55, cam.targetPitch + dpitch));
+    cam.travel = null; // cualquier gesto cancela el viaje automático
+  };
+
+  // Viaje cinematográfico a un punto de interés: nunca teletransporta
+  cam.travelTo = (yaw, pitch, seconds = 1.8) => {
+    let delta = yaw - cam.targetYaw;
+    delta = Math.atan2(Math.sin(delta), Math.cos(delta)); // por el camino corto
+    cam.travel = { fromYaw: cam.targetYaw, toYaw: cam.targetYaw + delta, fromPitch: cam.targetPitch, toPitch: pitch, t: 0, seconds };
+  };
+
+  cam.update = (dt, autoDrift) => {
+    if (cam.travel) {
+      cam.travel.t += dt;
+      const k = ease(cam.travel.t / cam.travel.seconds);
+      cam.targetYaw = mixn(cam.travel.fromYaw, cam.travel.toYaw, k);
+      cam.targetPitch = mixn(cam.travel.fromPitch, cam.travel.toPitch, k);
+      if (cam.travel.t >= cam.travel.seconds) cam.travel = null;
+    } else if (autoDrift) {
+      cam.drift += dt;
+      cam.targetYaw += Math.sin(cam.drift * 0.08) * dt * 0.02;
+    }
+    // Amortiguado: el sensor y el dedo nunca mueven la cámara de golpe
+    const k = 1 - Math.exp(-dt * 4.5);
+    cam.yaw += (cam.targetYaw - cam.yaw) * k;
+    cam.pitch += (cam.targetPitch - cam.pitch) * k;
+    const cp = Math.cos(cam.pitch);
+    cam.target[0] = cam.eye[0] + Math.sin(cam.yaw) * cp;
+    cam.target[1] = cam.eye[1] + Math.sin(cam.pitch);
+    cam.target[2] = cam.eye[2] - Math.cos(cam.yaw) * cp;
+    return cam;
+  };
+
+  return cam;
+}
+
+// ---- Calidad ----
+export function danaQuality(w, h) {
+  const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const cores = navigator.hardwareConcurrency || 4;
+  const memory = navigator.deviceMemory || 4;
+  let tier = 'high';
+  if (coarse) tier = cores >= 8 && memory >= 4 ? 'medium' : 'low';
+  else if (cores < 8) tier = 'medium';
+  const budget = { high: 34000, medium: 18000, low: 9000 }[tier];
+  const area = Math.min(1, Math.sqrt((w * h) / (390 * 844)));
+  return { tier, budget: Math.max(6000, Math.round(budget * area)), scale: coarse ? 0.8 : 1 };
+}
+
+// ---- Mundo ----
+// Cada sistema devuelve puntos con posición fija en el mundo; el brillo se calcula por cuadro.
+const MOON = { x: 0, y: 235, z: -1250, r: 300 };
+
+export function buildWorld(config, budget) {
+  const rnd = seeded(7);
+  const share = (f) => Math.max(200, Math.round(budget * f));
+
+  // Estrellas en tres capas: el parallax real lo da la distancia, no un truco 2D
+  const stars = [];
+  for (const [count, near, far, size] of [[share(0.1), 900, 1600, 0.9], [share(0.07), 420, 900, 1.3], [share(0.04), 120, 420, 2.0]]) {
+    for (let i = 0; i < count; i++) {
+      const a = rnd() * Math.PI * 2;
+      const b = Math.acos(2 * rnd() - 1);
+      const d = mixn(near, far, rnd());
+      stars.push({
+        x: Math.sin(b) * Math.cos(a) * d, y: Math.cos(b) * d * 0.7, z: Math.sin(b) * Math.sin(a) * d,
+        size: size * (0.7 + rnd() * 0.8), phase: rnd() * 6.28, warm: rnd() < 0.18,
+      });
+    }
+  }
+
+  // Luna: superficie muestreada (no un círculo) con cráteres y halo
+  const moon = [];
+  const moonCount = share(0.16);
+  for (let i = 0; i < moonCount; i++) {
+    const u = rnd() * Math.PI * 2;
+    const v = Math.acos(2 * rnd() - 1);
+    const nx = Math.sin(v) * Math.cos(u);
+    const ny = Math.cos(v);
+    const nz = Math.sin(v) * Math.sin(u);
+    if (nz < -0.25) continue; // solo la cara visible: no se gastan puntos en la nuca
+    const crater = wobble(nx * 5, ny * 5, nz * 5);
+    const mare = wobble(nx * 1.7, ny * 1.7, nz * 1.7);
+    moon.push({
+      x: MOON.x + nx * MOON.r, y: MOON.y + ny * MOON.r, z: MOON.z + nz * MOON.r,
+      nx, ny, nz,
+      shade: clamp01(0.35 + crater * 0.3 + mare * 0.45),
+      size: 2.6 + rnd() * 1.6,
+    });
+  }
+  const halo = [];
+  const haloCount = share(0.04);
+  for (let i = 0; i < haloCount; i++) {
+    const a = rnd() * Math.PI * 2;
+    const d = MOON.r * (1.02 + Math.pow(rnd(), 2.2) * 0.5);
+    halo.push({ x: MOON.x + Math.cos(a) * d, y: MOON.y + Math.sin(a) * d * 0.96, z: MOON.z + 12, a: Math.pow(1 - (d / MOON.r - 1) / 0.5, 2), size: 3 + rnd() * 5 });
+  }
+
+  // Islas flotantes: disco superior con relieve y cuerpo de roca que se afila hacia abajo
+  const islandSpecs = [
+    // Varias caen dentro del corredor -z para que el primer vistazo ya tenga profundidad
+    { x: 0, y: -34, z: -96, r: 26, depth: 34, main: true },
+    { x: -52, y: -14, z: -138, r: 19, depth: 26 },
+    { x: 62, y: 10, z: -164, r: 17, depth: 22 },
+    { x: -104, y: -30, z: -46, r: 20, depth: 26 },
+    { x: 106, y: -44, z: 28, r: 18, depth: 24 },
+    { x: -40, y: 30, z: 150, r: 12, depth: 16 },
+    { x: 70, y: -54, z: 190, r: 18, depth: 24 },
+  ];
+  const islands = [];
+  for (const spec of islandSpecs) {
+    const distance = Math.hypot(spec.x, spec.y, spec.z);
+    const detail = spec.main ? 1 : Math.max(0.28, 1 - distance / 320); // las lejanas gastan menos puntos
+    const count = Math.round(share(spec.main ? 0.16 : 0.05) * detail);
+    const points = [];
+    for (let i = 0; i < count; i++) {
+      const a = rnd() * Math.PI * 2;
+      const top = rnd() < 0.42;
+      let px; let py; let pz;
+      if (top) {
+        const rr = spec.r * Math.sqrt(rnd());
+        px = Math.cos(a) * rr; pz = Math.sin(a) * rr;
+        py = wobble(px * 0.12, 0, pz * 0.12) * spec.r * 0.06;
+      } else {
+        const k = Math.pow(rnd(), 0.65);
+        const rr = spec.r * (1 - k) * (0.85 + wobble(a * 2, k * 4, 0) * 0.18);
+        px = Math.cos(a) * rr; pz = Math.sin(a) * rr;
+        py = -k * spec.depth;
+      }
+      points.push({
+        x: spec.x + px, y: spec.y + py, z: spec.z + pz,
+        top, edge: Math.hypot(px, pz) / spec.r,
+        size: spec.main ? 0.5 + rnd() * 0.45 : 0.42 + rnd() * 0.4,
+        phase: rnd() * 6.28,
+      });
+    }
+    islands.push({ ...spec, points, distance });
+  }
+
+  return { stars, moon, halo, islands, MOON, config };
+}
+
+// Dirección de la luz de la luna en un punto: sirve para el rim light de islas y flores
+export function moonLight(x, y, z) {
+  const dx = MOON.x - x;
+  const dy = MOON.y - y;
+  const dz = MOON.z - z;
+  const d = Math.hypot(dx, dy, dz) || 1;
+  return [dx / d, dy / d, dz / d];
+}
+
+// ---- Flores ----
+// Cada flor se muestrea como pétalos radiales + corazón. Algunas guardan un recuerdo y solo
+// revelan su mensaje cuando el visitante las mira y las toca: los mensajes se descubren.
+export function buildFlowers(world, config, budget) {
+  const rnd = seeded(31);
+  const perFlower = Math.max(26, Math.round(budget * 0.0022));
+  const flowers = [];
+
+  const make = (x, y, z, scale, memory) => {
+    const petals = 8 + Math.floor(rnd() * 5);
+    const petalLen = scale;
+    const tilt = (rnd() - 0.5) * 0.5;
+    const points = [];
+    const steps = Math.max(4, Math.round(perFlower / petals));
+    for (let p = 0; p < petals; p++) {
+      const a = (p / petals) * Math.PI * 2 + rnd() * 0.15;
+      for (let i = 0; i < steps; i++) {
+        const k = (i + 0.5) / steps;
+        const wide = Math.sin(k * Math.PI) * petalLen * 0.3;
+        const side = (i % 2 ? 1 : -1) * wide * (0.35 + rnd() * 0.65);
+        points.push({
+          a, k, side,
+          r: petalLen * (0.22 + k * 0.78),
+          lift: petalLen * (0.42 - k * 0.3),
+          core: false,
+          size: petalLen * (0.2 + rnd() * 0.12),
+        });
+      }
+    }
+    for (let i = 0; i < Math.max(4, Math.round(steps * 1.2)); i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = petalLen * 0.22 * Math.sqrt(rnd());
+      points.push({ a, k: 0, side: 0, r, lift: petalLen * 0.12, core: true, size: petalLen * 0.22 });
+    }
+    flowers.push({
+      x, y, z, scale, tilt, points,
+      memory, // índice del recuerdo, o -1 si es flor de ambiente
+      open: memory >= 0 ? 0.35 : 0.8, // las de recuerdo empiezan cerradas: se abren al descubrirlas
+      found: false, phase: rnd() * 6.28,
+    });
+  };
+
+  // Flores de recuerdo: repartidas por la isla principal y las dos más cercanas
+  const hosts = [world.islands[0], world.islands[0], world.islands[0], world.islands[0], world.islands[1], world.islands[2], world.islands[3]];
+  const count = Math.min(config.memories.length, hosts.length);
+  for (let i = 0; i < count; i++) {
+    const island = hosts[i] || world.islands[0];
+    const a = (i / count) * Math.PI * 2 + 0.6;
+    const rr = island.r * (0.35 + rnd() * 0.45);
+    make(island.x + Math.cos(a) * rr, island.y + island.r * 0.05 + 1.4, island.z + Math.sin(a) * rr, island.main ? 2.6 : 2.1, i);
+  }
+  // Flores de ambiente: dan densidad sin competir con los recuerdos
+  for (const island of world.islands) {
+    const ambient = island.main ? 18 : 6;
+    for (let i = 0; i < ambient; i++) {
+      const a = rnd() * Math.PI * 2;
+      const rr = island.r * Math.sqrt(rnd()) * 0.92;
+      make(island.x + Math.cos(a) * rr, island.y + island.r * 0.05 + 0.9, island.z + Math.sin(a) * rr, island.main ? 1.5 : 1.1, -1);
+    }
+  }
+  return flowers;
+}
+
+// Posición de un punto de la flor en el mundo. `open` 0 = pétalos cerrados hacia arriba, 1 = abiertos.
+export function flowerPoint(flower, p, open, t, out) {
+  const spread = 0.25 + open * 0.75;
+  const r = p.core ? p.r : p.r * spread;
+  const lift = p.core ? p.lift : p.lift * (1.6 - open * 1.2);
+  const sway = Math.sin(t * 0.9 + flower.phase + p.k * 2) * flower.scale * 0.04;
+  out[0] = flower.x + Math.cos(p.a) * r - Math.sin(p.a) * p.side * spread + sway;
+  out[1] = flower.y + lift + Math.cos(p.a + flower.tilt) * flower.scale * 0.06;
+  out[2] = flower.z + Math.sin(p.a) * r + Math.cos(p.a) * p.side * spread;
+  return out;
+}

@@ -44,7 +44,8 @@ const readCard = () => cleanCard({
     c1: fields.c1.value, c2: fields.c2.value,
   } : {}),
 });
-if (anim.id === 'galaxia-de-flores') $('galaxyFields').hidden = false;
+// Campos extra (carta, recuerdos y colores) para las escenas que los usan
+if (anim.letterFields) $('galaxyFields').hidden = false;
 
 let shareText = '';
 
