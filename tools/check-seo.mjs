@@ -11,7 +11,7 @@ const index = await read('animaciones.html');
 const home = await read('index.html');
 
 const categories = CATEGORIES.filter((c) => c.id !== 'todas' && VISIBLE_ANIMATIONS.some((a) => a.category === c.id));
-const pages = ['index.html', 'animaciones.html', 'crear.html', 'codigo.html', 'encargos.html', 'acerca.html', 'privacidad.html'];
+const pages = ['index.html', 'animaciones.html', 'crear.html', 'codigo.html', 'sugerencias.html', 'acerca.html', 'privacidad.html'];
 for (const c of categories) pages.push(`categorias/${c.id}.html`);
 for (const a of VISIBLE_ANIMATIONS) {
   const path = `animaciones/${a.id}.html`;

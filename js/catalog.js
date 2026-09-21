@@ -16,6 +16,24 @@ export const CATEGORIES = [
 // textPosition: 'top' | 'center'. textDelay: segundos antes de mostrar el mensaje.
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
+  {
+    id: 'jardin-de-lunas',
+    codename: 'Dana2',
+    file: 'jardin-de-lunas',
+    category: 'flores',
+    hidden: false,
+    featured: true,
+    letterFields: true,
+    title: 'Jardín de lunas doradas',
+    description: 'Explora islas suspendidas, cascadas de luz y flores que guardan recuerdos bajo una luna inmensa.',
+    defaultMessage: 'Porque las flores normales estaban demasiado fáciles.',
+    textPosition: 'below',
+    nameInScene: true,
+    ownMessage: true,
+    interactive: true,
+    textDelay: 12,
+    previewLoop: 32,
+  },
   { id: 'corazon-de-girasoles', file: 'corazon-girasoles', category: 'flores', title: 'Corazón de girasoles', description: 'Girasoles llegan desde la profundidad, forman un corazón y se convierten en su nombre al tocarlos.', defaultMessage: 'Cada flor encuentra su camino hacia ti', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
   { id: 'flor-holografica', file: 'flor-holografica', category: 'flores', title: 'Flor holográfica', description: 'Un escáner de luz construye un girasol holográfico que se desmaterializa para escribir su nombre.', defaultMessage: 'Te hice una flor de luz', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },
   { id: 'cascada-de-petalos-invertida', file: 'cascada-petalos-invertida', category: 'flores', title: 'Cascada de pétalos invertida', description: 'Pétalos caen sobre un espejo; un toque detiene el tiempo y los hace ascender.', defaultMessage: 'Contigo hasta el tiempo cambia de rumbo', textPosition: 'top', nameInScene: true, interactive: true, textDelay: 10, previewLoop: 18 },

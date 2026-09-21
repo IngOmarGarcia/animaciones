@@ -30,7 +30,7 @@
     <a class="brand" href="./"><img src="img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a>
     <nav>
       <a href="./#galeria">Animaciones</a>
-      <a href="encargos.html">Encargos</a>
+      <a class="header-suggestions" href="sugerencias.html">Sugerencias</a>
       <a href="acerca.html">Acerca</a>
     </nav>
   </header>
@@ -58,7 +58,7 @@
 
         <form class="form" id="form" autocomplete="off">
           <label>¿Para quién es?
-            <input name="p" maxlength="40" placeholder="Ej. María">
+            <input name="p" maxlength="40" placeholder="Ej. Sofía">
           </label>
           <label>Tu mensaje
             <textarea name="m" maxlength="140" rows="3"></textarea>
@@ -75,11 +75,20 @@
               <textarea name="l" maxlength="650" rows="5" placeholder="Escribe aquí lo que quieres decirle..."></textarea>
             </label>
             <label>Frases de las flores <span class="muted">(separa con |)</span>
-              <textarea name="mem" maxlength="240" rows="3" placeholder="Te amo | Mi vida | Siempre contigo"></textarea>
+              <textarea name="mem" maxlength="500" rows="3" placeholder="Te amo | Mi vida | Siempre contigo"></textarea>
             </label>
             <div class="galaxy-colors">
               <label>Color principal <input name="c1" type="color" value="#ffd75a"></label>
               <label>Color secundario <input name="c2" type="color" value="#ff9d3c"></label>
+            </div>
+            <div id="dana2Fields" hidden>
+              <h2>Textos de cada isla</h2>
+              <p class="muted">Puedes cambiar cada título y mensaje. Los textos de Dana ya están listos como ejemplo.</p>
+              <div id="dana2Memories"></div>
+              <label>Imagen del portal
+                <input id="dana2Photo" type="file" accept="image/jpeg,image/png,image/webp">
+              </label>
+              <p id="dana2PhotoStatus" class="muted">Añade una imagen para el portal. La plantilla no trae foto.</p>
             </div>
           </div>
           <button class="btn btn-primary btn-block" type="submit">Crear enlace 💌</button>

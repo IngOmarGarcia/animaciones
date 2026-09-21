@@ -7,8 +7,8 @@
 export function createPlayer(canvas, create, { loop = 0, card = null, preview = false } = {}) {
   const ctx = canvas.getContext('2d');
   const stage = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, preview, revealed: false, card };
+  if (!preview) canvas.style.touchAction = 'none';
   canvas.addEventListener('pointermove', (event) => {
-    if (event.pointerType === 'touch') return;
     const rect = canvas.getBoundingClientRect();
     stage.pointer.x = (event.clientX - rect.left) / rect.width;
     stage.pointer.y = (event.clientY - rect.top) / rect.height;
@@ -16,7 +16,14 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   canvas.addEventListener('pointerdown', (event) => {
     stage.holding = true;
     const rect = canvas.getBoundingClientRect();
-    stage.taps.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    stage.pointer.x = x / rect.width;
+    stage.pointer.y = y / rect.height;
+    if (event.pointerType === 'touch') canvas.setPointerCapture(event.pointerId);
+    if (!stage.onPointerDown?.({ x, y, nx: stage.pointer.x, ny: stage.pointer.y, event })) {
+      stage.taps.push({ x, y });
+    }
   });
   const release = () => { stage.holding = false; };
   canvas.addEventListener('pointerup', release);
@@ -47,6 +54,9 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     stage.taps.length = 0;
     stage.revealed = false;
+    stage.onDispose?.();
+    stage.onDispose = null;
+    stage.onPointerDown = null;
     frame = create(ctx, w, h, dpr, stage);
     return true;
   }
@@ -99,6 +109,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
 
   function destroy() {
     pause();
+    stage.onDispose?.();
     resizeObserver.disconnect();
   }
 

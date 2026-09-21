@@ -14,6 +14,13 @@ const overlay = $('overlay');
 const gate = $('gate');
 const replay = $('replay');
 const hint = $('hint');
+const isDana2 = anim.codename === 'Dana2';
+if (isDana2) {
+  // Dana2 dibuja sus propios textos y su carta dentro del canvas.
+  overlay.style.display = 'none';
+  hint.textContent = 'Salir';
+  hint.href = './';
+}
 
 fillOverlay(overlay, card, anim);
 document.title = card.p ? `Una sorpresa para ${card.p} 💛` : 'Tienes una sorpresa 💛';
@@ -26,6 +33,11 @@ $('codeLink').href = `codigo.html?a=${encodeURIComponent(anim.id)}`;
 const modulePromise = anim.load();
 let player = null;
 let watcher = 0;
+document.addEventListener('visibilitychange', () => {
+  if (!player) return;
+  if (document.hidden) player.pause();
+  else player.play();
+});
 
 async function start() {
   let mod;
@@ -38,6 +50,8 @@ async function start() {
   }
   clearInterval(watcher);
   overlay.classList.remove('show');
+  replay.hidden = true;
+  hint.hidden = true;
   if (player) {
     player.restart();
   } else {
@@ -50,7 +64,7 @@ async function start() {
   watcher = setInterval(() => {
     const ready = anim.interactive ? player.stage.revealed : player.time >= anim.textDelay;
     if (ready && shownAt === null) {
-      overlay.classList.add('show');
+      if (!isDana2) overlay.classList.add('show');
       shownAt = player.time;
     }
     if (shownAt !== null && player.time >= shownAt + 2.5) {
@@ -67,7 +81,7 @@ $('openBtn').addEventListener('click', () => {
 }, { once: true });
 replay.addEventListener('click', start);
 
-if (params.has('autoplay')) {
+if (params.has('autoplay') || (anim.codename === 'Dana2' && params.has('s'))) {
   gate.classList.add('hide');
   start();
 }

@@ -74,7 +74,7 @@ const layout = ({ title, description, url, body, crumbs, type = 'website', anima
 ${schema.map((s) => `  <script type="application/ld+json">${json({ '@context': 'https://schema.org', ...s })}</script>`).join('\n')}
 </head>
 <body${animationId ? ` data-animation="${esc(animationId)}"` : ''}>
-  <header class="site-header seo-header"><a class="brand" href="/"><img src="/img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a><nav><a href="/animaciones.html">Animaciones</a><a href="/encargos.html">Encargos</a><a href="/acerca.html">Acerca</a></nav></header>
+  <header class="site-header seo-header"><a class="brand" href="/"><img src="/img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a><nav><a href="/animaciones.html">Animaciones</a><a href="/acerca.html">Acerca</a><a class="header-suggestions" href="/sugerencias.html">Sugerencias</a></nav></header>
   <main class="container prose seo-page">
     ${crumb(crumbs)}
     ${body}
@@ -135,7 +135,7 @@ for (const animation of VISIBLE_ANIMATIONS) {
   await writeFile(`animaciones/${animation.id}.html`, layout({ title: `${animation.title} para dedicar`, description: metaDescription, url: animationUrl(animation.id), body, animationId: animation.id, schema: [creative], crumbs: [{ name: 'Inicio', url: '/' }, { name: 'Animaciones', url: '/animaciones.html' }, { name: category, url: categoryUrl(animation.category) }, { name: animation.title, url: animationUrl(animation.id) }] }));
 }
 
-const urls = ['/', '/animaciones.html', ...categories.map((c) => categoryUrl(c.id)), ...VISIBLE_ANIMATIONS.map((a) => animationUrl(a.id)), '/crear.html', '/codigo.html', '/encargos.html', '/acerca.html', '/privacidad.html'];
+const urls = ['/', '/animaciones.html', ...categories.map((c) => categoryUrl(c.id)), ...VISIBLE_ANIMATIONS.map((a) => animationUrl(a.id)), '/crear.html', '/codigo.html', '/sugerencias.html', '/acerca.html', '/privacidad.html'];
 // lastmod real de cada archivo: ayuda a Google a volver solo donde algo cambió
 const fileOf = (url) => (url === '/' ? 'index.html' : url.slice(1));
 const entries = await Promise.all(urls.map(async (url) => {

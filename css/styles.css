@@ -50,9 +50,15 @@ img { max-width: 100%; }
     color: transparent;
   }
 }
-.site-header nav { display: flex; gap: 16px; }
-.site-header nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
-.site-header nav a:hover { color: var(--text); }
+.site-header nav { display: flex; gap: 10px; }
+.site-header nav a {
+  display: inline-flex; align-items: center; min-height: 36px;
+  padding: 6px 12px; border: 1px solid rgba(255, 195, 0, .42);
+  border-radius: 999px; color: #ffe08a; background: rgba(255, 195, 0, .1);
+  text-decoration: none; font-size: 0.95rem; font-weight: 600;
+}
+.site-header nav a:hover { background: rgba(255, 195, 0, .2); color: #fff; }
+.suggestions-page { max-width: 720px; padding-block: 40px 72px; }
 .header-support-button {
   min-height: 36px; padding: 5px 12px;
   border: 1px solid rgba(255, 195, 0, .35); border-radius: 999px;
@@ -62,6 +68,8 @@ img { max-width: 100%; }
 .header-support-button:hover { background: rgba(255, 195, 0, .16); }
 .header-menu-toggle, .mobile-nav { display: none; }
 @media (max-width: 699px) {
+  .site-header:not(.seo-header) { flex-wrap: wrap; }
+  .site-header:not(.seo-header) > nav { width: 100%; justify-content: space-between; align-items: center; }
   .site-header .header-desktop-nav { display: none; }
   .header-menu-toggle {
     display: grid; place-items: center; width: 44px; height: 44px; flex: none;
@@ -283,6 +291,9 @@ details p { margin: 8px 0 0; }
   font: inherit; font-size: 16px; resize: vertical;
 }
 .form input:focus, .form textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+.dana2-memory { margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.dana2-memory legend { padding: 0 6px; color: var(--accent); font-weight: 700; }
+.dana2-memory label { margin-bottom: 8px; }
 .result {
   margin-top: 16px; padding: 16px;
   border: 1px solid rgba(37, 211, 102, 0.35); border-radius: var(--radius);

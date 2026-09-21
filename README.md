@@ -1,6 +1,6 @@
 # ViralCss — animaciones para dedicar
 
-Sitio estático (HTML + CSS + JavaScript con módulos ES, sin compilación). Las animaciones se dibujan en `<canvas>` y los datos personalizados viajan dentro del enlace, así que **no hay backend ni base de datos**.
+Sitio estático (HTML + CSS + JavaScript con módulos ES, sin compilación). Las animaciones se dibujan en `<canvas>` y los datos personalizados viajan dentro del enlace. Las sugerencias se reciben por correo.
 
 ## Probar en local
 
@@ -85,6 +85,10 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 2. Cloudflare → Workers & Pages → Create → Pages → conecta el repo.
 3. Build command: *(vacío)* · Output directory: `/`.
 4. Conecta tu dominio.
+
+## Sugerencias
+
+El botón superior lleva a `/sugerencias.html`, donde se muestra el correo de contacto y un enlace `mailto:`. No necesita servicios adicionales en Cloudflare.
 
 ## AdSense
 
