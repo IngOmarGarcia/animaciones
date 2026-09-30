@@ -2,6 +2,7 @@ import {
   TAU, clamp, rand, pick, lerp, easeInOut, rgbaOf, glow, sparkle, heartPath, heartPoint, softBackdrop, makeVignette,
 } from './util.js';
 
+import { customPalette } from './color-style.js';
 // ✏️ Colores neón de las mariposas
 const NEON = [[255, 80, 200], [80, 230, 255], [180, 120, 255], [255, 150, 90]];
 
@@ -10,7 +11,8 @@ const GATHER = 3.2; // vuelan a formar el corazón
 const IGNITE = 5; // el corazón se enciende: momento WOW
 const TRAIL = 10;
 
-export default function create(ctx, w, h, dpr = 1) {
+export default function create(ctx, w, h, dpr = 1, stage) {
+  const NEON = customPalette(stage, [[255, 80, 200], [80, 230, 255], [180, 120, 255], [255, 150, 90]]);
   const S = Math.min(w, h * 0.62);
   const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const count = Math.round(clamp((w * h) / 9000, 12, calm ? 12 : 26));

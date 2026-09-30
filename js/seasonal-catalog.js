@@ -1,0 +1,30 @@
+const PHRASES = {
+  pumpkin: ['Esta noche, la magia despierta.', 'Dulce, truco y un poquito de caos.', 'Que empiece la noche de las calabazas.'],
+  ghost: ['Un susto pequeñito y una noche llena de magia.', 'Los fantasmas también vienen a celebrar.', 'Una noche rosa, misteriosa y divertida.'],
+  cat: ['La suerte tiene ojos de gato.', 'Esta noche seguimos las huellas de la magia.', 'Un maullido, un hechizo y una luna llena.'],
+  potion: ['Una pizca de misterio y una noche de magia.', 'La fórmula perfecta para un Halloween inolvidable.', 'Bienvenidos a nuestra noche embrujada.'],
+  moon: ['Bajo esta luna, la noche cobra vida.', 'Cuando cae la noche, despiertan las historias.', 'Alas, sombras y un cielo lleno de misterio.'],
+  skull: ['Recordar también es celebrar.', 'Entre colores, celebramos la vida y la memoria.', 'Las historias de quienes amamos siguen vivas.'],
+  marigold: ['La luz del recuerdo nunca se apaga.', 'Cada flor guarda una historia.', 'Un camino de flores para volver a encontrarnos.'],
+  monarch: ['El recuerdo encuentra su camino de regreso.', 'Entre alas y flores, la memoria sigue viva.', 'Hay historias que vuelan de generación en generación.'],
+  altar: ['Entre flores y velas, seguimos recordando.', 'Nuestra ofrenda guarda historias y cariño.', 'Encendemos la memoria, celebramos la vida.'],
+  dog: ['Tus huellitas se quedaron para siempre conmigo.', 'Un camino de flores para quienes nos dieron tanto amor.', 'También recordamos a quienes nos acompañaron con cuatro patitas.'],
+};
+export const SEASONAL_ANIMATIONS = [
+  ['calabaza-de-medianoche', 'pumpkin', 'halloween', 'Calabaza de medianoche', 'Una calabaza retro se construye con brasas y estalla para revelar su nombre.', 'Contigo, hasta la noche más oscura tiene magia.'],
+  ['fantasmita-rosa', 'ghost', 'halloween', 'Fantasmita rosa', 'Un fantasma rosa flota entre destellos y se convierte en una dedicatoria.', 'Me tienes embrujado de cariño.'],
+  ['gato-del-hechizo', 'cat', 'halloween', 'Gato del hechizo', 'Un gato violeta de ojos luminosos aparece entre chispas de magia.', 'Eres mi hechizo favorito.'],
+  ['pocion-de-luz', 'potion', 'halloween', 'Poción de luz', 'Una botella de magia burbujea, libera una onda y escribe su nombre.', 'Una pizca de magia y todo mi cariño para ti.'],
+  ['luna-de-murcielagos', 'moon', 'halloween', 'Luna de murciélagos', 'Una luna gótica de partículas y murciélagos se deshace en luz.', 'Te elegiría bajo cualquier luna.'],
+  ['calaverita-de-colores', 'skull', 'muertos', 'Calaverita de colores', 'Una calaverita floral de luz celebra la vida con rosa, oro y violeta.', 'Recordarte es volver a encontrarnos.'],
+  ['cempasuchil-eterno', 'marigold', 'muertos', 'Cempasúchil eterno', 'Pétalos dorados construyen una flor que guarda su nombre.', 'Tu recuerdo florece en mi corazón.'],
+  ['monarca-del-recuerdo', 'monarch', 'muertos', 'Monarca del recuerdo', 'Una monarca de luz llega sobre flores y se transforma en su nombre.', 'Hay cariños que siempre encuentran el camino de regreso.'],
+  ['ofrenda-de-luz', 'altar', 'muertos', 'Ofrenda de luz', 'Velas, papel picado y flores iluminan una ofrenda hecha de partículas.', 'Esta luz es para ti, con todo nuestro amor.'],
+  ['huellitas-al-mictlan', 'dog', 'muertos', 'Huellitas al Mictlán', 'Un perrito de luz aparece sobre cempasúchil para recordar a una mascota querida.', 'Tus huellitas se quedaron para siempre conmigo.'],
+].map(([id, kind, category, title, description, defaultMessage]) => ({
+  id, file: id, kind, category, title,
+  description: description.replace('su nombre', 'un título opcional').replace('una dedicatoria', 'luz rosa'),
+  defaultMessage: PHRASES[kind][0], phrases: PHRASES[kind], seasonalText: true,
+  featured: true, nameInScene: true, interactive: true,
+  textPosition: 'top', textDelay: 11, previewLoop: 18,
+}));

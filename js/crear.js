@@ -1,14 +1,19 @@
 import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
-import { buildShareUrl, cleanCard, encodeCard } from './share.js';
+import { buildShareUrl, cleanCard, encodeCard, decodeCard } from './share.js';
 import { fillOverlay } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
-import { renderGifts, renderSupport } from './extras.js';
+import './support.js';
+import { relatedAnimations, guideFor } from './scene-guides.js';
 import { DANA_DEFAULTS } from './anim/dana2-core.js';
+import { FONT_OPTIONS } from './anim/text-style.js';
 
-const anim = getAnimation(new URLSearchParams(location.search).get('a')) || VISIBLE_ANIMATIONS[0];
+const params = new URLSearchParams(location.search);
+const sharedCard = decodeCard(params.get('s'));
+const anim = getAnimation(sharedCard?.a || params.get('a')) || VISIBLE_ANIMATIONS[0];
 const DRAFT_KEY = `detallito-borrador-${anim.id}`;
 const isDana2 = anim.codename === 'Dana2';
+const isSeasonal = !!anim.seasonalText;
 const $ = (id) => document.getElementById(id);
 const form = $('form');
 const fields = form.elements;
@@ -21,7 +26,31 @@ const nativeBtn = $('native');
 document.title = `${anim.title} · Personaliza y comparte | ViralCss`;
 $('title').textContent = anim.title;
 $('desc').textContent = anim.description;
+$('detailLink').href = `/animaciones/${anim.id}.html`;
+$('previewStatus').textContent = guideFor(anim).interaction;
+const previewCanvas=$('scene').querySelector('canvas');
+if(guideFor(anim).mode==='auto') {previewCanvas.removeAttribute('role');previewCanvas.removeAttribute('tabindex');previewCanvas.setAttribute('aria-label',anim.description);}
 fields.m.placeholder = anim.defaultMessage;
+$('textFont').replaceChildren(...FONT_OPTIONS.map(font => {
+  const option = document.createElement('option'); option.value = font.id; option.textContent = font.label; return option;
+}));
+fields.f.value = 'clear';
+if (anim.colorDefaults) {
+  $('animationColors').hidden = false;
+  [fields.c1.value, fields.c2.value] = anim.colorDefaults;
+}
+if (isSeasonal) {
+  $('seasonalFields').hidden = false;
+  $('recipientCaption').textContent = 'Nombre o título (opcional)';
+  $('messageCaption').textContent = 'Tu frase (editable y opcional)';
+  $('senderCaption').textContent = 'Firma';
+  fields.p.placeholder = anim.category === 'muertos' ? 'Ej. En memoria de Luna' : 'Ej. Fiesta de Halloween';
+  fields.d.placeholder = 'Ej. Familia García';
+  fields.m.value = anim.defaultMessage;
+  $('phraseSuggestion').replaceChildren(...anim.phrases.map((phrase) => {
+    const option = document.createElement('option'); option.value = phrase; option.textContent = phrase; return option;
+  }));
+}
 if (isDana2) {
   fields.p.value = DANA_DEFAULTS.recipientName;
   fields.m.value = DANA_DEFAULTS.introMessage;
@@ -32,26 +61,40 @@ if (isDana2) {
 
 try {
   const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}');
-  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2']) if (fields[key] && typeof draft[key] === 'string') fields[key].value = draft[key];
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'tm', 'f']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
+  $('colorsEnabled').checked = !!anim.colorDefaults && (draft.colorsEnabled === true || (draft.colorsEnabled === undefined && anim.letterFields && !isDana2 && !!draft.c1));
 } catch {
   // sessionStorage no disponible: se empieza en blanco
 }
 
-let player = null;
+if (sharedCard) {
+  if (anim.colorDefaults) [fields.c1.value, fields.c2.value] = [sharedCard.c1 || anim.colorDefaults[0], sharedCard.c2 || anim.colorDefaults[1]];
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem']) if (fields[key]) fields[key].value = sharedCard[key] || '';
+  fields.f.value = sharedCard.f || 'elegant';
+  if (isSeasonal) fields.tm.value = sharedCard.tm || 'suggest';
+  $('colorsEnabled').checked = !!anim.colorDefaults && !!sharedCard.c1 && !!sharedCard.c2;
+}
+
+let player = null, previewPaused = false, previewVisible = true, previewLoading = true, previewFailed = false;
+const resumePreview = () => {
+  if (player && !previewPaused && previewVisible && !document.hidden) player.play();
+  else player?.pause();
+};
 anim.load()
   .then((mod) => {
-    player = createPlayer($('scene').querySelector('canvas'), mod.default, { loop: anim.previewLoop, card: readCard() });
-    player.play();
+    player = createPlayer($('scene').querySelector('canvas'), mod.default, { card: readCard() });
+    resumePreview();
   })
-  .catch((err) => console.error('No se pudo cargar la animación', err));
+  .catch((err) => { player?.destroy(); player = null; previewFailed = true; $('previewStatus').textContent = 'No se pudo cargar la vista previa. Reiniciar permite reintentar; aún puedes crear el enlace.'; console.error(err); })
+  .finally(() => { previewLoading = false; });
 
-let photoData = '';
+let photoData = sharedCard?.img || '';
+let photoProcessing = false;
 const memoryFields = [];
 if (isDana2) {
   $('galaxyFields').hidden = false;
   $('dana2Fields').hidden = false;
   fields.mem.closest('label').hidden = true;
-  document.querySelector('.galaxy-colors').hidden = true;
   $('codeLink').closest('.code-link').hidden = true;
   const values = (fields.mem.value || '').split('|');
   for (let i = 0; i < DANA_DEFAULTS.memories.length; i++) {
@@ -79,21 +122,28 @@ if (isDana2) {
     memoryFields.push({ titleInput, bodyInput });
   }
   let previousName = fields.p.value || DANA_DEFAULTS.recipientName;
+  if(photoData) $('dana2PhotoStatus').textContent='Imagen recuperada del enlace. Se conservará al compartirlo.';
   fields.p.addEventListener('input', () => {
     const finalTitle = memoryFields[6].titleInput;
     if (finalTitle.value === `Para ${previousName}`) finalTitle.value = `Para ${fields.p.value.trim() || DANA_DEFAULTS.recipientName}`;
     previousName = fields.p.value.trim() || DANA_DEFAULTS.recipientName;
   });
+  let photoVersion=0;
   $('dana2Photo').addEventListener('change', async (event) => {
+    const version=++photoVersion;
+    photoProcessing=false; form.querySelector('[type="submit"]').disabled=false;
     const file = event.target.files?.[0];
     photoData = '';
     if (!file) { $('dana2PhotoStatus').textContent = 'Añade una imagen para el portal. La plantilla no trae foto.'; update(); return; }
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { $('dana2PhotoStatus').textContent = 'Elige una imagen JPG, PNG o WebP.'; return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { $('dana2PhotoStatus').textContent = 'Elige una imagen JPG, PNG o WebP.'; update();return; }
+    $('dana2PhotoStatus').textContent='Preparando imagen…';update();
+    photoProcessing=true;form.querySelector('[type="submit"]').disabled=true;
     const source = URL.createObjectURL(file);
     try {
       const image = new Image();
       image.src = source;
       await image.decode();
+      if(version!==photoVersion)return;
       const side = Math.min(image.naturalWidth, image.naturalHeight);
       const sx = (image.naturalWidth - side) / 2;
       const sy = (image.naturalHeight - side) / 2;
@@ -108,20 +158,30 @@ if (isDana2) {
       $('dana2PhotoStatus').textContent = `Imagen lista: ${file.name}. Viajará dentro del enlace que compartas.`;
       update();
     } catch {
+      if(version!==photoVersion)return;
       photoData = '';
       $('dana2PhotoStatus').textContent = 'No se pudo leer la imagen. Prueba con otra.';
       update();
-    } finally { URL.revokeObjectURL(source); }
+    } finally {
+      URL.revokeObjectURL(source);
+      if(version===photoVersion){photoProcessing=false;form.querySelector('[type="submit"]').disabled=false;}
+    }
   });
 }
 
 const readCard = () => cleanCard({
-  a: anim.id, p: fields.p.value, m: fields.m.value, d: fields.d.value,
+  a: anim.id,
+  p: isSeasonal && fields.tm.value === 'none' ? '' : fields.p.value,
+  m: isSeasonal && fields.tm.value === 'none' ? '' : fields.m.value,
+  d: isSeasonal && fields.tm.value === 'none' ? '' : fields.d.value,
+  tm: isSeasonal ? fields.tm.value : '',
+  f: fields.f.value,
+  c1: anim.colorDefaults && $('colorsEnabled').checked ? fields.c1.value : '',
+  c2: anim.colorDefaults && $('colorsEnabled').checked ? fields.c2.value : '',
   ...(anim.letterFields ? {
     lt: fields.lt.value, l: fields.l.value, mem: isDana2
       ? memoryFields.map(({ titleInput, bodyInput }) => `${titleInput.value.replace(/[|~]/g, ' ').trim()}~${bodyInput.value.replace(/[|~]/g, ' ').trim()}`).join('|')
       : fields.mem.value,
-    c1: isDana2 ? '' : fields.c1.value, c2: isDana2 ? '' : fields.c2.value,
   } : {}),
   img: isDana2 ? photoData : '',
 });
@@ -131,6 +191,14 @@ if (anim.letterFields) $('galaxyFields').hidden = false;
 let shareText = '';
 
 function update() {
+  $('colorInputs').hidden = !$('colorsEnabled').checked;
+  $('fontLabel').hidden = isSeasonal && fields.tm.value === 'none';
+  if (isSeasonal) {
+    const noText = fields.tm.value === 'none';
+    for (const id of ['recipientLabel', 'messageLabel', 'senderLabel']) $(id).hidden = noText;
+    $('suggestionLabel').hidden = fields.tm.value !== 'suggest';
+    $('textModeHelp').textContent = noText ? 'Solo la experiencia visual: las partículas se dispersan y reconstruyen la figura, sin frases ni título.' : 'El título y la firma son opcionales. También puedes dejar la frase vacía.';
+  }
   const card = readCard();
   fillOverlay(overlay, card, anim);
   if (player) player.stage.card = card;
@@ -143,25 +211,38 @@ function update() {
   try {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p: fields.p.value, m: fields.m.value, d: fields.d.value,
       lt: fields.lt?.value, l: fields.l?.value, mem: card.mem,
-      c1: fields.c1?.value, c2: fields.c2?.value }));
+      c1: fields.c1?.value, c2: fields.c2?.value, tm: isSeasonal ? fields.tm.value : '',
+      f: fields.f.value, colorsEnabled: $('colorsEnabled').checked }));
   } catch {
     // ignorar
   }
 }
 
 form.addEventListener('input', update);
+for (const control of [$('colorsEnabled'), fields.c1, fields.c2]) control.addEventListener('change', () => { update(); player?.restart(); });
+if (isSeasonal) {
+  $('phraseSuggestion').addEventListener('change', () => { fields.m.value = $('phraseSuggestion').value; update(); });
+  fields.tm.addEventListener('change', () => {
+    if (fields.tm.value === 'custom' && anim.phrases.includes(fields.m.value)) fields.m.value = '';
+    if (fields.tm.value === 'suggest' && !fields.m.value.trim()) fields.m.value = $('phraseSuggestion').value;
+    update(); player?.restart();
+  });
+  if (anim.phrases.includes(fields.m.value)) $('phraseSuggestion').value = fields.m.value;
+}
 update();
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
+  if(photoProcessing) return;
   const card = readCard();
   const url = buildShareUrl(card);
-  shareText = card.p ? `${card.p}, tengo una sorpresa para ti 💛` : 'Tengo una sorpresa para ti 💛';
+  shareText = isSeasonal ? `${anim.category === 'muertos' ? 'Una animación para celebrar y recordar este Día de Muertos 🕯️' : 'Un poquito de magia para Halloween 🎃'}${card.p ? `: ${card.p}` : ''}` : card.p ? `${card.p}, tengo una sorpresa para ti 💛` : 'Tengo una sorpresa para ti 💛';
   link.value = url;
   $('wa').href = `https://wa.me/?text=${encodeURIComponent(`${shareText} Ábrela aquí: ${url}`)}`;
   $('open').href = url;
   nativeBtn.hidden = !navigator.share;
   result.hidden = false;
+  result.focus({preventScroll:true});
   result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
@@ -180,6 +261,28 @@ nativeBtn.addEventListener('click', () => {
   navigator.share({ title: 'Una sorpresa para ti', text: shareText, url: link.value }).catch(() => {});
 });
 
-renderSupport($('support'));
-renderGifts($('gifts'), anim.category);
-renderGallery($('more'), VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id));
+renderGallery($('more'), relatedAnimations(anim, VISIBLE_ANIMATIONS));
+$('previewPause').addEventListener('click',()=>{
+  previewPaused=!previewPaused;
+  resumePreview();
+  $('previewPause').textContent=previewPaused?'Continuar vista previa':'Pausar vista previa';
+});
+$('previewRestart').addEventListener('click',async()=>{
+  if (previewLoading) return;
+  previewLoading = true; $('previewRestart').disabled = true;
+  try {
+    if(!player) player=createPlayer(previewCanvas,(await anim.load({ retry: previewFailed })).default,{card:readCard()});
+    player.restart();previewPaused=false;resumePreview();previewFailed=false;
+    $('previewPause').textContent='Pausar vista previa';$('previewStatus').textContent=guideFor(anim).interaction;
+  } catch(error) { player?.destroy();player=null;previewFailed=true;$('previewStatus').textContent='La escena no se pudo cargar. Revisa tu conexión e inténtalo de nuevo.'; }
+  finally { previewLoading=false; $('previewRestart').disabled=false; }
+});
+const previewObserver=new IntersectionObserver(entries=>{previewVisible=entries[0].isIntersecting;resumePreview();});
+previewObserver.observe(previewCanvas);
+document.addEventListener('visibilitychange',resumePreview);
+window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {player?.destroy();previewObserver.disconnect();}});
+window.addEventListener('pageshow',event=>{if(event.persisted)resumePreview();});
+$('clearDraft').addEventListener('click',()=>{
+  try{sessionStorage.removeItem(DRAFT_KEY);}catch{}
+  if(sharedCard){const url=new URL(location.href);url.searchParams.delete('s');url.searchParams.set('a',anim.id);location.replace(url.href);}else location.reload();
+});

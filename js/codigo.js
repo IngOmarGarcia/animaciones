@@ -1,7 +1,8 @@
 import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { decodeCard } from './share.js';
 import { buildStandaloneHtml } from './standalone.js';
-import { renderSupport } from './extras.js';
+import './support.js';
+import { relatedAnimations } from './scene-guides.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -16,9 +17,8 @@ $('title').textContent = `Código de «${anim.title}»`;
 $('back').href = createHref;
 $('cta').href = createHref;
 $('fileName').textContent = fileName;
-renderSupport($('support'));
 
-$('others').replaceChildren(...VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id).map((a) => {
+$('others').replaceChildren(...relatedAnimations(anim, VISIBLE_ANIMATIONS.filter(a=>!a.noCode&&a.codename!=='Dana2')).map((a) => {
   const item = document.createElement('li');
   const link = document.createElement('a');
   link.href = `codigo.html?a=${encodeURIComponent(a.id)}`;

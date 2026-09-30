@@ -76,7 +76,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const disk = ctx.createRadialGradient(cx - R * .1, cy - R * .1, 0, cx, cy, R * .35);
       disk.addColorStop(0, '#ffda6b'); disk.addColorStop(.45, '#6c3b0e'); disk.addColorStop(1, '#24160c');
       ctx.fillStyle = disk; ctx.beginPath(); ctx.arc(cx, cy, R * .28 * flower, 0, TAU); ctx.fill();
-      if (flower > .7) textHalo(ctx, recipient(stage), cx, cy + R * .08, Math.max(15, w * .075), progress(flower, .7, .3), '#fff2ba');
+      if (flower > .7) textHalo(ctx, recipient(stage), cx, cy + R * .08, Math.max(15, w * .075), progress(flower, .7, .3), '#fff2ba', stage);
     }
   };
 }

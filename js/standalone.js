@@ -1,6 +1,7 @@
 // Arma un solo archivo HTML (sin módulos ni dependencias) con la escena real de js/anim/,
 // para que la gente pueda copiarlo o descargarlo y abrirlo con doble clic.
 import { SITE } from './config.js';
+import { textFamily } from './anim/text-style.js';
 
 const IMPORT_RE = /^import\s*\{([^}]*)\}\s*from\s*'\.\/util\.js';?\s*/m;
 // Cualquier import de otro módulo local de js/anim/ (una sola sentencia, puede ocupar varias líneas).
@@ -74,6 +75,7 @@ export async function buildSceneCode(anim, readText = fetchText) {
   const strip = (code) => code
     .replace(MODULE_IMPORT_RE, '')
     .replace(/^export default function create/m, 'function create')
+    .replace(/^export default (seasonal\([\s\S]*?\));?/m, 'const create = $1;')
     .replace(/^export /gm, '')
     .trim();
   return [...pickHelpers(splitDeclarations(utilSource), [...names]), ...[...modules.values()].map(strip), strip(sceneSource)]
@@ -119,6 +121,7 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
   .para { color: #ffc300; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: clamp(0.8rem, 4vw, 1.3rem); }
   .texto { margin-block: 0.15em !important; color: #fff; font: 700 clamp(1.5rem, 9vw, 3.6rem)/1.15 "Dancing Script", "Segoe Script", cursive; text-wrap: balance; }
   .de { color: #ffe8a3; font: 700 clamp(1.05rem, 5.5vw, 2rem) "Dancing Script", "Segoe Script", cursive; }
+  .mensaje .para, .mensaje .texto, .mensaje .de { font-family: ${textFamily(card.f)}; }
   ${anim.id === 'galaxia-de-flores' ? `.mensaje { gap: 8px; background: linear-gradient(to bottom, rgba(2,1,6,.72), transparent 48%); }
   .mensaje .texto { font-size: clamp(1.35rem, 6.4vw, 2.4rem); }
   .mensaje .texto.largo { font-size: clamp(1.1rem, 5vw, 1.8rem); }` : ''}
@@ -140,9 +143,11 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
 
 <script>
 // ✏️ Cambia aquí el nombre y el mensaje (deja '' para no mostrarlo)
-const PARA = ${jsString(card.p)};
-const MENSAJE = ${jsString(card.m || anim.defaultMessage)};
-const DE = ${jsString(card.d)};
+const PARA = ${jsString(anim.seasonalText && card.tm === 'none' ? '' : card.p)};
+const MENSAJE = ${jsString(anim.seasonalText && card.tm === 'none' ? '' : anim.seasonalText && card.tm ? card.m : card.m || anim.defaultMessage)};
+const DE = ${jsString(anim.seasonalText && card.tm === 'none' ? '' : card.d)};
+const MODO_TEXTO = ${jsString(card.tm)};
+const TIPOGRAFIA = ${jsString(card.f)};
 const CARTA_TITULO = ${jsString(card.lt)};
 const CARTA = ${jsString(card.l)};
 const FRASES = ${jsString(card.mem)};
@@ -161,9 +166,9 @@ const pincel = lienzo.getContext('2d');
 const mensaje = document.getElementById('mensaje');
 ${anim.id === 'galaxia-de-flores' ? "if (MENSAJE.length > 80) document.getElementById('texto').classList.add('largo');" : ''}
 const escena = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, revealed: false,
-  card: { p: PARA, m: MENSAJE, d: DE, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2 } };
+  card: { p: PARA, m: MENSAJE, d: DE, tm: MODO_TEXTO, f: TIPOGRAFIA, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2 } };
 
-for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', DE && 'Con cariño, ' + DE]]) {
+for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', ${anim.seasonalText ? 'DE' : "DE && 'Con cariño, ' + DE"}]]) {
   const nodo = document.getElementById(id);
   nodo.textContent = id === 'texto' && ${Boolean(anim.ownMessage)} ? '' : texto;
   nodo.hidden = !nodo.textContent;

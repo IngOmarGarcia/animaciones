@@ -14,3 +14,16 @@
 
 /v.html
   X-Robots-Tag: noindex, follow
+
+# Utilidades con variantes por parámetros, no páginas de descubrimiento.
+/crear
+  X-Robots-Tag: noindex, follow
+
+/crear.html
+  X-Robots-Tag: noindex, follow
+
+/codigo
+  X-Robots-Tag: noindex, follow
+
+/codigo.html
+  X-Robots-Tag: noindex, follow

@@ -1,146 +1,61 @@
-// Genera páginas HTML rastreables a partir del catálogo público. Ejecutar al editar js/catalog.js.
-import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
-import { VISIBLE_ANIMATIONS, CATEGORIES } from '../js/catalog.js';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { VISIBLE_ANIMATIONS as animations, CATEGORIES } from '../js/catalog.js';
+import { guideFor, MODE_LABELS, relatedAnimations } from '../js/scene-guides.js';
+import { CATEGORY_GUIDES } from '../js/category-guides.js';
 
 const origin = 'https://viralcss.com';
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const categories = CATEGORIES.filter((c) => c.id !== 'todas' && VISIBLE_ANIMATIONS.some((a) => a.category === c.id));
-const names = {
-  flores: 'Flores amarillas', mexico: 'Independencia de México', futbol: 'Fútbol', gamer: 'Gamer',
-  amor: 'Amor', espacio: 'Espacio y cielo', paisajes: 'Paisajes', cumple: 'Cumpleaños',
-  navidad: 'Navidad', muertos: 'Día de Muertos',
-};
-const intros = {
-  flores: 'Flores amarillas virtuales para dedicar el 21 de septiembre o cualquier día. Elige una animación de girasoles, pétalos o flores de luz, escribe un nombre y un mensaje, y comparte el enlace por WhatsApp.',
-  mexico: 'Festeja el 15 y 16 de septiembre con animaciones inspiradas en México. Personalízalas y comparte el enlace con familia y amigos.',
-  futbol: 'Animaciones de fútbol para dedicar a quien vive cada partido. Añade su nombre y comparte una sorpresa interactiva.',
-  gamer: 'Sorpresas animadas inspiradas en videojuegos para dedicar a alguien que juega contigo. Personaliza el texto y envía el enlace.',
-  amor: 'Animaciones de amor para decir lo que sientes con corazones, luz y escenas interactivas. Personaliza el nombre y el mensaje.',
-  espacio: 'Lunas, galaxias y estrellas que se convierten en una dedicatoria. Elige una animación, escribe tu mensaje y compártelo.',
-  paisajes: 'Paisajes animados para acompañar una dedicatoria: cielos, flores y escenas tranquilas que puedes compartir por enlace.',
-  cumple: 'Animaciones de cumpleaños con nombre y mensaje personalizable para felicitar a alguien desde cualquier lugar.',
-  navidad: 'Animaciones navideñas para enviar una felicitación personalizada mediante un enlace que se abre en el celular.',
-  muertos: 'Una animación para recordar con cariño a quienes ya no están. Personaliza el mensaje y comparte el recuerdo.',
-};
-// Contexto extra para categorías con búsquedas estacionales. Texto natural, no relleno de palabras clave.
-const extras = {
-  flores: `<h2>Flores amarillas virtuales para el 21 de septiembre</h2>
-<p>Cada 21 de septiembre, con la llegada de la primavera en el hemisferio sur, se volvió costumbre regalar flores amarillas a quien quieres. Si esa persona está lejos, puedes mandarle un ramo que se abre en su pantalla: eliges la animación, escribes su nombre y le llega un enlace por WhatsApp.</p>
-<h2>Preguntas frecuentes</h2>
-<h3>¿Cuánto cuesta enviar flores amarillas virtuales?</h3>
-<p>Nada. Puedes crear y compartir la animación gratis, tantas veces como quieras.</p>
-<h3>¿Necesita instalar una aplicación?</h3>
-<p>No. El enlace se abre en el navegador de cualquier celular o computadora.</p>
-<h3>¿Puedo escribir un mensaje propio?</h3>
-<p>Sí. Añades su nombre y tu dedicatoria antes de compartir, y algunas animaciones incluyen una carta más larga.</p>`,
-  mexico: `<h2>Para el Grito del 15 de septiembre</h2>
-<p>La noche del 15 de septiembre y el desfile del 16 son buen momento para mandar algo a la familia que está lejos. Estas animaciones se comparten por enlace y se abren al instante, sin descargar nada.</p>`,
-};
-// La meta description se corta en ~160 caracteres: cuando el texto de la página es más largo, se usa una versión breve.
-const metaDescriptions = {
-  flores: 'Flores amarillas virtuales para dedicar el 21 de septiembre: girasoles, pétalos y flores de luz. Personalízalas y compártelas por WhatsApp.',
-};
-const categoryUrl = (id) => `/categorias/${id}.html`;
-const animationUrl = (id) => `/animaciones/${id}.html`;
-const json = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
-const crumb = (parts) => `<nav class="crumbs" aria-label="Ruta de navegación">${parts.map((p, i) => i === parts.length - 1 ? `<span aria-current="page">${esc(p.name)}</span>` : `<a href="${p.url}">${esc(p.name)}</a>`).join(' <span aria-hidden="true">›</span> ')}</nav>`;
-const layout = ({ title, description, url, body, crumbs, type = 'website', animationId = '', schema = [] }) => `<!doctype html>
-<!-- ViralCss SEO generado; edita tools/generate-seo.mjs -->
-<html lang="es-MX">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>${esc(title)} | ViralCss</title>
-  <meta name="description" content="${esc(description)}">
-  <meta name="theme-color" content="#0d0a1f">
-  <link rel="canonical" href="${origin}${url}">
-  <meta property="og:type" content="${type}">
-  <meta property="og:site_name" content="ViralCss">
-  <meta property="og:title" content="${esc(title)} | ViralCss">
-  <meta property="og:description" content="${esc(description)}">
-  <meta property="og:url" content="${origin}${url}">
-  <meta property="og:image" content="${origin}/img/og.jpg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Animaciones de ViralCss para dedicar y compartir">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${esc(title)} | ViralCss">
-  <meta name="twitter:description" content="${esc(description)}">
-  <link rel="icon" href="/img/icon.png" type="image/png">
-  <link rel="apple-touch-icon" href="/img/icon.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <link rel="stylesheet" href="/css/styles.css">
-  <script type="application/ld+json">${json({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((p, i) => ({ '@type': 'ListItem', position: i + 1, name: p.name, item: `${origin}${p.url}` })) })}</script>
-${schema.map((s) => `  <script type="application/ld+json">${json({ '@context': 'https://schema.org', ...s })}</script>`).join('\n')}
-</head>
-<body${animationId ? ` data-animation="${esc(animationId)}"` : ''}>
-  <header class="site-header seo-header"><a class="brand" href="/"><img src="/img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a><nav><a href="/animaciones.html">Animaciones</a><a href="/acerca.html">Acerca</a><a class="header-suggestions" href="/sugerencias.html">Sugerencias</a></nav></header>
-  <main class="container prose seo-page">
-    ${crumb(crumbs)}
-    ${body}
-  </main>
-  <footer class="site-footer"><nav><a href="/">Inicio</a><a href="/animaciones.html">Animaciones</a><a href="/privacidad.html">Aviso de privacidad</a></nav><p>© 2026 ViralCss</p></footer>
-  ${animationId ? '<script type="module" src="/js/detail.js"></script>' : ''}
-</body>
-</html>
-`;
-const list = (items) => `<ul class="seo-list">${items.map((a) => `<li><a href="${animationUrl(a.id)}">${esc(a.title)}</a><p>${esc(a.description)}</p></li>`).join('')}</ul>`;
-
-await mkdir('animaciones', { recursive: true });
-await mkdir('categorias', { recursive: true });
-for (const [dir, ids] of [['animaciones', new Set(VISIBLE_ANIMATIONS.map((a) => a.id))], ['categorias', new Set(categories.map((c) => c.id))]]) {
-  for (const file of await readdir(dir)) {
-    if (!file.endsWith('.html') || ids.has(file.slice(0, -5))) continue;
-    const path = `${dir}/${file}`;
-    if ((await readFile(path, 'utf8')).includes('<!-- ViralCss SEO generado;')) await unlink(path);
-  }
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const aurl = a => `/animaciones/${a.id}.html`;
+const curl = id => `/categorias/${id}.html`;
+const edit = a => `/crear.html?a=${a.id}`;
+const categories = CATEGORIES.filter(c=>c.id!=='todas' && animations.some(a=>a.category===c.id));
+const cname = id => categories.find(c=>c.id===id).name.replace(/^\S+\s/,'');
+const particleNames = new Set(['corazon-de-girasoles','flor-holografica','cascada-de-petalos-invertida','corazon-de-energia','constelacion-con-tu-nombre','fuegos-con-tu-nombre']);
+const shortNames = new Set(['corazon-de-energia','constelacion-con-tu-nombre','fuegos-con-tu-nombre']);
+const options = a => `${a.seasonalText?'Frases o sin texto':a.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${a.colorDefaults?' · Dos colores':''}`;
+function card(a) {
+ const g=guideFor(a);
+ return `<article class="card" data-id="${a.id}" data-mode="${g.mode}" data-color="${!!a.colorDefaults}" data-letter="${!!a.letterFields}"><a class="card-preview-link" href="${aurl(a)}" aria-label="Ver ${esc(a.title)}"><div class="thumb"><canvas aria-hidden="true"></canvas><span class="badge">${MODE_LABELS[g.mode]}</span></div></a><div class="card-body"><h3><a href="${aurl(a)}">${esc(a.title)}</a></h3><p>${esc(a.description)}</p><p class="card-options">${options(a)}</p><div class="card-links"><a href="${aurl(a)}">Ver escena y detalles</a><a href="${edit(a)}">Personalizar<span class="sr-only"> ${esc(a.title)}</span> →</a></div></div></article>`;
 }
-
-const indexBody = `<h1>Animaciones para dedicar y compartir</h1><p>Explora las animaciones interactivas de ViralCss. Puedes escribir el nombre de quien la recibe y un mensaje, ver el resultado y compartirlo por WhatsApp o con un enlace. Las animaciones gratuitas se abren en el navegador.</p><h2>Categorías</h2><ul class="seo-category-list">${categories.map((c) => `<li><a href="${categoryUrl(c.id)}">${esc(names[c.id])}</a></li>`).join('')}</ul><h2>Todas las animaciones</h2>${list(VISIBLE_ANIMATIONS)}`;
-await writeFile('animaciones.html', layout({ title: 'Animaciones con código para dedicar y compartir', description: 'Explora animaciones interactivas gratuitas de flores amarillas, amor, cumpleaños y más. Personaliza nombre y mensaje y comparte por WhatsApp.', url: '/animaciones.html', body: indexBody, crumbs: [{ name: 'Inicio', url: '/' }, { name: 'Animaciones', url: '/animaciones.html' }] }));
-
-for (const category of categories) {
-  const name = names[category.id];
-  const items = VISIBLE_ANIMATIONS.filter((a) => a.category === category.id);
-  const extra = extras[category.id] ?? '';
-  const body = `<h1>Animaciones de ${esc(name.toLowerCase())}</h1><p>${esc(intros[category.id])}</p><h2>Elige una animación</h2>${list(items)}${extra}<p><a href="/animaciones.html">Ver todas las categorías</a></p>`;
-  const itemList = {
-    '@type': 'ItemList',
-    name: `Animaciones de ${name.toLowerCase()}`,
-    itemListElement: items.map((a, i) => ({ '@type': 'ListItem', position: i + 1, name: a.title, url: `${origin}${animationUrl(a.id)}` })),
-  };
-  await writeFile(`categorias/${category.id}.html`, layout({ title: `Animaciones de ${name.toLowerCase()} para dedicar`, description: metaDescriptions[category.id] ?? intros[category.id], url: categoryUrl(category.id), body, schema: [itemList], crumbs: [{ name: 'Inicio', url: '/' }, { name: 'Animaciones', url: '/animaciones.html' }, { name, url: categoryUrl(category.id) }] }));
+const controls = `<div class="collection-controls" hidden><label>Buscar por función <select data-filter><option value="all">Todas las escenas</option><option value="auto">Se reproducen solas</option><option value="interactive">Con interacción</option><option value="color">Con colores editables</option><option value="letter">Con carta y recuerdos</option></select></label><button class="btn btn-ghost" type="button" data-motion>Pausar miniaturas</button><p data-count role="status"></p></div>`;
+function grid(list) {return `<div class="grid" data-gallery>${list.map(card).join('\n')}</div>`;}
+function template({title,description,path,body,schema,script='collection',id=''}) {
+ return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><meta name="description" content="${esc(description.slice(0,160))}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description.slice(0,160))}"><meta property="og:image" content="${origin}/img/og.jpg"><meta property="og:url" content="${origin}${path}"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#0b1020"><link rel="canonical" href="${origin}${path}"><link rel="icon" href="/img/icon.png" type="image/png"><link rel="stylesheet" href="/css/styles.css"><script type="application/ld+json">${JSON.stringify(schema).replace(/</g,'\\u003c')}</script></head><body${id?` data-animation="${id}"`:''}><a class="skip-link" href="#contenido">Saltar al contenido</a><header class="site-header"><a class="brand" href="/">Viral<span>Css</span></a><nav aria-label="Navegación principal"><a href="/animaciones.html">Animaciones</a><a href="/acerca.html">Acerca</a><a href="/sugerencias.html">Sugerencias</a></nav></header><main id="contenido" class="container content-page">${body}</main><footer class="site-footer"><span>ViralCss · Crea y comparte una escena</span><div><a href="/acerca.html">Acerca y contacto</a><a href="/privacidad.html">Privacidad</a><a href="/animaciones.html">Todas las animaciones</a></div></footer><script type="module" src="/js/${script}.js"></script><script type="module" src="/js/support.js"></script></body></html>`;
 }
-
-for (const animation of VISIBLE_ANIMATIONS) {
-  const category = names[animation.category];
-  const related = VISIBLE_ANIMATIONS.filter((a) => a.category === animation.category && a.id !== animation.id).slice(0, 4);
-  const body = `<h1>${esc(animation.title)}</h1><p>${esc(animation.description)}</p><p>Personaliza esta animación con un nombre y un mensaje. Puedes verla antes de compartirla; la persona que reciba el enlace podrá abrirla en su celular o computadora.</p><div class="seo-preview"><canvas id="detail-canvas" aria-label="Vista previa de ${esc(animation.title)}"></canvas><button id="detail-play" class="btn btn-primary" type="button">Ver animación</button></div><p><a class="btn btn-primary" href="/crear.html?a=${encodeURIComponent(animation.id)}">Personalizar ${esc(animation.title)}</a></p><h2>Cómo compartirla</h2><ol><li>Abre la animación y escribe tu dedicatoria.</li><li>Revisa la vista previa.</li><li>Copia el enlace o envíalo por WhatsApp.</li></ol><h2>Más animaciones de ${esc(category.toLowerCase())}</h2>${list(related)}<p><a href="${categoryUrl(animation.category)}">Ver la categoría ${esc(category)}</a></p>`;
-  const pitch = `${animation.description} Personalízala con nombre y mensaje y compártela gratis por WhatsApp.`;
-  const metaDescription = pitch.length <= 160 ? pitch : `${animation.description} Personalízala y compártela gratis por WhatsApp.`;
-  // Cada animación aporta sus propias señales: nombre, descripción, categoría, URL y que es gratuita
-  const creative = {
-    '@type': 'CreativeWork',
-    name: animation.title,
-    description: animation.description,
-    url: `${origin}${animationUrl(animation.id)}`,
-    genre: category,
-    inLanguage: 'es-MX',
-    isAccessibleForFree: true,
-    isFamilyFriendly: true,
-    learningResourceType: 'Animación interactiva',
-    publisher: { '@type': 'Organization', name: 'ViralCss', url: `${origin}/` },
-    isPartOf: { '@type': 'CollectionPage', name: `Animaciones de ${category.toLowerCase()}`, url: `${origin}${categoryUrl(animation.category)}` },
-  };
-  await writeFile(`animaciones/${animation.id}.html`, layout({ title: `${animation.title} para dedicar`, description: metaDescription, url: animationUrl(animation.id), body, animationId: animation.id, schema: [creative], crumbs: [{ name: 'Inicio', url: '/' }, { name: 'Animaciones', url: '/animaciones.html' }, { name: category, url: categoryUrl(animation.category) }, { name: animation.title, url: animationUrl(animation.id) }] }));
+function layout(config) {
+ return template(config).replace('<a class="brand" href="/">Viral<span>Css</span></a>','<a class="brand" href="/"><img src="/img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a>').replace(/></g,'>\n<')+'\n';
 }
-
-const urls = ['/', '/animaciones.html', ...categories.map((c) => categoryUrl(c.id)), ...VISIBLE_ANIMATIONS.map((a) => animationUrl(a.id)), '/crear.html', '/codigo.html', '/sugerencias.html', '/acerca.html', '/privacidad.html'];
-// lastmod real de cada archivo: ayuda a Google a volver solo donde algo cambió
-const fileOf = (url) => (url === '/' ? 'index.html' : url.slice(1));
-const entries = await Promise.all(urls.map(async (url) => {
-  const lastmod = await stat(fileOf(url)).then((s) => s.mtime.toISOString().slice(0, 10)).catch(() => '');
-  return `  <url><loc>${origin}${url}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`;
-}));
-await writeFile('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`);
-console.log(`Generadas ${VISIBLE_ANIMATIONS.length} animaciones, ${categories.length} categorías y sitemap.xml`);
+const breadcrumb = entries => ({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:entries.map(([name,url],i)=>({'@type':'ListItem',position:i+1,name,item:origin+url}))});
+function personalization(a) {
+ const items=[];
+ if(a.seasonalText) {
+  items.push('Frase sugerida editable, texto propio de hasta 140 caracteres o Sin texto. Esta última opción oculta también el título y la firma.');
+  items.push('Título opcional de hasta 40 caracteres: las partículas lo forman después de dispersarse. Sin título, reconstruyen la figura.');
+ } else {
+  items.push(particleNames.has(a.id)?`Nombre breve: la propia escena forma letras (hasta ${shortNames.has(a.id)?12:32} caracteres dentro de la figura).`:`Nombre y mensaje de hasta 40 y 140 caracteres en el formulario.${a.nameInScene?' La composición también utiliza el nombre; uno breve evita recortes.':''}`);
+  items.push(a.id==='origami-amarillo'?'La frase se dibuja dentro de una tarjeta con un máximo de cinco líneas. Conviene probar un mensaje corto.':`Puedes reemplazar la frase inicial «${a.defaultMessage}». Si la dejas vacía, se conserva la sugerencia de esta escena.`);
+ }
+ items.push('Firma opcional y cinco tipografías para el texto normal. Las letras construidas con partículas conservan su forma.');
+ if(a.letterFields) items.push(a.id==='jardin-de-lunas'?'Título y texto de la carta, siete recuerdos y una foto opcional. Los recuerdos acompañan el recorrido por las islas y la carta se abre en el corazón final.':'Título y texto de la carta, y recuerdos separados por el signo |. El destinatario abre la carta al terminar la secuencia.');
+ if(a.colorDefaults) items.push('Dos colores opcionales para los elementos de luz. Puedes desactivar la paleta personalizada para recuperar el diseño original; el fondo y algunos detalles mantienen sus colores.');
+ return `<ul>${items.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+}
+await mkdir('animaciones',{recursive:true}); await mkdir('categorias',{recursive:true});
+const catalogBody=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / Animaciones</nav><h1>Elige una escena antes de dedicarla</h1><p class="lead">Compara cómo se mueve, qué gesto necesita y qué puedes editar. Abre su ficha para probarla o entra directamente al editor si ya la conoces.</p><nav class="category-links" aria-label="Categorías">${categories.map(c=>`<a href="${curl(c.id)}">${esc(c.name)}</a>`).join('')}</nav><p>Las escenas automáticas funcionan con solo mirar. Las interactivas responden al toque, a una pulsación mantenida o a varios golpes. Los recorridos con carta requieren más tiempo para llegar al final.</p>${controls}${grid(animations)}`;
+await writeFile('animaciones.html',layout({title:'Animaciones para personalizar y compartir | ViralCss',description:'Compara animaciones por interacción, cartas, recuerdos y colores. Prueba cada escena antes de crear y compartir tu dedicatoria.',path:'/animaciones.html',body:catalogBody,schema:breadcrumb([['Inicio','/'],['Animaciones','/animaciones.html']])}));
+for(const c of categories) {
+ const guide=CATEGORY_GUIDES[c.id]; if(!guide) throw Error(`Falta guía ${c.id}`);
+ const list=animations.filter(a=>a.category===c.id);
+ const body=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / <a href="/animaciones.html">Animaciones</a> / ${esc(cname(c.id))}</nav><h1>${esc(cname(c.id))}: encuentra tu escena</h1><p class="lead">${esc(guide.intro)}</p><section class="selection-guide"><h2>Cómo elegir</h2><ul>${guide.picks.map(([id,reason])=>{const a=animations.find(a=>a.id===id);if(!a)throw Error(id);return `<li><a href="${aurl(a)}">${esc(a.title)}</a>: ${esc(reason)}</li>`;}).join('')}</ul><p>${esc(guide.advice)}</p></section><h2>Escenas de esta categoría</h2>${controls}${grid(list)}<p><a href="/animaciones.html">Comparar con todas las categorías →</a></p>`;
+ await writeFile(`categorias/${c.id}.html`,layout({title:`${cname(c.id)}: escenas, interacción y opciones | ViralCss`,description:guide.intro,path:curl(c.id),body,schema:breadcrumb([['Inicio','/'],['Animaciones','/animaciones.html'],[cname(c.id),curl(c.id)]])}));
+}
+for(const a of animations) {
+ const g=guideFor(a); const interactive=g.mode!=='auto';
+ const body=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / <a href="${curl(a.category)}">${esc(cname(a.category))}</a> / ${esc(a.title)}</nav><p class="eyebrow">${esc(cname(a.category))} · ${MODE_LABELS[g.mode]}</p><h1>${esc(a.title)}</h1><p class="lead">${esc(a.description)}</p><p><a class="btn btn-primary" href="${edit(a)}">Personalizar esta escena</a></p><div class="detail-layout"><section class="preview-panel"><h2>Prueba la escena</h2><div class="scene detail-scene"><canvas id="detail-canvas" aria-label="${esc(a.title)}: ${esc(g.interaction)}"${interactive?' tabindex="0" role="button"':''}></canvas><div class="overlay" id="detail-overlay"><span class="ov-to" id="ov-to"></span><p class="ov-msg" id="ov-msg"></p><span class="ov-from" id="ov-from"></span></div><button id="detail-play" class="btn btn-primary" type="button">Cargar vista previa</button></div><div class="preview-controls"><button class="btn btn-ghost" id="detail-pause" hidden type="button">Pausar</button><button class="btn btn-ghost" id="detail-replay" hidden type="button">Reiniciar</button></div><p id="detail-status" class="hint" role="status">La vista previa usa texto de ejemplo. Se carga cuando la solicitas.</p><p>${esc(g.interaction)}</p>${interactive?'<p class="hint">Puedes tocar la escena o usar Intro o Espacio con el lienzo enfocado. En una pulsación mantenida, conserva la tecla presionada.</p>':''}</section><div class="detail-copy"><section><h2>Qué ocurre en la escena</h2><p>${esc(g.scene)}</p></section><section><h2>Qué puedes personalizar</h2>${personalization(a)}</section><section><h2>Qué verá el destinatario</h2><p>${a.letterFields?'El enlace abre la escena y su recorrido con recuerdos. La carta queda disponible al final; el destinatario puede leerla en la misma pantalla.':a.seasonalText?'El enlace muestra la figura, la frase y los colores elegidos. Si seleccionas Sin texto, recibe la animación sin título, mensaje ni firma.':'El enlace abre esta misma animación con tu nombre, frase y firma. No necesita crear una cuenta ni instalar una aplicación.'}</p><p>${esc(g.use)}</p><p>El editor genera un enlace para copiar o compartir por WhatsApp. Quien tenga ese enlace puede abrirlo: evita incluir información privada.</p><a class="btn btn-primary" href="${edit(a)}">Crear con ${esc(a.title)}</a>${!a.noCode&&a.id!=='jardin-de-lunas'?` <a href="/codigo.html?a=${a.id}">Ver opción de código</a>`:''}</section></div></div><section><h2>Otras escenas para comparar</h2>${grid(relatedAnimations(a,animations))}<p><a href="${curl(a.category)}">Ver guía de ${esc(cname(a.category))} →</a></p></section>`;
+ await writeFile(`animaciones/${a.id}.html`,layout({title:`${a.title}: vista previa y personalización | ViralCss`,description:g.scene,path:aurl(a),body,id:a.id,script:'detail',schema:breadcrumb([['Inicio','/'],[cname(a.category),curl(a.category)],[a.title,aurl(a)]])}));
+}
+// Solo páginas públicas de descubrimiento. Editor, código y enlaces personales son utilidades sin indexación.
+// Se omite lastmod: regenerar HTML no significa que la escena haya cambiado.
+const paths=['/','/animaciones.html',...categories.map(c=>curl(c.id)),...animations.map(aurl),'/acerca.html','/privacidad.html','/sugerencias.html'];
+await writeFile('sitemap.xml',`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(p=>`\n  <url><loc>${origin}${p}</loc></url>`).join('')}\n</urlset>\n`);
+console.log(`Generadas ${animations.length} fichas y ${categories.length} guías de categorías; ${paths.length} URLs públicas.`);

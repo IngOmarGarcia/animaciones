@@ -27,7 +27,8 @@ const hex = (value, fallback) => {
 
 // Tarjeta del enlace → configuración. Fuera del motor gráfico, como pide la skill.
 export function readConfig(card) {
-  const memories = String(card?.mem || '').split('|').map((x) => x.trim().slice(0, 160)).filter(Boolean);
+  // 50 caracteres de título + separador ~ + 110 de mensaje del formulario.
+  const memories = String(card?.mem || '').split('|').map((x) => x.trim().slice(0, 161)).filter(Boolean);
   const recipientName = (card?.p || DANA_DEFAULTS.recipientName).trim().slice(0, 24);
   return {
     ...DANA_DEFAULTS,

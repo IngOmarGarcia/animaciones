@@ -1,3 +1,4 @@
+import { canvasTextFont } from './text-style.js';
 import {
   clamp, particleQuality, getParticleRenderer, viewProjection, projectVP, drawParticles2D, qualityGovernor,
 } from './util.js';
@@ -339,7 +340,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     if (titleIn > 0.01) {
       const name = (config.recipientName || '').trim();
       const big = Math.max(20, w * 0.085);
-      ctx.font = `700 ${big}px "Dancing Script", Georgia, serif`;
+      ctx.font = canvasTextFont(stage, `700 ${big}px`, "\"Dancing Script\", Georgia, serif");
       ctx.shadowColor = 'rgba(0,0,0,.85)';
       ctx.shadowBlur = 18;
       ctx.fillStyle = `rgba(255,246,214,${titleIn})`;
@@ -347,14 +348,14 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       // fracción y el texto le caía encima, así que el bloque desciende con el aspecto.
       const titleY = aspect > 0.75 ? 0.62 : 0.38;
       ctx.fillText(name ? `Para ${name} 💛` : 'Para ti 💛', w / 2, h * titleY, w * 0.86);
-      ctx.font = `500 ${Math.max(12, w * 0.037)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `500 ${Math.max(12, w * 0.037)}px`, "system-ui, sans-serif");
       ctx.fillStyle = `rgba(226,232,255,${titleIn * 0.85})`;
       ctx.fillText(config.introMessage, w / 2, h * (titleY + 0.07), w * 0.84);
       ctx.shadowBlur = 0;
     }
     const exploreIn = revealAt(t, INTRO.free, 0.8) * (1 - clamp01((t - INTRO.free - 4) / 1));
     if (exploreIn > 0.01 && found === 0) {
-      ctx.font = `600 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${Math.max(12, w * 0.036)}px`, "system-ui, sans-serif");
       ctx.shadowColor = 'rgba(0,0,0,.85)';
       ctx.shadowBlur = 12;
       ctx.fillStyle = `rgba(255,238,190,${exploreIn * 0.9})`;
@@ -364,7 +365,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     }
     if ((found > 0 || t > INTRO.free) && doneAt < 0) {
       // Abajo y con sombra: arriba quedaba encima de la luna y no se leía
-      ctx.font = `600 ${Math.max(11, w * 0.031)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${Math.max(11, w * 0.031)}px`, "system-ui, sans-serif");
       ctx.shadowColor = 'rgba(0,0,0,.95)';
       ctx.shadowBlur = 16;
       ctx.fillStyle = 'rgba(255,238,190,.82)';
@@ -375,7 +376,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     if (gyroButton) {
       const label = gyro.denied ? 'Arrastra para mirar alrededor' : '✦ Activar vista 360° ✦';
       const fs = Math.max(12, w * 0.036);
-      ctx.font = `600 ${fs}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${fs}px`, "system-ui, sans-serif");
       const pad = fs * 0.9;
       const tw = ctx.measureText(label).width;
       const bx = w / 2 - tw / 2 - pad;
@@ -397,7 +398,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const ft = t - doneAt;
       const letterIn = revealAt(ft, FINALE.letter, 1.2);
       // Medidas de la hoja: se calculan antes para poder dibujar el papel y luego el texto
-      ctx.font = `500 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `500 ${Math.max(12, w * 0.036)}px`, "system-ui, sans-serif");
       const words = config.letterText.split(/\s+/);
       const lines = [];
       let line = '';
@@ -438,15 +439,15 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         const top = cy - sheetH / 2 + padY;
         ctx.shadowColor = 'rgba(0,0,0,.85)';
         ctx.shadowBlur = 14;
-        ctx.font = `700 ${Math.max(18, w * 0.062)}px "Dancing Script", Georgia, serif`;
+        ctx.font = canvasTextFont(stage, `700 ${Math.max(18, w * 0.062)}px`, "\"Dancing Script\", Georgia, serif");
         ctx.fillStyle = `rgba(255,246,214,${textIn})`;
         ctx.fillText(config.letterTitle, cx, top, sheetW * 0.88);
-        ctx.font = `500 ${Math.max(12, w * 0.036)}px system-ui, sans-serif`;
+        ctx.font = canvasTextFont(stage, `500 ${Math.max(12, w * 0.036)}px`, "system-ui, sans-serif");
         ctx.fillStyle = `rgba(226,232,255,${textIn * 0.92})`;
         lines.forEach((l, i) => ctx.fillText(l, cx, top + w * 0.085 + i * lh, sheetW * 0.88));
         const senderIn = revealAt(ft, FINALE.sender, 1) * textIn;
         if (senderIn > 0.01 && config.senderName) {
-          ctx.font = `700 ${Math.max(14, w * 0.045)}px "Dancing Script", Georgia, serif`;
+          ctx.font = canvasTextFont(stage, `700 ${Math.max(14, w * 0.045)}px`, "\"Dancing Script\", Georgia, serif");
           ctx.fillStyle = `rgba(255,238,190,${senderIn})`;
           ctx.fillText(`— ${config.senderName}`, cx, top + w * 0.085 + lines.length * lh + lh * 0.7, sheetW * 0.7);
         }
@@ -454,7 +455,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       }
     }
     if (aimed && !aimed.found) {
-      ctx.font = `600 ${Math.max(11, w * 0.03)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${Math.max(11, w * 0.03)}px`, "system-ui, sans-serif");
       ctx.fillStyle = `rgba(255,240,200,${0.35 + 0.25 * Math.sin(t * 3)})`;
       ctx.fillText('toca la flor', w / 2, h * 0.62);
     }
@@ -478,7 +479,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       if (age > 5.2) shown = null;
       else {
         const text = config.memories[shown.flower.memory] || '';
-        ctx.font = `700 ${Math.max(16, w * 0.052)}px "Dancing Script", Georgia, serif`;
+        ctx.font = canvasTextFont(stage, `700 ${Math.max(16, w * 0.052)}px`, "\"Dancing Script\", Georgia, serif");
         ctx.shadowColor = 'rgba(0,0,0,.8)';
         ctx.shadowBlur = 14;
         ctx.fillStyle = `rgba(255,246,214,${alpha})`;

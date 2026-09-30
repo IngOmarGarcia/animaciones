@@ -11,7 +11,7 @@ const index = await read('animaciones.html');
 const home = await read('index.html');
 
 const categories = CATEGORIES.filter((c) => c.id !== 'todas' && VISIBLE_ANIMATIONS.some((a) => a.category === c.id));
-const pages = ['index.html', 'animaciones.html', 'crear.html', 'codigo.html', 'sugerencias.html', 'acerca.html', 'privacidad.html'];
+const pages = ['index.html', 'animaciones.html', 'sugerencias.html', 'acerca.html', 'privacidad.html'];
 for (const c of categories) pages.push(`categorias/${c.id}.html`);
 for (const a of VISIBLE_ANIMATIONS) {
   const path = `animaciones/${a.id}.html`;
@@ -57,14 +57,14 @@ for (const page of pages) {
 
 // Enlaces internos: todos deben resolver a un archivo existente
 const linkErrors = [];
-for (const page of [...pages, '404.html']) {
+for (const page of [...pages, 'crear.html', 'codigo.html', 'v.html', 'encargos.html', '404.html']) {
   const html = await read(page);
   const dir = page.includes('/') ? `${page.slice(0, page.lastIndexOf('/'))}/` : '';
-  for (const match of html.matchAll(/href="([^"#]+)"/g)) {
+  for (const match of html.matchAll(/(?:href|src)="([^"#]+)"/g)) {
     const href = match[1];
     if (/^(https?:|mailto:|tel:|data:)/.test(href)) continue;
-    const clean = href.split('?')[0];
-    if (!clean || clean.endsWith('.css') || clean.endsWith('.png') || clean.endsWith('.jpg') || clean.endsWith('.svg')) continue;
+    const clean = href.split(/[?#]/)[0];
+    if (!clean) continue;
     const target = clean.startsWith('/') ? clean.slice(1) : `${dir}${clean}`;
     const file = target === '' || target.endsWith('/') ? `${target}index.html` : target;
     if (!existsSync(file)) linkErrors.push(`${page} → ${href}`);
@@ -78,6 +78,10 @@ for (const a of ANIMATIONS.filter((a) => a.hidden)) {
   assert(!existsSync(`animaciones/${a.id}.html`), `Escena oculta con página generada: ${a.id}`);
 }
 assert(/name="robots" content="noindex/.test(await read('v.html')), 'v.html debe llevar noindex');
+for(const file of ['crear.html','codigo.html','encargos.html']) {
+  assert(/name="robots"[^>]*noindex/.test(await read(file)), `La utilidad ${file} debe llevar noindex`);
+  assert(!sitemap.includes(`/${file}</loc>`), `La utilidad ${file} no va en sitemap`);
+}
 assert(/name="robots" content="noindex/.test(await read('404.html')), '404.html debe llevar noindex');
 for (const file of await readdir('tools')) {
   if (!file.endsWith('.html')) continue;

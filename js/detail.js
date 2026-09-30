@@ -1,22 +1,30 @@
-// La ficha es HTML completo. La escena se descarga solo cuando alguien pide verla.
-const button = document.getElementById('detail-play');
-button?.addEventListener('click', async () => {
-  button.disabled = true;
-  button.textContent = 'Cargando animación…';
-  try {
-    const [{ getAnimation }, { createPlayer }] = await Promise.all([
-      import('./catalog.js'), import('./anim/engine.js'),
-    ]);
-    const anim = getAnimation(document.body.dataset.animation);
-    if (!anim || anim.hidden) throw new Error('Animación no disponible');
-    const mod = await anim.load();
-    const player = createPlayer(document.getElementById('detail-canvas'), mod.default, { loop: anim.previewLoop, preview: true });
-    button.hidden = true;
-    player.play();
-    document.addEventListener('visibilitychange', () => document.hidden ? player.pause() : player.play());
-  } catch (error) {
-    button.disabled = false;
-    button.textContent = 'No se pudo cargar. Reintentar';
-    console.error(error);
-  }
-});
+import { getAnimation } from './catalog.js';
+import { createPlayer } from './anim/engine.js';
+import { fillOverlay } from './overlay.js';
+import { enhanceGallery, setGalleryPaused } from './gallery.js';
+const $=id=>document.getElementById(id);
+const anim=getAnimation(document.body.dataset.animation);
+const button=$('detail-play'), pause=$('detail-pause'), replay=$('detail-replay'), status=$('detail-status'), overlay=$('detail-overlay');
+let player, timer, paused=false, visible=true, failed=false;
+function resume() {if(player&&!paused&&!document.hidden&&visible)player.play();else player?.pause();}
+async function load() {
+ button.disabled=true;status.textContent='Cargando escena…';
+ try {
+  if(!anim||anim.hidden)throw Error('Escena no disponible');
+  const mod=await anim.load({retry:failed});
+  const card={a:anim.id,p:'Tu nombre',m:anim.defaultMessage,d:'Tu firma',f:'clear',...(anim.seasonalText?{tm:'suggest'}:{})};
+  fillOverlay(overlay,card,anim);
+  player=createPlayer($('detail-canvas'),mod.default,{card});player.restart();resume();failed=false;
+  setGalleryPaused(true);button.hidden=true;pause.hidden=false;replay.hidden=false;
+  status.textContent='Vista previa en reproducción. Prueba la interacción indicada abajo.';
+  timer=setInterval(()=>overlay.classList.toggle('show',anim.interactive?player.stage.revealed:player.time>=anim.textDelay),150);
+ } catch(error) {player?.destroy();player=null;failed=true;status.textContent='No se pudo cargar la escena. Puedes reintentar o continuar al editor.';button.disabled=false;button.textContent='Reintentar vista previa';console.error(error);}
+}
+button.addEventListener('click',load);
+pause.addEventListener('click',()=>{paused=!paused;pause.textContent=paused?'Continuar':'Pausar';status.textContent=paused?'Vista previa pausada.':'Vista previa en reproducción.';resume();});
+replay.addEventListener('click',()=>{overlay.classList.remove('show');player.restart();paused=false;pause.textContent='Pausar';resume();});
+document.addEventListener('visibilitychange',resume);
+const visibility=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;resume();});visibility.observe($('detail-canvas'));
+window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {clearInterval(timer);player?.destroy();visibility.disconnect();}});
+window.addEventListener('pageshow',event=>{if(event.persisted)resume();});
+for(const gallery of document.querySelectorAll('[data-gallery]'))enhanceGallery(gallery);

@@ -1,0 +1,21 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comprobación local de escenas</title><style>body{background:#0d0a1f;color:#ffe08a;font:14px system-ui}canvas{width:240px;height:320px}pre{white-space:pre-wrap}</style></head><body><h1>Prueba de carga y render</h1><p id="status">Comprobando…</p><canvas id="scene" width="240" height="320"></canvas><pre id="result"></pre><script type="module">
+import {VISIBLE_ANIMATIONS} from '../js/catalog.js';
+import {createPlayer} from '../js/anim/engine.js';
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');window.qaResult=[];
+for(const a of VISIBLE_ANIMATIONS){let stage;try{
+ const mod=await a.load();stage={preview:true,card:{a:a.id,p:'Luna',m:'Un recuerdo para compartir',d:'Familia',f:'clear'},taps:[],pointer:{x:.5,y:.5},holding:false,revealed:false};
+ const frame=mod.default(ctx,240,320,1,stage);
+ for(let i=0;i<=180;i++){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,240,320);if(i===30||i===60||i===90)stage.taps.push({x:120,y:160});stage.holding=i>30&&i<120;frame(i/6,1/6);}
+ window.qaResult.push({id:a.id,ok:true});
+}catch(e){window.qaResult.push({id:a.id,ok:false,error:String(e.stack)});}finally{stage?.onDispose?.();}}
+const keyboard=createPlayer(canvas,()=>()=>{});keyboard.restart();
+canvas.dispatchEvent(new KeyboardEvent('keydown',{key:' ',cancelable:true}));
+if(!keyboard.stage.holding||keyboard.stage.taps.length!==1)throw Error('Teclado no activa el gesto');
+canvas.dispatchEvent(new KeyboardEvent('keydown',{key:' ',repeat:true,cancelable:true}));
+if(keyboard.stage.taps.length!==1)throw Error('Una pulsación genera varios toques');
+canvas.dispatchEvent(new KeyboardEvent('keyup',{key:' ',cancelable:true}));
+if(keyboard.stage.holding)throw Error('No termina la pulsación');
+keyboard.destroy();canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',cancelable:true}));
+if(keyboard.stage.holding)throw Error('El reproductor destruido conserva escuchas');
+document.getElementById('result').textContent=JSON.stringify(window.qaResult.filter(x=>!x.ok),null,2);document.getElementById('status').textContent=`${window.qaResult.filter(x=>x.ok).length}/${VISIBLE_ANIMATIONS.length} escenas renderizadas; teclado y limpieza correctos`;document.body.dataset.complete='true';
+</script></body></html>

@@ -1,8 +1,10 @@
 import { TAU, clamp, rand, pick, easeOutBack } from './util.js';
+import { customPalette } from './color-style.js';
 
 const HEART_COLORS = ['#ff6b9d', '#ff8fab', '#f06595', '#e64980', '#ffc9de', '#ffffff'];
 
-export default function create(ctx, w, h) {
+export default function create(ctx, w, h, dpr = 1, stage) {
+  const HEART_COLORS = customPalette(stage, [[255,107,157], [255,143,171], [240,101,149], [230,73,128], [255,201,222], [255,255,255]]).map(c => `rgb(${c.join(',')})`);
   const S = Math.min(w, h * 0.62);
   const cx = w / 2;
   const cy = h * 0.5;

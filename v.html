@@ -19,9 +19,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
   <link rel="stylesheet" href="css/styles.css">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3061014711786485" crossorigin="anonymous"></script>
 </head>
-<body>
+<body data-focused-flow>
   <main>
     <section class="scene scene-full" id="scene">
       <canvas aria-hidden="true"></canvas>
@@ -42,15 +41,14 @@
 
       <a class="hint" id="hint" href="#after" hidden>Crea la tuya ↓</a>
       <button class="replay" id="replay" type="button" hidden>↻ Ver de nuevo</button>
+      <button class="viewer-pause btn btn-ghost" id="viewerPause" type="button" hidden>Pausar</button>
+      <p class="sr-only" id="viewerStatus" role="status"></p>
     </section>
 
     <section class="container after" id="after">
       <h2>¿Te gustó? Sorprende a alguien especial</h2>
       <a class="btn btn-primary" id="cta" href="crear.html">Crear la mía gratis</a>
       <p class="after-code"><a id="codeLink" href="codigo.html">o copia el código de esta animación &lt;/&gt;</a></p>
-      <div id="support"></div>
-      <div class="ad-slot" data-ad-slot="viewer"></div>
-      <section class="gifts-section" id="gifts"></section>
       <h3>Más animaciones</h3>
       <div class="grid" id="more"></div>
     </section>
@@ -65,6 +63,6 @@
     <p>© 2026 ViralCss</p>
   </footer>
 
-  <script type="module" src="js/viewer.js"></script>
+  <script type="module" src="js/entry.js" data-entry="viewer"></script>
 </body>
 </html>

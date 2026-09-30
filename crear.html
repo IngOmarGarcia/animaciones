@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="canonical" href="https://viralcss.com/crear.html">
+  <meta name="robots" content="noindex, follow">
   <title>Personaliza tu animación | ViralCss</title>
   <meta name="description" content="Escribe el nombre y un mensaje, crea tu enlace y compártelo por WhatsApp.">
   <meta name="theme-color" content="#0d0a1f">
@@ -23,9 +23,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
   <link rel="stylesheet" href="css/styles.css">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3061014711786485" crossorigin="anonymous"></script>
 </head>
-<body>
+<body data-focused-flow>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
   <header class="site-header">
     <a class="brand" href="./"><img src="img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a>
     <nav>
@@ -34,15 +34,15 @@
       <a href="acerca.html">Acerca</a>
     </nav>
   </header>
-
-  <main class="container create">
+  <main id="contenido" class="container create">
     <nav class="crumbs"><a href="./#galeria">← Todas las animaciones</a></nav>
+    <div class="editor-intro"><h1 id="title">Personaliza tu animación</h1><p class="muted" id="desc"></p><p><a id="detailLink" href="animaciones.html">Ver cómo funciona esta escena</a></p></div>
 
     <div class="create-layout">
       <div class="preview-col">
         <div class="phone">
           <div class="scene" id="scene">
-            <canvas aria-hidden="true"></canvas>
+            <canvas tabindex="0" role="button" aria-label="Vista previa interactiva. Usa Intro o Espacio para tocar la escena."></canvas>
             <div class="overlay show" id="overlay">
               <p class="ov-to"></p>
               <p class="ov-msg"></p>
@@ -50,24 +50,48 @@
             </div>
           </div>
         </div>
+        <div class="preview-controls"><button id="previewPause" class="btn btn-ghost" type="button">Pausar vista previa</button><button id="previewRestart" class="btn btn-ghost" type="button">Reiniciar</button></div>
+        <p id="previewStatus" role="status" class="scene-note">Cargando vista previa…</p>
       </div>
 
       <div class="form-col">
-        <h1 id="title">Personaliza tu animación</h1>
-        <p class="muted" id="desc"></p>
 
         <form class="form" id="form" autocomplete="off">
-          <label>¿Para quién es?
+          <div id="seasonalFields" hidden>
+            <label>Texto de tu animación
+              <select name="tm" id="textMode">
+                <option value="suggest">Usar una frase sugerida</option>
+                <option value="custom">Escribir mi texto</option>
+                <option value="none">Sin texto</option>
+              </select>
+            </label>
+            <label id="suggestionLabel">Elige una frase
+              <select id="phraseSuggestion"></select>
+            </label>
+            <p class="muted" id="textModeHelp">Puedes editar la frase y añadir un título, o dejar solo la animación.</p>
+          </div>
+          <label id="recipientLabel"><span id="recipientCaption">¿Para quién es?</span>
             <input name="p" maxlength="40" placeholder="Ej. Sofía">
           </label>
-          <label>Tu mensaje
+          <label id="messageLabel"><span id="messageCaption">Tu mensaje</span>
             <textarea name="m" maxlength="140" rows="3"></textarea>
             <small id="counter">0/140</small>
           </label>
-          <label>¿De parte de quién? <span class="muted">(opcional)</span>
+          <details class="editor-options"><summary>Firma, tipografía y colores</summary><label id="senderLabel"><span id="senderCaption">¿De parte de quién?</span> <span class="muted">(opcional)</span>
             <input name="d" maxlength="40" placeholder="Ej. Juan">
           </label>
-          <div id="galaxyFields" hidden>
+          <label id="fontLabel">Tipografía del texto
+            <select name="f" id="textFont"></select>
+            <small>Se aplica a frases, títulos y firmas. Las letras de partículas conservan su forma.</small>
+          </label>
+          <div id="animationColors" hidden>
+            <label class="color-toggle"><input type="checkbox" id="colorsEnabled"> Personalizar colores de la animación</label>
+            <div class="galaxy-colors" id="colorInputs" hidden>
+              <label>Color principal <input name="c1" type="color" value="#ffd75a"></label>
+              <label>Color secundario <input name="c2" type="color" value="#ff9d3c"></label>
+            </div>
+          </div>
+          </details><details class="editor-options" id="galaxyFields" hidden><summary>Carta y recuerdos</summary>
             <label>Título de la carta
               <input name="lt" maxlength="65" placeholder="Para mi persona favorita">
             </label>
@@ -77,10 +101,6 @@
             <label>Frases de las flores <span class="muted">(separa con |)</span>
               <textarea name="mem" maxlength="500" rows="3" placeholder="Te amo | Mi vida | Siempre contigo"></textarea>
             </label>
-            <div class="galaxy-colors">
-              <label>Color principal <input name="c1" type="color" value="#ffd75a"></label>
-              <label>Color secundario <input name="c2" type="color" value="#ff9d3c"></label>
-            </div>
             <div id="dana2Fields" hidden>
               <h2>Textos de cada isla</h2>
               <p class="muted">Puedes cambiar cada título y mensaje. Los textos de Dana ya están listos como ejemplo.</p>
@@ -88,14 +108,13 @@
               <label>Imagen del portal
                 <input id="dana2Photo" type="file" accept="image/jpeg,image/png,image/webp">
               </label>
-              <p id="dana2PhotoStatus" class="muted">Añade una imagen para el portal. La plantilla no trae foto.</p>
+              <p id="dana2PhotoStatus" class="muted" role="status">Añade una imagen para el portal. La plantilla no trae foto.</p>
             </div>
-          </div>
-          <button class="btn btn-primary btn-block" type="submit">Crear enlace 💌</button>
-        </form>
+          </details><p class="hint">El enlace contiene tus textos. Compártelo solo con quien quieras que los lea.</p><button class="btn btn-primary btn-block" type="submit">Crear enlace 💌</button>
+        </form><button class="btn btn-ghost" id="clearDraft" type="button">Borrar borrador de esta escena</button>
         <p class="code-link"><a class="btn btn-block" id="codeLink" href="codigo.html">&lt;/&gt; Ver o descargar el código</a></p>
 
-        <div class="result" id="result" hidden>
+        <div class="result" id="result" tabindex="-1" hidden>
           <p class="ok">¡Listo! Tu sorpresa ya tiene enlace 🎉</p>
           <div class="link-row">
             <input id="link" readonly aria-label="Enlace para compartir">
@@ -107,16 +126,11 @@
             <a class="btn" id="open" target="_blank" rel="noopener">Ver cómo se ve</a>
           </div>
         </div>
-
-        <div class="ad-slot" data-ad-slot="create"></div>
-        <div id="support"></div>
       </div>
     </div>
 
-    <section class="gifts-section" id="gifts"></section>
-
     <section>
-      <div class="section-head"><h2>Otras animaciones</h2></div>
+      <div class="section-head"><h2>Escenas similares</h2></div>
       <div class="grid" id="more"></div>
     </section>
   </main>
@@ -129,6 +143,6 @@
     <p>© 2026 ViralCss</p>
   </footer>
 
-  <script type="module" src="js/crear.js"></script>
+  <script type="module" src="js/entry.js" data-entry="crear"></script>
 </body>
 </html>

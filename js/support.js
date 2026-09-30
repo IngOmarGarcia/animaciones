@@ -126,7 +126,7 @@ export function initSupportUI() {
   const desktop = header.querySelector('nav');
   if (!desktop) return;
   desktop.classList.add('header-desktop-nav');
-  if (hasSupportMethod()) desktop.append(createSupportButton('Apoyar', 'header-support-button'));
+  if (hasSupportMethod() && !document.body.hasAttribute('data-focused-flow')) desktop.append(createSupportButton('Apoyar', 'header-support-button'));
 
   const toggle = make('button', 'header-menu-toggle', '☰');
   toggle.type = 'button';
@@ -138,7 +138,7 @@ export function initSupportUI() {
   mobile.setAttribute('aria-label', 'Menú móvil');
   toggle.setAttribute('aria-controls', mobile.id);
   for (const link of desktop.querySelectorAll('a')) mobile.append(link.cloneNode(true));
-  if (hasSupportMethod()) mobile.append(createSupportButton('Apoyar a ViralCss', 'mobile-support-button'));
+  if (hasSupportMethod() && !document.body.hasAttribute('data-focused-flow')) mobile.append(createSupportButton('Apoyar a ViralCss', 'mobile-support-button'));
   closeMobileMenu = () => {
     mobile.hidden = true;
     toggle.setAttribute('aria-expanded', 'false');

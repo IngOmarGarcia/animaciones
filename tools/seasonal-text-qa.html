@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Verificación de textos estacionales</title><style>body{background:#100a1b;color:#ffddb4;font:16px system-ui}iframe{width:1100px;height:1050px;border:0}</style><p id="status">Verificando…</p><iframe id="editor" src="/crear.html?a=ofrenda-de-luz"></iframe>
+<script type="module">
+import {decodeCard} from '../js/share.js';
+const check=(ok,msg)=>{if(!ok)throw Error(msg)};
+const q=new URLSearchParams(location.search);
+const timer=setInterval(()=>{const doc=editor.contentDocument;if(doc?.getElementById('title')?.textContent!=='Ofrenda de luz')return;
+clearInterval(timer);
+try{const form=doc.getElementById('form'),f=form.elements,mode=doc.getElementById('textMode'),suggest=doc.getElementById('phraseSuggestion');
+check(!doc.getElementById('seasonalFields').hidden,'Faltan opciones');check(suggest.options.length===3,'Faltan frases');
+const change=el=>el.dispatchEvent(new Event('change',{bubbles:true})),input=el=>el.dispatchEvent(new Event('input',{bubbles:true}));
+const submit=()=>{form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));return decodeCard(new URL(doc.getElementById('link').value).searchParams.get('s'));};
+suggest.selectedIndex=1;change(suggest);check(f.m.value===suggest.value,'No aplica frase');f.m.value='Mi ofrenda, mi historia.';input(f.m);check(submit().m===f.m.value,'No conserva edición');
+mode.value='custom';change(mode);f.p.value='Nuestra ofrenda';input(f.p);f.m.value='';input(f.m);let card=submit();check(card.tm==='custom'&&card.m==='','La frase vacía cambia');check(doc.querySelector('.ov-msg').hidden,'Reaparece texto');
+mode.value='none';change(mode);card=submit();check(card.tm==='none'&&!card.p&&!card.m&&!card.d,'Sin texto comparte datos');check(doc.getElementById('recipientLabel').hidden,'No oculta título');check([...doc.querySelectorAll('#overlay p')].every(p=>p.hidden),'Overlay visible');
+mode.value='custom';change(mode);check(f.p.value==='Nuestra ofrenda','Pierde título al cambiar modo');f.m.value='Entre flores y velas, seguimos recordando.';input(f.m);
+if(q.get('mode')==='none'){mode.value='none';change(mode);}else{mode.value='suggest';change(mode);suggest.selectedIndex=0;change(suggest);}
+document.getElementById('status').textContent='OK: sugerencias editables, texto libre vacío, sin texto, enlace y restauración de campos.';
+}catch(e){document.getElementById('status').textContent='ERROR: '+e.stack;}},25);
+</script>

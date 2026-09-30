@@ -65,9 +65,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.beginPath(); ctx.ellipse(cx, cy, w * (.2 + age * .15), h * (.08 + age * .08), 0, 0, TAU); ctx.stroke();
       const label = recipient(stage);
       // Debajo del bloque de mensaje y firma del visor, que ocupa la franja superior
-      textHalo(ctx, label, cx, h * .44, Math.max(19, w * .12), reveal);
+      textHalo(ctx, label, cx, h * .44, Math.max(19, w * .12), reveal, '#fff1bf', stage);
       ctx.save(); ctx.translate(0, h * .7); ctx.scale(1, -.42);
-      textHalo(ctx, label, cx, 0, Math.max(19, w * .12), reveal * .22, '#d9b8ff'); ctx.restore();
+      textHalo(ctx, label, cx, 0, Math.max(19, w * .12), reveal * .22, '#d9b8ff', stage); ctx.restore();
     }
   };
 }

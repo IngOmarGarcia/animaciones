@@ -1,3 +1,4 @@
+import { canvasTextFont } from './text-style.js';
 import { TAU, clamp, progress, mix, backdrop, recipient, message,
   consumeTap } from './flower-premium-core.js';
 
@@ -69,9 +70,9 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       triangle([[x + width, y], [x + width - flap, y + height * .3], [x + width, y + height * .6]], '#fff5c7', '#b17d2f');
       if (card > .6) {
         ctx.save(); ctx.globalAlpha = progress(card, .6, .4); ctx.textAlign = 'center';
-        ctx.fillStyle = '#69421d'; ctx.font = `700 ${Math.max(17, w * .065)}px Georgia, serif`;
+        ctx.fillStyle = '#69421d'; ctx.font = canvasTextFont(stage, `700 ${Math.max(17, w * .065)}px`, "Georgia, serif");
         ctx.fillText(`Para ${recipient(stage)}`, cx, y + height * .32, width - 38);
-        ctx.font = `italic ${Math.max(12, w * .04)}px Georgia, serif`;
+        ctx.font = canvasTextFont(stage, `italic ${Math.max(12, w * .04)}px`, "Georgia, serif");
         const words = message(stage, 'Una flor hecha sólo para ti').split(' ');
         let line = '', rows = [], max = width - 45;
         for (const word of words) {

@@ -77,7 +77,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     } else {
       const show = ease((t - completedAt) / .9);
       textHalo(ctx, `Esta la hice para ${recipient(stage)}`, cx, h * .87,
-        Math.max(14, w * .06), show);
+        Math.max(14, w * .06), show, '#fff1bf', stage);
     }
   };
 }

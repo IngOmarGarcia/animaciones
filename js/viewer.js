@@ -3,7 +3,8 @@ import { decodeCard } from './share.js';
 import { fillOverlay } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
-import { renderGifts, renderSupport } from './extras.js';
+import './support.js';
+import { relatedAnimations, guideFor } from './scene-guides.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -14,6 +15,10 @@ const overlay = $('overlay');
 const gate = $('gate');
 const replay = $('replay');
 const hint = $('hint');
+const canvas=$('scene').querySelector('canvas');
+canvas.removeAttribute('aria-hidden');
+canvas.setAttribute('aria-label',`${anim.title}. ${guideFor(anim).interaction}`);
+if(anim.interactive){canvas.tabIndex=0;canvas.setAttribute('role','button');}
 const isDana2 = anim.codename === 'Dana2';
 if (isDana2) {
   // Dana2 dibuja sus propios textos y su carta dentro del canvas.
@@ -26,38 +31,56 @@ fillOverlay(overlay, card, anim);
 document.title = card.p ? `Una sorpresa para ${card.p} 💛` : 'Tienes una sorpresa 💛';
 $('gateTo').textContent = card.p ? `Para ${card.p}` : 'Tienes una sorpresa';
 $('gateFrom').textContent = card.d ? `${card.d} te envió algo especial` : 'Alguien te envió algo especial';
+if (anim.seasonalText) {
+  document.title = card.tm !== 'none' && card.p ? `${card.p} · ${anim.title}` : anim.title;
+  $('gateTo').textContent = card.tm !== 'none' && card.p ? card.p : anim.title;
+  $('gateFrom').textContent = anim.category === 'muertos' ? 'Celebra la vida y la memoria' : 'La noche está llena de magia';
+}
 $('cta').href = `crear.html?a=${encodeURIComponent(anim.id)}`;
 // Sin el mensaje de quien la envió: solo la animación.
 $('codeLink').href = `codigo.html?a=${encodeURIComponent(anim.id)}`;
+$('codeLink').closest('.after-code').hidden = !!anim.noCode || isDana2;
 
-const modulePromise = anim.load();
 let player = null;
 let watcher = 0;
+let paused=false, starting=false, failed=false;
+$('viewerPause').addEventListener('click',()=>{
+  paused=!paused;paused?player?.pause():player?.play();
+  $('viewerPause').textContent=paused?'Continuar':'Pausar';$('viewerStatus').textContent=paused?'Animación pausada.':'Animación en reproducción.';
+});
 document.addEventListener('visibilitychange', () => {
   if (!player) return;
   if (document.hidden) player.pause();
-  else player.play();
+  else if(!paused) player.play();
 });
 
 async function start() {
-  let mod;
+  if (starting) return;
+  starting=true; clearInterval(watcher);
   try {
-    mod = await modulePromise;
+    const mod = await anim.load({retry:failed});
+    if (player) player.restart();
+    else player=createPlayer(canvas, mod.default, {card});
+    paused=false;
+    if(!document.hidden)player.play();
+    failed=false;
   } catch (err) {
+    player?.destroy();player=null;failed=true;
     console.error('No se pudo cargar la animación', err);
-    overlay.classList.add('show');
+    $('viewerStatus').className='viewer-error';
+    $('viewerStatus').textContent='No se pudo cargar la animación. Pulsa Ver de nuevo para reintentar.';
+    replay.hidden=false;
+    $('viewerPause').hidden=true;
     return;
+  } finally {
+    starting=false;
   }
   clearInterval(watcher);
+  $('viewerStatus').className='sr-only';$('viewerStatus').textContent='Animación en reproducción.';
   overlay.classList.remove('show');
   replay.hidden = true;
   hint.hidden = true;
-  if (player) {
-    player.restart();
-  } else {
-    player = createPlayer($('scene').querySelector('canvas'), mod.default, { card });
-    player.play();
-  }
+  paused=false;$('viewerPause').hidden=false;$('viewerPause').textContent='Pausar';
   // Se sigue el tiempo de la animación (no el reloj) para que en celulares lentos
   // el mensaje no aparezca antes de que florezca. Las interactivas avisan con stage.revealed.
   let shownAt = null;
@@ -86,7 +109,6 @@ if (params.has('autoplay') || (anim.codename === 'Dana2' && params.has('s'))) {
   start();
 }
 
-renderSupport($('support'));
-renderGifts($('gifts'), anim.category);
-const related = VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id && a.category === anim.category);
-renderGallery($('more'), (related.length ? related : VISIBLE_ANIMATIONS.filter((a) => a.id !== anim.id)).slice(0, 8));
+renderGallery($('more'), relatedAnimations(anim, VISIBLE_ANIMATIONS));
+window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {clearInterval(watcher);player?.destroy();}});
+window.addEventListener('pageshow',event=>{if(event.persisted&&!paused&&!document.hidden)player?.play();});

@@ -2,6 +2,7 @@ import {
   TAU, clamp, rand, pick, lerp, easeInOut, rgbaOf, glow, sparkle, softBackdrop, makeVignette,
 } from './util.js';
 
+import { customPalette } from './color-style.js';
 // ✏️ Colores bioluminiscentes
 const GLOWS = [[90, 230, 255], [255, 110, 210], [170, 130, 255], [120, 255, 200]];
 
@@ -10,7 +11,8 @@ const WAKE = 1.4; // las medusas empiezan a encenderse
 const QUEEN = 3.4; // sube la medusa grande
 const PULSE = 5; // su pulso ilumina el plancton: momento WOW
 
-export default function create(ctx, w, h, dpr = 1) {
+export default function create(ctx, w, h, dpr = 1, stage) {
+  const GLOWS = customPalette(stage, [[90, 230, 255], [255, 110, 210], [170, 130, 255], [120, 255, 200]]);
   const S = Math.min(w, h * 0.62);
   const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 

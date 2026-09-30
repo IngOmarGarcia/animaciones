@@ -1,3 +1,8 @@
 
 # Fuente de Blender: 28 MB que ninguna pagina carga. Para incluirlo: git add -f
 assets/football/*.fbx
+
+# Evidencia de pruebas en navegador; no forma parte del sitio público.
+tools/review/
+personalization-*.png
+seasonal-*.png

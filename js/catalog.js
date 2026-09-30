@@ -1,5 +1,8 @@
+import { SEASONAL_ANIMATIONS } from './seasonal-catalog.js';
 export const CATEGORIES = [
   { id: 'todas', name: 'Todas' },
+  { id: 'halloween', name: '🎃 Halloween' },
+  { id: 'muertos', name: '🕯️ Día de Muertos' },
   { id: 'flores', name: '🌼 Flores amarillas' },
   { id: 'mexico', name: '🎉 Independencia de México' },
   { id: 'futbol', name: '⚽ Fútbol' },
@@ -9,13 +12,13 @@ export const CATEGORIES = [
   { id: 'paisajes', name: '🏞️ Paisajes' },
   { id: 'cumple', name: '🎂 Cumpleaños y fiesta' },
   { id: 'navidad', name: '🎄 Navidad' },
-  { id: 'muertos', name: '🕯️ Día de Muertos' },
 ];
 
 // file: nombre de la escena en js/anim/ (sin .js).
 // textPosition: 'top' | 'center'. textDelay: segundos antes de mostrar el mensaje.
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
+  ...SEASONAL_ANIMATIONS,
   {
     id: 'jardin-de-lunas',
     codename: 'Dana2',
@@ -154,6 +157,7 @@ export const ANIMATIONS = [
   },
   {
     id: 'constelacion-con-tu-nombre',
+    nameInScene: true,
     file: 'constelacion-nombre',
     category: 'espacio',
     title: 'Constelación con tu nombre',
@@ -411,6 +415,7 @@ export const ANIMATIONS = [
   },
   {
     id: 'fuegos-con-tu-nombre',
+    nameInScene: true,
     file: 'fuegos-nombre',
     category: 'cumple',
     title: 'Fuegos artificiales con tu nombre',
@@ -699,7 +704,21 @@ export const ANIMATIONS = [
   },
 ];
 
-for (const anim of ANIMATIONS) anim.load = () => import(`./anim/${anim.file}.js`);
+const COLOR_DEFAULTS = {
+  'medusas-bioluminiscentes': ['#5ae6ff', '#ff6ed2'],
+  'mariposas-neon': ['#ff50c8', '#50e6ff'],
+  'lluvia-de-corazones': ['#ff6b9d', '#ff8fab'],
+  'galaxia-de-flores': ['#ffd75a', '#ff9d3c'],
+  'jardin-de-lunas': ['#ffba29', '#38d1f5'],
+  'universo-de-flores': ['#ffd75a', '#ff9d3c'],
+};
+for (const anim of ANIMATIONS) {
+  anim.colorDefaults = COLOR_DEFAULTS[anim.id] || (anim.seasonalText ? anim.category === 'muertos' ? ['#ff9c34', '#ffe5a0'] : anim.kind === 'ghost' ? ['#ff85d4', '#ffd3ed'] : ['#b077ff', '#e2caff'] : null);
+  let loadAttempt = 0;
+  // Un import fallido queda en la caché del documento. Un reintento explícito
+  // necesita una URL nueva para volver a solicitar el módulo de la escena.
+  anim.load = ({ retry = false } = {}) => import(`./anim/${anim.file}.js${retry ? `?retry=${++loadAttempt}` : ''}`);
+}
 
 // Las que se listan en el sitio. Una animación con `hidden: true` sigue funcionando por
 // enlace directo y en las herramientas de tools/, pero no aparece en la portada ni en las

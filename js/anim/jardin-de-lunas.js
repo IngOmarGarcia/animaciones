@@ -1,3 +1,4 @@
+import { canvasTextFont } from './text-style.js';
 import {
   clamp, particleQuality, getParticleRenderer, viewProjection, projectVP, drawParticles2D, qualityGovernor,
 } from './util.js';
@@ -583,7 +584,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const words = config.introMessage.trim().split(/\s+/);
       const split = words.length > 5 ? Math.ceil(words.length / 2) : words.length;
       const lines = [words.slice(0, split).join(' '), words.slice(split).join(' ')].filter(Boolean);
-      ctx.font = `700 ${small}px Georgia, "Times New Roman", serif`;
+      ctx.font = canvasTextFont(stage, `700 ${small}px`, "Georgia, \"Times New Roman\", serif");
       ctx.shadowColor = 'rgba(0,0,0,.85)';
       ctx.shadowBlur = 18;
       ctx.fillStyle = `rgba(255,246,214,${introIn})`;
@@ -592,7 +593,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       ctx.shadowBlur = 0;
     }
     if (stage?.preview) {
-      ctx.font = `700 ${Math.max(19, textScale * 0.077)}px Georgia, "Times New Roman", serif`;
+      ctx.font = canvasTextFont(stage, `700 ${Math.max(19, textScale * 0.077)}px`, "Georgia, \"Times New Roman\", serif");
       ctx.shadowColor = 'rgba(0,0,0,.95)';
       ctx.shadowBlur = 12;
       ctx.fillStyle = 'rgba(255,240,193,.9)';
@@ -601,7 +602,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     }
     const exploreIn = revealAt(t, INTRO.look, 0.5) * (1 - clamp01((t - INTRO.free + 1.2) / 0.8));
     if (exploreIn > 0.01 && found === 0 && !shown) {
-      ctx.font = `600 ${Math.max(14, textScale * 0.04)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${Math.max(14, textScale * 0.04)}px`, "system-ui, sans-serif");
       ctx.shadowColor = 'rgba(0,0,0,.85)';
       ctx.shadowBlur = 12;
       ctx.fillStyle = `rgba(255,238,190,${exploreIn * 0.9})`;
@@ -614,7 +615,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     }
     if ((found > 0 || t > INTRO.free) && doneAt < 0) {
       // Abajo y con sombra: arriba quedaba encima de la luna y no se leía
-      ctx.font = `600 ${Math.max(12, textScale * 0.034)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${Math.max(12, textScale * 0.034)}px`, "system-ui, sans-serif");
       ctx.shadowColor = 'rgba(0,0,0,.95)';
       ctx.shadowBlur = 16;
       ctx.fillStyle = 'rgba(255,238,190,.82)';
@@ -625,7 +626,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     if (gyroButton) {
       const label = gyro.pending ? 'Esperando sensor...' : '✦ Activar vista 360° ✦';
       const fs = Math.max(14, textScale * 0.04);
-      ctx.font = `600 ${fs}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${fs}px`, "system-ui, sans-serif");
       const pad = fs * 0.9;
       const tw = ctx.measureText(label).width;
       const bx = w / 2 - tw / 2 - pad;
@@ -645,7 +646,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     if (doneAt >= 0 && t - doneAt > FINALE.letter && letterOpenedAt < 0) {
       const pulse = 0.72 + 0.28 * Math.sin(t * 2);
       ctx.fillStyle = `rgba(255,236,184,${pulse})`;
-      ctx.font = `600 ${Math.max(15, textScale * 0.05)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `600 ${Math.max(15, textScale * 0.05)}px`, "system-ui, sans-serif");
       const heartUV = projectVP(vp, HEART_POS.x, HEART_POS.y - HEART_POS.scale, HEART_POS.z);
       ctx.fillText('Toca el corazón para abrir la carta', w / 2,
         Math.min(h * 0.87, h * (1 - heartUV[1]) + h * 0.07), w * 0.85);
@@ -658,7 +659,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const bodySize = Math.max(14, textScale * 0.04);
       const headingSize = Math.max(20, textScale * 0.069);
       const sheetW = Math.min(w * 0.84, h * 0.86);
-      ctx.font = `500 ${bodySize}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `500 ${bodySize}px`, "system-ui, sans-serif");
       const words = config.letterText.split(/\s+/);
       const lines = [];
       let line = '';
@@ -699,15 +700,15 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         const top = cy - sheetH / 2 + padY;
         ctx.shadowColor = 'rgba(0,0,0,.85)';
         ctx.shadowBlur = 14;
-        ctx.font = `700 ${headingSize}px Georgia, "Times New Roman", serif`;
+        ctx.font = canvasTextFont(stage, `700 ${headingSize}px`, "Georgia, \"Times New Roman\", serif");
         ctx.fillStyle = `rgba(255,246,214,${textIn})`;
         ctx.fillText(config.letterTitle, cx, top, sheetW * 0.88);
-        ctx.font = `500 ${bodySize}px system-ui, sans-serif`;
+        ctx.font = canvasTextFont(stage, `500 ${bodySize}px`, "system-ui, sans-serif");
         ctx.fillStyle = `rgba(226,232,255,${textIn * 0.92})`;
         lines.forEach((l, i) => ctx.fillText(l, cx, top + headingGap + i * lh, sheetW * 0.88));
         const senderIn = revealAt(ft, FINALE.sender, 1) * textIn;
         if (senderIn > 0.01 && config.senderName) {
-          ctx.font = `700 ${Math.max(16, textScale * 0.05)}px Georgia, "Times New Roman", serif`;
+          ctx.font = canvasTextFont(stage, `700 ${Math.max(16, textScale * 0.05)}px`, "Georgia, \"Times New Roman\", serif");
           ctx.fillStyle = `rgba(255,238,190,${senderIn})`;
           ctx.fillText(`— ${config.senderName}`, cx, top + headingGap + lines.length * lh + lh * 0.7, sheetW * 0.7);
         }
@@ -737,13 +738,13 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         const [title, message = ''] = memoryMessage(shown.flower.memory).split('~');
         const memoryTitleSize = Math.max(18, textScale * 0.058);
         const memoryBodySize = Math.max(14, textScale * 0.038);
-        ctx.font = `700 ${memoryTitleSize}px Georgia, "Times New Roman", serif`;
+        ctx.font = canvasTextFont(stage, `700 ${memoryTitleSize}px`, "Georgia, \"Times New Roman\", serif");
         ctx.shadowColor = 'rgba(0,0,0,.8)';
         ctx.shadowBlur = 14;
         ctx.fillStyle = `rgba(255,246,214,${alpha})`;
         ctx.fillText(title, w / 2, h * 0.38, w * 0.82);
         if (message) {
-          ctx.font = `500 ${memoryBodySize}px system-ui, sans-serif`;
+          ctx.font = canvasTextFont(stage, `500 ${memoryBodySize}px`, "system-ui, sans-serif");
           ctx.fillText(message, w / 2, h * 0.38 + (memoryTitleSize + memoryBodySize) * 0.7, w * 0.84);
         }
       }

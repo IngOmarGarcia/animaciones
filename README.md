@@ -7,10 +7,10 @@ Sitio estático (HTML + CSS + JavaScript con módulos ES, sin compilación). Las
 Los módulos ES necesitan un servidor (abrir con doble clic no funciona):
 
 ```bash
-python tools/serve.py
+node tools/serve-local.mjs
 ```
 
-Usa este servidor y no `python -m http.server`: el de Python no manda cabeceras de caché y el navegador puede quedarse con módulos viejos (animaciones en negro después de cambiar `util.js`).
+Este servidor sirve los módulos con el tipo de contenido correcto y desactiva la caché durante las pruebas. También está disponible `python tools/serve.py` si tienes Python instalado.
 
 Luego abre http://localhost:8080
 
@@ -28,11 +28,11 @@ En Google Search Console, verifica `https://viralcss.com`, envía `https://viral
 ## Estructura
 
 ```
-index.html        Portada con galería y texto SEO
+index.html        Portada con galería y guía de elección
 crear.html        Vista previa + formulario + enlace para compartir
 v.html            Página que abre quien recibe la sorpresa
 codigo.html       Código HTML de una animación para copiar o descargar (?a=id o ?s=... con mensaje)
-acerca.html, privacidad.html   Requeridas para solicitar AdSense
+acerca.html, privacidad.html   Información del proyecto y tratamiento de datos
 css/styles.css
 js/catalog.js     Lista de animaciones (agrega aquí las nuevas)
 js/share.js       Codifica/decodifica la tarjeta en el enlace (base64url)
@@ -90,12 +90,13 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 
 El botón superior lleva a `/sugerencias.html`, donde se muestra el correo de contacto y un enlace `mailto:`. No necesita servicios adicionales en Cloudflare.
 
-## AdSense
+## AdSense y revisión local
 
-- Solicítalo con el dominio propio ya publicado y con las páginas de privacidad y contacto.
-- El script de la cuenta (`ca-pub-3061014711786485`) ya está en el `<head>` de cada página y `ads.txt` está en la raíz.
-- Cuando aprueben la cuenta, pega los bloques de anuncio dentro de los `div.ad-slot` (ya reservan altura para no mover el diseño). Vacíos se ocultan solos.
-- No pongas anuncios encima de la animación ni botones de descarga falsos: Google lo penaliza.
+Esta versión no carga anuncios. La portada conserva la meta de asociación con la cuenta y `ads.txt` permanece en la raíz. Editor, código, dedicatorias y herramientas no tienen espacios publicitarios. La activación de publicidad y cualquier solicitud de revisión requieren autorización del propietario y comprobar la configuración de consentimiento/CMP.
+
+Las políticas consultadas, las decisiones de indexación y los datos pendientes están en [tools/ADSENSE-REVIEW.md](tools/ADSENSE-REVIEW.md). No se promete aprobación. Las fichas se generan desde el catálogo y las explicaciones comprobadas de `js/scene-guides.js` y `js/category-guides.js`.
+
+Para verificar los cambios, ejecuta `node tools/generate-seo.mjs`, `node tools/check-seo.mjs`, `node tools/check-seasonal-text.mjs` y `node tools/check-personalization.mjs`. Con el servidor local activo y Chrome instalado, `node tools/browser-check.mjs` comprueba los flujos reales y genera capturas en `tools/review/` (excluidas de Git).
 
 ## Pendientes sugeridos
 

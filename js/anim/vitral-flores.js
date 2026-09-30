@@ -1,3 +1,4 @@
+import { canvasTextFont } from './text-style.js';
 import { TAU, clamp, progress, mix, seeded, backdrop, point, flare,
   recipient, consumeTap } from './flower-premium-core.js';
 
@@ -97,7 +98,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         ctx.lineTo(w * .5 + Math.cos(a+.2) * w * .7, h); ctx.fill();
       }
       ctx.save(); ctx.translate(cx, h * .81); ctx.transform(1, 0, -.22, .46, 0, 0);
-      ctx.textAlign = 'center'; ctx.font = `700 ${Math.max(24,w * .13)}px Georgia, serif`;
+      ctx.textAlign = 'center'; ctx.font = canvasTextFont(stage, `700 ${Math.max(24,w * .13)}px`, 'Georgia, serif');
       ctx.fillStyle = `rgba(255,220,132,${illuminated * .85})`;
       ctx.shadowColor = '#f5c45b'; ctx.shadowBlur = 16;
       ctx.fillText(recipient(stage), 0, 0, w * .75); ctx.restore();

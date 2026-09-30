@@ -56,7 +56,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         final * .85, 15);
       ctx.strokeStyle = `rgba(255,222,140,${final * .35})`;
       ctx.beginPath(); ctx.ellipse(cx, cy, R * (1.3 + Math.sin(t) * .03), R * .42, t * .08, 0, TAU); ctx.stroke();
-      textHalo(ctx, recipient(stage), cx, h * .77, Math.max(22, w * .105), final);
+      textHalo(ctx, recipient(stage), cx, h * .77, Math.max(22, w * .105), final, '#fff1bf', stage);
     }
   };
 }

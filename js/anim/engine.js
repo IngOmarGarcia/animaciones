@@ -6,14 +6,17 @@
 // `stage.card` ({ p, m, d }) permite que una escena dibuje el nombre.
 export function createPlayer(canvas, create, { loop = 0, card = null, preview = false } = {}) {
   const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('El navegador no pudo crear el lienzo de la animación.');
   const stage = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, preview, revealed: false, card };
-  if (!preview) canvas.style.touchAction = 'none';
-  canvas.addEventListener('pointermove', (event) => {
+  const listeners = new AbortController();
+  const add = (name, handler) => canvas.addEventListener(name, handler, { signal: listeners.signal });
+  if (!preview) canvas.style.touchAction = 'pan-y';
+  add('pointermove', (event) => {
     const rect = canvas.getBoundingClientRect();
     stage.pointer.x = (event.clientX - rect.left) / rect.width;
     stage.pointer.y = (event.clientY - rect.top) / rect.height;
   });
-  canvas.addEventListener('pointerdown', (event) => {
+  add('pointerdown', (event) => {
     stage.holding = true;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -26,9 +29,18 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     }
   });
   const release = () => { stage.holding = false; };
-  canvas.addEventListener('pointerup', release);
-  canvas.addEventListener('pointercancel', release);
-  canvas.addEventListener('pointerleave', release);
+  add('pointerup', release);
+  add('pointercancel', release);
+  add('pointerleave', release);
+  add('keydown', event => {
+    if (!['Enter', ' '].includes(event.key) || event.repeat) return;
+    event.preventDefault(); stage.holding = true;
+    const x = w * .5, y = h * .5;
+    stage.pointer.x = stage.pointer.y = .5;
+    if (!stage.onPointerDown?.({x,y,nx:.5,ny:.5,event})) stage.taps.push({x,y});
+  });
+  add('keyup', event => { if (['Enter',' '].includes(event.key)) {event.preventDefault();release();} });
+  add('blur', release);
   let frame = null;
   let w = 0;
   let h = 0;
@@ -37,9 +49,11 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   let last = 0;
   let raf = 0;
   let running = false;
+  let destroyed = false;
 
   // Recrea la escena solo si cambió el tamaño (conserva el tiempo).
   function setup(force = false) {
+    if (destroyed) return false;
     const rect = canvas.getBoundingClientRect();
     const nw = Math.round(rect.width);
     const nh = Math.round(rect.height);
@@ -57,7 +71,9 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     stage.onDispose?.();
     stage.onDispose = null;
     stage.onPointerDown = null;
+    frame = null;
     frame = create(ctx, w, h, dpr, stage);
+    if (!preview && stage.onPointerDown) canvas.style.touchAction = 'none';
     return true;
   }
 
@@ -90,7 +106,9 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   resizeObserver.observe(canvas);
 
   function play() {
-    if (running) return;
+    if (running || destroyed) return;
+    if (!setup()) return;
+    render(0);
     running = true;
     last = performance.now();
     raf = requestAnimationFrame(tick);
@@ -99,18 +117,25 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   function pause() {
     running = false;
     cancelAnimationFrame(raf);
+    stage.holding = false;
   }
 
   function restart() {
+    if (destroyed) return;
     t = 0;
     setup(true);
     if (!running) render(0);
   }
 
   function destroy() {
+    if (destroyed) return;
     pause();
     stage.onDispose?.();
     resizeObserver.disconnect();
+    listeners.abort();
+    destroyed = true;
+    frame = null;
+    stage.onDispose = null;
   }
 
   return {

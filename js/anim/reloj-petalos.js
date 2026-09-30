@@ -59,8 +59,8 @@ export default function create(ctx, w, h, dpr = 1, stage) {
         (.1 + .3 * Math.sin(t * 2 + p.phase) ** 2) * face, '#ffe09b');
     }
     if (hero > 0) {
-      textHalo(ctx, 'Volvería a elegirte', cx, h * .77, Math.max(15, w * .066), hero);
-      textHalo(ctx, recipient(stage), cx, h * .84, Math.max(20, w * .10), hero, '#fff3c4');
+      textHalo(ctx, 'Volvería a elegirte', cx, h * .77, Math.max(15, w * .066), hero, '#fff1bf', stage);
+      textHalo(ctx, recipient(stage), cx, h * .84, Math.max(20, w * .10), hero, '#fff3c4', stage);
     }
   };
 }

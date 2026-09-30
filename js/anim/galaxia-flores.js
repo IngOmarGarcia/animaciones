@@ -1,3 +1,4 @@
+import { canvasTextFont } from './text-style.js';
 import {
   TAU, clamp, lerp, particleQuality, qualityGovernor, getParticleRenderer,
   viewProjection, projectVP, drawParticles2D,
@@ -132,7 +133,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     if (t > 4.6 + i * 0.55 && phrase) {
       ctx.save(); ctx.globalAlpha = ease((t - 4.6 - i * 0.55) / 0.9) * (active ? 1 : 0.78);
       ctx.textAlign = 'center';
-      ctx.font = `${active ? 600 : 500} ${clamp(w * 0.030, 10, 15)}px system-ui, sans-serif`;
+      ctx.font = canvasTextFont(stage, `${active ? 600 : 500} ${clamp(w * 0.030, 10, 15)}px`, "system-ui, sans-serif");
       ctx.fillStyle = '#fff2ca'; ctx.shadowColor = '#000'; ctx.shadowBlur = 9;
       const words = phrase.split(' '), mid = Math.ceil(words.length / 2);
       // La frase se centra en la flor, pero sin salirse: las flores de los bordes cortaban el texto
@@ -154,14 +155,14 @@ export default function create(ctx, w, h, dpr = 1, stage) {
     ctx.fillStyle = '#fff9e9'; ctx.beginPath(); ctx.roundRect(x, y, cw, ch, 12); ctx.fill(); ctx.shadowBlur = 0;
     ctx.strokeStyle = '#cfa75c'; ctx.lineWidth = 1; ctx.strokeRect(x + 12, y + 12, cw - 24, ch - 24);
     ctx.textAlign = 'center'; ctx.fillStyle = '#6c451e';
-    ctx.font = `600 ${Math.min(24, w * 0.055)}px Georgia, serif`;
+    ctx.font = canvasTextFont(stage, `600 ${Math.min(24, w * 0.055)}px`, "Georgia, serif");
     ctx.fillText(liveConfig.title, w / 2, y + 62, cw - 50);
     ctx.fillStyle = '#b7893c'; ctx.font = '16px Georgia, serif'; ctx.fillText('✦  ✦  ✦', w / 2, y + 93);
     const bodySize = liveConfig.letter.length > 320 ? 13 : Math.min(17, w * 0.039);
     const lineHeight = bodySize + 5;
-    ctx.fillStyle = '#4b392b'; ctx.font = `${bodySize}px Georgia, serif`;
+    ctx.fillStyle = '#4b392b'; ctx.font = canvasTextFont(stage, `${bodySize}px`, "Georgia, serif");
     const lines = wrap(ctx, liveConfig.letter, w / 2, y + 126, cw - 62, lineHeight);
-    ctx.font = 'italic 16px Georgia, serif';
+    ctx.font = canvasTextFont(stage, 'italic 16px', 'Georgia, serif');
     ctx.fillText(`Con amor, ${liveConfig.senderName || 'alguien especial'}`, w / 2, Math.min(y + ch - 36, y + 143 + lines * lineHeight), cw - 48);
     ctx.fillStyle = '#ffdf8b'; ctx.font = '600 14px system-ui, sans-serif'; ctx.fillText('✕  Cerrar', w / 2, y + ch + 32);
   }
@@ -259,7 +260,7 @@ export default function create(ctx, w, h, dpr = 1, stage) {
       const labelY = h * 0.955;
       ctx.fillStyle = 'rgba(9,6,12,.82)'; ctx.beginPath();
       ctx.roundRect(w * 0.22, labelY - 19, w * 0.56, 28, 14); ctx.fill();
-      ctx.fillStyle = '#f5d487'; ctx.font = `600 ${clamp(w * 0.037, 12, 17)}px system-ui, sans-serif`;
+      ctx.fillStyle = '#f5d487'; ctx.font = canvasTextFont(stage, `600 ${clamp(w * 0.037, 12, 17)}px`, "system-ui, sans-serif");
       ctx.fillText('✦  Haz clic aquí  ✦', w / 2, labelY); ctx.restore();
     }
     if (letterOpen) drawLetter();

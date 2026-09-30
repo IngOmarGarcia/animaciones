@@ -1,3 +1,4 @@
+import { canvasTextFont } from './text-style.js';
 // Geometría y utilidades compartidas. Cada escena define su propio guion y composición.
 export const TAU = Math.PI * 2;
 export const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -117,10 +118,10 @@ export function particleName(ctx, pts, cx, cy, t, amount = 1, color = '#ffe783')
   ctx.restore();
 }
 
-export function textHalo(ctx, text, x, y, size, alpha = 1, color = '#fff1bf') {
+export function textHalo(ctx, text, x, y, size, alpha = 1, color = '#fff1bf', stage) {
   if (!text || alpha <= 0) return;
   ctx.save(); ctx.globalAlpha = alpha; ctx.textAlign = 'center';
-  ctx.font = `600 ${size}px Georgia, serif`;
+  ctx.font = canvasTextFont(stage, `600 ${size}px`, 'Georgia, serif');
   ctx.shadowColor = '#ffc358'; ctx.shadowBlur = 15;
   ctx.fillStyle = color; ctx.fillText(text, x, y, Math.max(80, ctx.canvas.width * .78));
   ctx.restore();
