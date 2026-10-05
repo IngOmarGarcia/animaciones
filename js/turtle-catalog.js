@@ -1,0 +1,41 @@
+// Each row describes its own geometry and choreography, not a palette variant.
+export const TURTLE_ROWS = [
+ ['mansion-imposible','halloween','Mansión de las habitaciones imposibles','Habitaciones que se separan sin perder sus escaleras.','Toca la mansión','tap','#ab72ff','#ffc16a'],
+ ['telarana-electrica','halloween','Telaraña de electricidad','Una red elástica transmite ondas y guía a una araña de luz.','Toca los hilos','tap','#bad6ff','#98ffe1'],
+ ['grimorio-tinta-viva','halloween','Grimorio de tinta viva','La escritura sale del libro, adquiere volumen y vuelve a la página.','Desliza para pasar página','explore','#cd9aff','#edce7c'],
+ ['carrusel-medianoche','halloween','El carrusel de medianoche','Caballos suspendidos abandonan el carrusel y galopan en hélice.','Toca el carrusel','tap','#ffbe63','#69e5ac'],
+ ['catrina-encaje','muertos','Catrina de encaje luminoso','Sombrero, silueta y vestido abren un abanico de encajes con relieve.','Arrastra para girar','explore','#ffc88a','#f077c1'],
+ ['pan-memoria','muertos','Pan de muerto: memoria compartida','Corteza y azúcar se separan para revelar una mesa dentro del vapor.','Toca para compartir','tap','#e9a05e','#fff0cb'],
+ ['retrato-historias','muertos','El retrato que guarda historias','Una mesa, sillas y ventana forman capas de memoria y una foto opcional.','Mueve y toca el retrato','explore','#ffcf8d','#79c8c4'],
+ ['bordado-memoria','muertos','Bordado de la memoria','Una composición artística original levanta sus puntadas de la tela.','Mantén para bordar','hold','#ff849f','#f6cf7b'],
+ ['herbario-luz','flores','Herbario de luz','Ejemplares botánicos abandonan una página y conservan sus nervaduras.','Desliza la página','explore','#b8df8b','#ffd281'],
+ ['eclipse-corona','espacio','Eclipse de corona viva','Dos discos se ocultan y dejan una corona de filamentos solares.','Arrastra para alinear','explore','#ffbd62','#fff0c9'],
+ ['maquina-dulces','cumple','La edad en una máquina de dulces','Conductos transparentes entregan una edad de caramelos a una bandeja.','Toca para liberar los dulces','tap','#ff87b2','#79e1ff'],
+ ['taller-juguetes','navidad','Taller de juguetes de luz','Un taller ensambla un tren y dibuja la vía que entrega una tarjeta.','Toca para partir','tap','#f2bc76','#71dfae'],
+ ['guitarra-resonancia','mexico','Guitarra de resonancia','Madera y cuerdas transmiten ondas que reúnen una dedicatoria.','Desliza las cuerdas','explore','#f4b16b','#70d6cf'],
+ ['escalera-imposible','general','Escalera hacia lo imposible','Una ilusión de perspectiva se resuelve en una escalera ascendente.','Toca para cambiar de perspectiva','tap','#bcb4ff','#83e7dd'],
+];
+const SCENE_COPY = {
+ 'mansion-imposible': ['Noche en la mansión', 'Esta noche, cada habitación guarda una sorpresa.', 'Te esperamos donde las escaleras cambian de destino.', 'Abre la puerta a una noche imposible.'],
+ 'telarana-electrica': ['Una noche conectada', 'Un pequeño toque conecta toda la noche.', 'Sigue el hilo: al otro lado hay una sorpresa.', 'Entre hilos de luz, comienza nuestra celebración.'],
+ 'grimorio-tinta-viva': ['Historias de medianoche', 'Hay historias que se despiertan al pasar la página.', 'Abre el libro: la próxima aventura lleva tu nombre.', 'Esta noche escribimos un capítulo extraordinario.'],
+ 'carrusel-medianoche': ['Una vuelta extraordinaria', 'Cuando llega la medianoche, la imaginación sale a galopar.', 'Reserva una vuelta para una noche inolvidable.', 'Que las luces del carrusel nos encuentren celebrando.'],
+ 'catrina-encaje': ['Elegancia y memoria', 'Entre encajes y colores, celebramos las historias que nos unen.', 'Vestimos de luz los recuerdos que queremos compartir.', 'Que esta celebración reúna memoria, alegría y compañía.'],
+ 'pan-memoria': ['Nuestra mesa compartida', 'Un pan en la mesa, mil recuerdos para compartir.', 'Lo más cálido de esta mesa es volver a reunirnos.', 'Hay historias que se cuentan mejor en compañía.'],
+ 'retrato-historias': ['Un recuerdo de familia', 'Los grandes recuerdos viven en los pequeños momentos.', 'Esta ventana guarda una historia que quiero compartir contigo.', 'Una mesa, dos sillas y todo lo que vivimos juntos.'],
+ 'bordado-memoria': ['Un nombre entre hilos', 'Puntada a puntada, guardamos lo que nos une.', 'Tu nombre tiene un lugar entre nuestros recuerdos.', 'Los hilos de esta historia vuelven a encontrarse.'],
+ 'herbario-luz': ['Pequeñas maravillas', 'Entre estas páginas guardé un pequeño mundo para ti.', 'Cada hoja merece una pausa para descubrirla.', 'Hay detalles pequeños que hacen grande un día.'],
+ 'eclipse-corona': ['Un instante excepcional', 'A veces, la sombra revela una luz extraordinaria.', 'Detengamos un momento el tiempo para mirar el cielo.', 'Que nunca falten instantes capaces de sorprenderte.'],
+ 'maquina-dulces': ['Una edad para celebrar', 'Que cada vuelta al sol venga con algo dulce.', 'Hoy la máquina tiene una sorpresa hecha para ti.', 'Celebramos tus años y las aventuras que vienen.'],
+ 'taller-juguetes': ['El expreso de Navidad', 'Este pequeño tren lleva un saludo lleno de ilusión.', 'Próxima parada: una Navidad para compartir.', 'En nuestro taller, los buenos deseos ya están en camino.'],
+ 'guitarra-resonancia': ['Una canción para compartir', 'Hay palabras que encuentran su camino entre las cuerdas.', 'Que esta melodía acompañe un momento especial.', 'Una guitarra, una historia y un saludo para ti.'],
+ 'escalera-imposible': ['El siguiente paso', 'Lo que parecía imposible comienza con un paso.', 'Cambia la perspectiva y descubre tu próximo camino.', 'Sigue subiendo: todavía hay mucho por descubrir.'],
+};
+export const TURTLE_ANIMATIONS = TURTLE_ROWS.map(([id,category,title,description,hint,mode,c1,c2],index)=>({
+ id,file:id,category,title,description, hint,mode,turtleIndex:index,
+ exampleTitle: SCENE_COPY[id][0],
+ defaultMessage: SCENE_COPY[id][1],
+ phrases: SCENE_COPY[id].slice(1),
+ seasonalText:true, nameInScene:true, ownMessage:true,interactive:true,textPosition:'below',textDelay:12,previewLoop:24,
+ colorDefaults:[c1,c2],photoField:id==='retrato-historias',ageField:id==='maquina-dulces',
+}));

@@ -55,12 +55,15 @@
 
     <section id="galeria" class="container">
       <div class="section-head gallery-head">
-        <h2>Animaciones</h2>
+        <h2 id="gallery-title" tabindex="-1">Animaciones</h2>
         <div class="chips" id="chips" role="group" aria-label="Categorías"></div>
       </div>
       <p id="categoryGuide"></p><button id="homeMotion" class="btn btn-ghost" type="button">Pausar miniaturas</button><div class="grid" id="grid"></div>
-      <div id="gallery-sentinel" class="gallery-sentinel" aria-hidden="true" hidden></div>
-      <button id="gallery-more" class="btn gallery-more" type="button" hidden>Mostrar más animaciones</button>
+      <p id="gallery-page-status" class="muted" role="status" aria-live="polite"></p>
+      <nav class="gallery-pagination" aria-label="Páginas de animaciones">
+        <button id="gallery-previous" class="btn" type="button" aria-controls="grid" hidden>Ver las 40 anteriores</button>
+        <button id="gallery-more" class="btn btn-primary" type="button" aria-controls="grid" hidden>Ver las siguientes 40</button>
+      </nav>
     </section>
 
     <nav class="container seo-discovery" aria-label="Explorar animaciones">
@@ -91,6 +94,7 @@
         <li><a href="categorias/mexico.html">Independencia de México</a></li>
         <li><a href="categorias/cumple.html">Cumpleaños</a></li>
         <li><a href="categorias/navidad.html">Navidad</a></li>
+        <li><a href="categorias/general.html">General y motivación</a></li>
         <li><a href="categorias/espacio.html">Espacio y cielo</a></li>
         <li><a href="categorias/paisajes.html">Paisajes</a></li>
         <li><a href="categorias/gamer.html">Gamer</a></li>

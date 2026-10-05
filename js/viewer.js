@@ -34,7 +34,7 @@ $('gateFrom').textContent = card.d ? `${card.d} te envió algo especial` : 'Algu
 if (anim.seasonalText) {
   document.title = card.tm !== 'none' && card.p ? `${card.p} · ${anim.title}` : anim.title;
   $('gateTo').textContent = card.tm !== 'none' && card.p ? card.p : anim.title;
-  $('gateFrom').textContent = anim.category === 'muertos' ? 'Celebra la vida y la memoria' : 'La noche está llena de magia';
+  $('gateFrom').textContent = anim.category === 'muertos' ? 'Celebra la vida y la memoria' : anim.category === 'halloween' ? 'La noche está llena de magia' : 'Una experiencia creada para compartir';
 }
 $('cta').href = `crear.html?a=${encodeURIComponent(anim.id)}`;
 // Sin el mensaje de quien la envió: solo la animación.

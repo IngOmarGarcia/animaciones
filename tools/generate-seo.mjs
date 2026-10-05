@@ -30,12 +30,14 @@ function personalization(a) {
  const items=[];
  if(a.seasonalText) {
   items.push('Frase sugerida editable, texto propio de hasta 140 caracteres o Sin texto. Esta última opción oculta también el título y la firma.');
-  items.push('Título opcional de hasta 40 caracteres: las partículas lo forman después de dispersarse. Sin título, reconstruyen la figura.');
+  items.push(a.turtleIndex!==undefined?'Nombre o título opcional de hasta 40 caracteres, integrado en la composición sin reemplazar su protagonista.':'Título opcional de hasta 40 caracteres: las partículas lo forman después de dispersarse. Sin título, reconstruyen la figura.');
  } else {
   items.push(particleNames.has(a.id)?`Nombre breve: la propia escena forma letras (hasta ${shortNames.has(a.id)?12:32} caracteres dentro de la figura).`:`Nombre y mensaje de hasta 40 y 140 caracteres en el formulario.${a.nameInScene?' La composición también utiliza el nombre; uno breve evita recortes.':''}`);
   items.push(a.id==='origami-amarillo'?'La frase se dibuja dentro de una tarjeta con un máximo de cinco líneas. Conviene probar un mensaje corto.':`Puedes reemplazar la frase inicial «${a.defaultMessage}». Si la dejas vacía, se conserva la sugerencia de esta escena.`);
  }
  items.push('Firma opcional y cinco tipografías para el texto normal. Las letras construidas con partículas conservan su forma.');
+ if(a.ageField) items.push('Edad opcional de 1 a 999, construida con dulces. Sin edad se dibuja una estrella festiva.');
+ if(a.photoField) items.push('Foto opcional preparada en el navegador y conservada dentro del enlace. Sin foto permanecen las escenas de memoria. No se usa reconocimiento facial.');
  if(a.letterFields) items.push(a.id==='jardin-de-lunas'?'Título y texto de la carta, siete recuerdos y una foto opcional. Los recuerdos acompañan el recorrido por las islas y la carta se abre en el corazón final.':'Título y texto de la carta, y recuerdos separados por el signo |. El destinatario abre la carta al terminar la secuencia.');
  if(a.colorDefaults) items.push('Dos colores opcionales para los elementos de luz. Puedes desactivar la paleta personalizada para recuperar el diseño original; el fondo y algunos detalles mantienen sus colores.');
  return `<ul>${items.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;

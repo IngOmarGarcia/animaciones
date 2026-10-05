@@ -1,3 +1,4 @@
+import { TURTLE_ANIMATIONS } from './turtle-catalog.js';
 // Editorial information checked against each js/anim/<file>.js and its shared core.
 // Keep scene behaviour here, separate from catalogue labels and rendering geometry.
 const rows = [
@@ -76,6 +77,7 @@ const rows = [
   ['arco-de-cempasuchil', 'Flores naranjas se distribuyen en un arco acompañado por velas. Mariposas monarca vuelan dentro de la composición y mantienen el ambiente en movimiento.', 'El arco se forma automáticamente. El mensaje y la firma aparecen sobre la escena; no se transforma el arco en letras.', 'Un recuerdo para Día de Muertos con flores, velas y mariposas.', 'auto'],
 ];
 export const SCENE_GUIDES = Object.fromEntries(rows.map(([id, scene, interaction, use, mode]) => [id, { scene, interaction, use, mode }]));
+for(const a of TURTLE_ANIMATIONS) SCENE_GUIDES[a.id]={scene:a.description,interaction:`${a.hint}. También avanza automáticamente y puedes repetirla sin recargar.`,use:a.category==='muertos'?'Una composición artística de celebración y memoria; sus efectos fantásticos son originales.':'Una invitación, felicitación o dedicatoria con texto opcional.',mode:a.mode};
 export const MODE_LABELS = {auto:'Se reproduce sola',tap:'Un toque',hold:'Mantener pulsado',triple:'Tres toques',explore:'Explorar y abrir recuerdos'};
 export function guideFor(anim) {
   const guide = SCENE_GUIDES[anim.id];

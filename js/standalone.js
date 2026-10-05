@@ -130,10 +130,12 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
     padding: 4px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.35);
     color: rgba(255, 255, 255, 0.6); font: 12px system-ui, sans-serif; text-decoration: none; white-space: nowrap;
   }
+  .repetir { position: fixed; top: 12px; right: 12px; padding: 8px 14px; border: 1px solid #777; border-radius: 20px; background: #101324; color: white; cursor: pointer; }
 </style>
 </head>
 <body>
 <canvas></canvas>
+${anim.turtleIndex !== undefined ? '<button class="repetir" id="repetir" type="button">Repetir</button>' : ''}
 <div class="mensaje" id="mensaje">
   <p class="para" id="para"></p>
   <p class="texto" id="texto"></p>
@@ -166,9 +168,9 @@ const pincel = lienzo.getContext('2d');
 const mensaje = document.getElementById('mensaje');
 ${anim.id === 'galaxia-de-flores' ? "if (MENSAJE.length > 80) document.getElementById('texto').classList.add('largo');" : ''}
 const escena = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, revealed: false,
-  card: { p: PARA, m: MENSAJE, d: DE, tm: MODO_TEXTO, f: TIPOGRAFIA, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2 } };
+  card: { p: PARA, m: MENSAJE, d: DE, tm: MODO_TEXTO, f: TIPOGRAFIA, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2, age: ${jsString(card.age)}, img: ${jsString(card.img)} } };
 
-for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', ${anim.seasonalText ? 'DE' : "DE && 'Con cariño, ' + DE"}]]) {
+for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', ${anim.turtleIndex !== undefined ? "''" : anim.seasonalText ? 'DE' : "DE && 'Con cariño, ' + DE"}]]) {
   const nodo = document.getElementById(id);
   nodo.textContent = id === 'texto' && ${Boolean(anim.ownMessage)} ? '' : texto;
   nodo.hidden = !nodo.textContent;
@@ -190,6 +192,9 @@ function preparar() {
   pincel.setTransform(escala, 0, 0, escala, 0, 0);
   escena.taps.length = 0;
   escena.revealed = false;
+  escena.onDispose?.();
+  escena.onDispose = null;
+  escena.onPointerDown = null;
   dibujar = create(pincel, ancho, alto, escala, escena);
 }
 
@@ -209,15 +214,16 @@ addEventListener('resize', () => {
   if (innerWidth !== ancho || innerHeight !== alto) preparar();
 });
 addEventListener('pointermove', (event) => {
-  if (event.pointerType !== 'touch') {
+  {
     escena.pointer.x = event.clientX / innerWidth;
     escena.pointer.y = event.clientY / innerHeight;
   }
 });
 ${anim.interactive ? `addEventListener('pointerdown', (event) => {
-  if (event.target.closest('a')) return;
+  if (event.target.closest('a,button')) return;
   escena.holding = true;
-  escena.taps.push({ x: event.clientX, y: event.clientY });
+  escena.pointer.x=event.clientX/innerWidth; escena.pointer.y=event.clientY/innerHeight;
+  if(!escena.onPointerDown?.({ x:event.clientX,y:event.clientY,event })) escena.taps.push({ x: event.clientX, y: event.clientY });
 });
 for (const type of ['pointerup', 'pointercancel', 'pointerleave']) addEventListener(type, () => { escena.holding = false; });` : `addEventListener('click', (event) => {
   if (event.target.closest('a')) return;
@@ -226,6 +232,7 @@ for (const type of ['pointerup', 'pointercancel', 'pointerleave']) addEventListe
 });`}
 
 preparar();
+${anim.turtleIndex !== undefined ? `document.getElementById('repetir').addEventListener('click',()=>{tiempo=0;escena.holding=false;mensaje.classList.remove('visible');preparar();});` : ''}
 requestAnimationFrame(cuadro);
 </script>
 </body>

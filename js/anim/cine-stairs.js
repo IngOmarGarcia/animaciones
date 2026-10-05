@@ -1,0 +1,7 @@
+import { cinematic,cinePart,cineBox,cineLine,cineTube,cineEase } from './cinema.js';
+function stairCinemaAnchor(g){const side=Math.floor(g/7),u=(g%7)/7,sx=side===0?-.5+u:side===1?.5:side===2?.5-u:-.5,sy=side===0?-.5:side===1?-.5+u:side===2?.5:.5-u,yaw=-.66,pitch=.28,z=g*.032-.43,b=sx*Math.sin(yaw)-sy*Math.sin(pitch)*Math.cos(yaw),depth=(z-b)/(b/4+Math.cos(pitch)*Math.cos(yaw)),rx=sx*(1+depth/4),yp=sy*(1+depth/4),rz=-yp*Math.sin(pitch)+depth*Math.cos(pitch);return [rx*Math.cos(yaw)-rz*Math.sin(yaw),yp*Math.cos(pitch)+depth*Math.sin(pitch),z];}
+export function stairsCinema(ctx,w,h,dpr,stage){return cinematic(ctx,w,h,dpr,stage,{
+ palette:[[143,140,163],[221,197,139],[42,46,65],[102,131,144]],background:'#0f1220',hint:'Toca para cambiar de perspectiva · conecta el camino',camera:s=>[-.66+s.a*.91,.28-s.a*.1,.97],
+ build(){const steps=[],parts=[];for(let j=0;j<28;j++){const p=cinePart();p.i=j;p.home=stairCinemaAnchor(j);p.pos=[...p.home];cineBox(p,0,0,0,.18,.075,.21,0);cineBox(p,0,-.042,-.005,.184,.012,.22,3);cineLine(p,[[-.09,-.05,-.11],[.09,-.05,-.11]],1,.005);for(let k=0;k<5;k++)cineLine(p,[[-.082+k*.04,-.049,-.095],[-.082+k*.04,-.049,.085]],[128,135,150],.001);cineTube(p,[[.075,-.05,.07],[.075,-.20,.07]],.005,1,'metal');steps.push(p);parts.push(p);}return {parts,steps};},
+ update(m,s){for(const p of m.steps){const j=p.i,connect=cineEase((s.e-1.3-j*.015)/2.9),target=[-.66+j*.049,.74-j*.055,(j-14)*.012];p.pos=p.home.map((v,k)=>v+(target[k]-v)*connect);p.rot[1]=Math.sin(j*.25)*(1-connect)*s.a*.10;}}
+});}

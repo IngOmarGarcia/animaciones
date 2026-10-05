@@ -1,0 +1,16 @@
+import { cinematic,cinePart,cineBox,cineFace,cineTube,cineSphere,cineLine,cinePetal,CINE_TAU } from './cinema.js';
+export function portraitCinema(ctx,w,h,dpr,stage){return cinematic(ctx,w,h,dpr,stage,{
+ palette:[[118,158,151],[223,180,113],[43,56,61],[199,173,139]],background:'#101316',hint:'Mueve y toca el retrato · conserva tus historias',camera:s=>[-.05+(s.px-.5)*.24,(s.py-.5)*.06,.96],
+ build(){const frame=cinePart(),room=cinePart(),table=cinePart(),chairs=cinePart(),window=cinePart(),parts=[room,window,chairs,table,frame];for(let j=0;j<5;j++){const x=.70+j*.016,y=.88+j*.016,z=-.39-j*.012,outline=[[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z],[-x,-y,z]];cineTube(frame,outline,.019,j%2?1:3,'metal');}
+ for(const x of [-.73,.73])for(const y of [-.91,.91])for(let j=0;j<6;j++)cinePetal(frame,x,y,-.48,j/6*CINE_TAU,.10,.035,1);
+ cineBox(room,0,0,.43,1.40,1.76,.07,2);cineBox(room,-.66,0,.10,.07,1.70,.65,0);cineBox(room,.66,0,.10,.07,1.70,.65,0);cineBox(room,0,.84,.12,1.40,.06,.75,3);
+ for(let j=0;j<12;j++)cineLine(room,[[-.65+j*.12,.802,-.23],[-.65+j*.12,.802,.42]],[97,81,65],.003);for(let j=0;j<7;j++)cineLine(room,[[-.64,.802,-.21+j*.10],[.64,.802,-.21+j*.10]],[97,81,65],.003);
+ cineBox(window,.15,-.32,.38,.54,.64,.06,3);cineBox(window,.15,-.32,.335,.46,.55,.04,[68,104,124]);for(const x of [-.03,.33])cineBox(window,x,-.32,.30,.035,.56,.04,1);cineBox(window,.15,-.32,.30,.47,.02,.04,3);
+ for(const sign of [-1,1]){const x=.15+sign*.22;for(let j=0;j<5;j++)cineTube(window,[[x+sign*j*.018,-.65,.27],[x+sign*j*.012,-.3,.22],[x+sign*j*.01,.02,.24]],.025,[103,70,75],'silk');}
+ cineBox(table,0,.27,-.04,.74,.07,.50,3);for(const x of [-.28,.28])for(const z of [-.21,.15])cineTube(table,[[x,.30,z],[x*.93,.79,z]],.022,3);for(let j=0;j<10;j++)cineLine(table,[[-.33,.232,-.22+j*.045],[.33,.232,-.22+j*.045]],[123,88,61],.0015);
+ for(const x of [-.49,.49]){cineBox(chairs,x,.49,.0,.24,.05,.27,3);cineBox(chairs,x,.24,.10,.23,.38,.035,3);for(const xx of [-.08,.08])for(const z of [-.10,.11])cineTube(chairs,[[x+xx,.50,z],[x+xx,.80,z]],.013,3);for(let j=0;j<3;j++)cineTube(chairs,[[x-.08+j*.08,.09,.075],[x-.08+j*.08,.41,.075]],.008,1);}
+ cineSphere(table,-.20,.20,-.09,.045,.018,.04,1,'metal',12,6);cineTube(table,[[-.20,.20,-.09],[-.20,.05,-.09]],.015,1);cineSphere(table,-.20,.04,-.09,.012,.028,.01,1,'light',8,6);for(const x of [.06,.22]){cineSphere(table,x,.17,-.11,.035,.048,.032,[167,187,177],'metal',12,8);cineLine(table,[[x-.035,.125,-.11],[x+.035,.125,-.11]],1,.003);}cineBox(table,.14,.21,.10,.18,.025,.12,0);
+ return {parts,room,table,chairs,window,photo:true};},
+ update(m,s){m.table.pos[2]=-s.a*.08;m.chairs.pos[2]=s.a*.045;m.window.pos[2]=s.a*.09;},
+ overlay(m,{ctx,project,S,state:s,photo}){if(photo&&s.a>.1){const p=project([0,0,-.43]);ctx.save();ctx.globalAlpha=(s.a-.1)/.9;ctx.beginPath();ctx.rect(p[0]-S*.61,p[1]-S*.78,S*1.22,S*1.56);ctx.clip();const ratio=photo.width/photo.height;let ww=S*1.56*ratio,hh=S*1.56;if(ww<S*1.22){ww=S*1.22;hh=ww/ratio;}ctx.drawImage(photo,p[0]-ww/2,p[1]-hh/2,ww,hh);const g=ctx.createLinearGradient(p[0]-S*.6,0,p[0]+S*.6,0);g.addColorStop(0,'rgba(4,13,19,.35)');g.addColorStop(.6,'transparent');g.addColorStop(1,'rgba(246,213,167,.08)');ctx.fillStyle=g;ctx.fillRect(p[0]-S*.61,p[1]-S*.78,S*1.22,S*1.56);ctx.restore();}}
+});}

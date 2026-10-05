@@ -1,0 +1,15 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Revisión turtle</title><style>body{margin:0;background:#060814;color:white;font:14px system-ui}#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}figure{margin:0}canvas{width:100%;display:block}figcaption{padding:8px}button{margin:8px}</style><div id="grid"></div><script type="module">
+import {TURTLE_ANIMATIONS} from '../js/turtle-catalog.js';
+window.frames=[];window.ready=false;
+window.draw=async ({start=0,count=5,time=5,w=390,h=844,noText=false,long=false,preview=false,forceCanvas=false,age='25'}={})=>{
+ for(const item of window.frames)item.stage.onDispose?.();window.frames=[];document.querySelector('#grid').replaceChildren();
+ for(const a of TURTLE_ANIMATIONS.slice(start,start+count)){
+  const figure=document.createElement('figure'),canvas=document.createElement('canvas'),label=document.createElement('figcaption');canvas.width=w;canvas.height=h;label.textContent=a.title;figure.append(canvas,label);document.querySelector('#grid').append(figure);
+  const stage={card:{a:a.id,p:long?'Un nombre de cuarenta caracteres de prueba':'Para nuestra celebración',m:long?'Cada pequeño recuerdo se convierte en una historia para compartir con quienes queremos. Celebramos los caminos que todavía nos quedan por abrir.':'Una historia de luz para compartir',d:long?'Una firma de cuarenta caracteres de prueba':'Familia',age,f:'clear',tm:noText?'none':'custom'},pointer:{x:.5,y:.5},taps:[],holding:false,preview,forceCanvas,revealed:false};
+  const mod=await import('../js/anim/'+a.file+'.js'),ctx=canvas.getContext('2d'),frame=mod.default(ctx,w,h,1,stage);
+  for(let t=0;t<time;t+=.5)frame(t,.1);frame(time,.1);window.frames.push({a,canvas,stage,frame});
+ }
+ window.ready=true;return window.frames.map(x=>({id:x.a.id,revealed:x.stage.revealed,...x.stage.diagnostics}));
+};
+await window.draw();
+</script></html>

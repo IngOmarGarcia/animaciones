@@ -73,7 +73,9 @@
           <label id="recipientLabel"><span id="recipientCaption">¿Para quién es?</span>
             <input name="p" maxlength="40" placeholder="Ej. Sofía">
           </label>
-          <label id="messageLabel"><span id="messageCaption">Tu mensaje</span>
+          <label id="ageField" hidden>Edad (opcional)<input name="age" type="number" min="1" max="999" step="1" placeholder="Ej. 25"><small>Sin edad aparece una estrella de celebración.</small></label>
+            <div id="memoryPhotoFields" hidden><h2>Fotografía opcional</h2><p>Usa una foto que quieras compartir. Sin foto se conservan las escenas de memoria.</p></div>
+            <label id="messageLabel"><span id="messageCaption">Tu mensaje</span>
             <textarea name="m" maxlength="140" rows="3"></textarea>
             <small id="counter">0/140</small>
           </label>

@@ -13,6 +13,7 @@ const sharedCard = decodeCard(params.get('s'));
 const anim = getAnimation(sharedCard?.a || params.get('a')) || VISIBLE_ANIMATIONS[0];
 const DRAFT_KEY = `detallito-borrador-${anim.id}`;
 const isDana2 = anim.codename === 'Dana2';
+const hasPhoto = isDana2 || !!anim.photoField;
 const isSeasonal = !!anim.seasonalText;
 const $ = (id) => document.getElementById(id);
 const form = $('form');
@@ -44,7 +45,7 @@ if (isSeasonal) {
   $('recipientCaption').textContent = 'Nombre o título (opcional)';
   $('messageCaption').textContent = 'Tu frase (editable y opcional)';
   $('senderCaption').textContent = 'Firma';
-  fields.p.placeholder = anim.category === 'muertos' ? 'Ej. En memoria de Luna' : 'Ej. Fiesta de Halloween';
+  fields.p.placeholder = anim.exampleTitle ? `Ej. ${anim.exampleTitle}` : anim.category === 'muertos' ? 'Ej. En memoria de Luna' : anim.category === 'halloween' ? 'Ej. Fiesta de Halloween' : 'Ej. Un nuevo comienzo';
   fields.d.placeholder = 'Ej. Familia García';
   fields.m.value = anim.defaultMessage;
   $('phraseSuggestion').replaceChildren(...anim.phrases.map((phrase) => {
@@ -61,7 +62,7 @@ if (isDana2) {
 
 try {
   const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}');
-  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'tm', 'f']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'tm', 'f', 'age']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
   $('colorsEnabled').checked = !!anim.colorDefaults && (draft.colorsEnabled === true || (draft.colorsEnabled === undefined && anim.letterFields && !isDana2 && !!draft.c1));
 } catch {
   // sessionStorage no disponible: se empieza en blanco
@@ -69,12 +70,14 @@ try {
 
 if (sharedCard) {
   if (anim.colorDefaults) [fields.c1.value, fields.c2.value] = [sharedCard.c1 || anim.colorDefaults[0], sharedCard.c2 || anim.colorDefaults[1]];
-  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem']) if (fields[key]) fields[key].value = sharedCard[key] || '';
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'age']) if (fields[key]) fields[key].value = sharedCard[key] || '';
   fields.f.value = sharedCard.f || 'elegant';
   if (isSeasonal) fields.tm.value = sharedCard.tm || 'suggest';
   $('colorsEnabled').checked = !!anim.colorDefaults && !!sharedCard.c1 && !!sharedCard.c2;
 }
 
+if(anim.ageField) $('ageField').hidden=false;
+if(anim.photoField) { $('memoryPhotoFields').hidden=false; $('memoryPhotoFields').append($('dana2Photo').closest('label'),$('dana2PhotoStatus')); $('dana2PhotoStatus').textContent='Foto opcional. Se prepara en tu dispositivo y viaja dentro del enlace.'; }
 let player = null, previewPaused = false, previewVisible = true, previewLoading = true, previewFailed = false;
 const resumePreview = () => {
   if (player && !previewPaused && previewVisible && !document.hidden) player.play();
@@ -128,6 +131,8 @@ if (isDana2) {
     if (finalTitle.value === `Para ${previousName}`) finalTitle.value = `Para ${fields.p.value.trim() || DANA_DEFAULTS.recipientName}`;
     previousName = fields.p.value.trim() || DANA_DEFAULTS.recipientName;
   });
+}
+if (hasPhoto) {
   let photoVersion=0;
   $('dana2Photo').addEventListener('change', async (event) => {
     const version=++photoVersion;
@@ -183,7 +188,8 @@ const readCard = () => cleanCard({
       ? memoryFields.map(({ titleInput, bodyInput }) => `${titleInput.value.replace(/[|~]/g, ' ').trim()}~${bodyInput.value.replace(/[|~]/g, ' ').trim()}`).join('|')
       : fields.mem.value,
   } : {}),
-  img: isDana2 ? photoData : '',
+  age: anim.ageField ? fields.age.value : '',
+  img: hasPhoto ? photoData : '',
 });
 // Campos extra (carta, recuerdos y colores) para las escenas que los usan
 if (anim.letterFields) $('galaxyFields').hidden = false;
@@ -197,7 +203,7 @@ function update() {
     const noText = fields.tm.value === 'none';
     for (const id of ['recipientLabel', 'messageLabel', 'senderLabel']) $(id).hidden = noText;
     $('suggestionLabel').hidden = fields.tm.value !== 'suggest';
-    $('textModeHelp').textContent = noText ? 'Solo la experiencia visual: las partículas se dispersan y reconstruyen la figura, sin frases ni título.' : 'El título y la firma son opcionales. También puedes dejar la frase vacía.';
+    $('textModeHelp').textContent = noText ? 'Solo la experiencia visual, sin nombre, frase ni firma.' : 'El título y la firma son opcionales. También puedes dejar la frase vacía.';
   }
   const card = readCard();
   fillOverlay(overlay, card, anim);
@@ -211,7 +217,7 @@ function update() {
   try {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p: fields.p.value, m: fields.m.value, d: fields.d.value,
       lt: fields.lt?.value, l: fields.l?.value, mem: card.mem,
-      c1: fields.c1?.value, c2: fields.c2?.value, tm: isSeasonal ? fields.tm.value : '',
+      age: fields.age?.value, c1: fields.c1?.value, c2: fields.c2?.value, tm: isSeasonal ? fields.tm.value : '',
       f: fields.f.value, colorsEnabled: $('colorsEnabled').checked }));
   } catch {
     // ignorar

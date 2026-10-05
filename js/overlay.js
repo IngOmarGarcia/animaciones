@@ -10,7 +10,7 @@ export function fillOverlay(el, card, anim) {
   // nameInScene: la escena ya escribe el nombre, no se repite arriba
   setText(el.querySelector('.ov-to'), !noText && card.p && !anim.nameInScene ? (anim.seasonalText ? card.p : `Para ${card.p}`) : '');
   setText(el.querySelector('.ov-msg'), noText || anim.ownMessage ? '' : anim.seasonalText && card.tm ? card.m : card.m || anim.defaultMessage);
-  setText(el.querySelector('.ov-from'), !noText && card.d ? (anim.seasonalText ? card.d : `Con cariño, ${card.d}`) : '');
+  setText(el.querySelector('.ov-from'), !noText && card.d && anim.turtleIndex === undefined ? (anim.seasonalText ? card.d : `Con cariño, ${card.d}`) : '');
 }
 
 function setText(node, text) {

@@ -1,35 +1,46 @@
 import { VISIBLE_ANIMATIONS, CATEGORIES } from './catalog.js';
-import { renderGallery, appendGallery, setGalleryPaused, galleryPaused } from './gallery.js';
+import { renderGallery, setGalleryPaused, galleryPaused } from './gallery.js';
 import { createSupportCard } from './support.js';
+import { TURTLE_ANIMATIONS } from './turtle-catalog.js';
+import { SEASONAL_ANIMATIONS } from './seasonal-catalog.js';
 
 const support = createSupportCard();
 if (support) document.getElementById('support').append(support);
 
 const grid = document.getElementById('grid');
 const chips = document.getElementById('chips');
-const sentinel = document.getElementById('gallery-sentinel');
 const more = document.getElementById('gallery-more');
+const previous = document.getElementById('gallery-previous');
+const pageStatus = document.getElementById('gallery-page-status');
+// Los dos lotes recientes primero; el resto conserva su orden editorial.
+const recentIds = new Set([...TURTLE_ANIMATIONS, ...SEASONAL_ANIMATIONS].map(a=>a.id));
+const homeAnimations = [...TURTLE_ANIMATIONS, ...SEASONAL_ANIMATIONS, ...VISIBLE_ANIMATIONS.filter(a=>!recentIds.has(a.id))].filter(a=>!a.hidden);
 let current = new URLSearchParams(location.search).get('cat') || 'todas';
 if (!CATEGORIES.some(c=>c.id===current)) current='todas';
 let list = [];
-let shown = 0;
-const BATCH = 16;
-const initialCount = () => matchMedia('(max-width: 719px)').matches ? 8 : 12;
+let page = 0;
+const BATCH = 40;
 
-function loadNext() {
-  if (shown >= list.length) return;
-  const next = list.slice(shown, shown + BATCH);
-  appendGallery(grid, next);
-  shown += next.length;
-  more.hidden = shown >= list.length;
-  sentinel.hidden = shown >= list.length;
-  if (sentinel.hidden) loader.unobserve(sentinel);
+function renderPage() {
+  const start = page * BATCH, end = Math.min(start + BATCH, list.length);
+  renderGallery(grid, list.slice(start, end));
+  previous.hidden = page === 0;
+  more.hidden = end >= list.length;
+  more.textContent = `Ver las siguientes ${Math.min(BATCH, list.length - end)}`;
+  pageStatus.textContent = list.length ? `Mostrando ${start + 1}–${end} de ${list.length} animaciones` : 'No hay animaciones en esta categoría';
 }
 
-const loader = new IntersectionObserver((entries) => {
-  if (entries.some((entry) => entry.isIntersecting)) loadNext();
-}, { rootMargin: '0px 0px 80px 0px' });
-more.addEventListener('click', loadNext);
+function changePage(direction) {
+  const next = page + direction;
+  if(next < 0 || next * BATCH >= list.length) return;
+  page = next;
+  renderPage();
+  const heading = document.getElementById('gallery-title');
+  heading.focus({preventScroll:true});
+  heading.scrollIntoView({block:'start'});
+}
+more.addEventListener('click', () => changePage(1));
+previous.addEventListener('click', () => changePage(-1));
 
 function render() {
   chips.replaceChildren(...CATEGORIES.map((cat) => {
@@ -45,16 +56,11 @@ function render() {
     });
     return chip;
   }));
-  list = current === 'todas' ? VISIBLE_ANIMATIONS : VISIBLE_ANIMATIONS.filter((a) => a.category === current);
+  list = current === 'todas' ? homeAnimations : homeAnimations.filter((a) => a.category === current);
   const guide=document.getElementById('categoryGuide');
   const link=document.createElement('a');link.href=current==='todas'?'/animaciones.html':`/categorias/${current}.html`;link.textContent=current==='todas'?'Comparar por interacción, colores o cartas →':'Ver la guía para elegir en esta categoría →';guide.replaceChildren(link);
-  shown = Math.min(initialCount(), list.length);
-  loader.unobserve(sentinel);
-  renderGallery(grid, list.slice(0, shown));
-  const hasMore = shown < list.length;
-  more.hidden = !hasMore;
-  sentinel.hidden = !hasMore;
-  if (hasMore) loader.observe(sentinel);
+  page = 0;
+  renderPage();
 }
 
 render();

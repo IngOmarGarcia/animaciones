@@ -12,7 +12,7 @@ async function load() {
  try {
   if(!anim||anim.hidden)throw Error('Escena no disponible');
   const mod=await anim.load({retry:failed});
-  const card={a:anim.id,p:'Tu nombre',m:anim.defaultMessage,d:'Tu firma',f:'clear',...(anim.seasonalText?{tm:'suggest'}:{})};
+  const card={a:anim.id,p:anim.exampleTitle || 'Tu nombre',m:anim.defaultMessage,d:'Tu firma',f:'clear',...(anim.seasonalText?{tm:'suggest'}:{})};
   fillOverlay(overlay,card,anim);
   player=createPlayer($('detail-canvas'),mod.default,{card});player.restart();resume();failed=false;
   setGalleryPaused(true);button.hidden=true;pause.hidden=false;replay.hidden=false;

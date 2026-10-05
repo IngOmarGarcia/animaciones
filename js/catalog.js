@@ -1,6 +1,8 @@
+import { TURTLE_ANIMATIONS } from './turtle-catalog.js';
 import { SEASONAL_ANIMATIONS } from './seasonal-catalog.js';
 export const CATEGORIES = [
   { id: 'todas', name: 'Todas' },
+  { id: 'general', name: 'General y motivación' },
   { id: 'halloween', name: '🎃 Halloween' },
   { id: 'muertos', name: '🕯️ Día de Muertos' },
   { id: 'flores', name: '🌼 Flores amarillas' },
@@ -19,6 +21,7 @@ export const CATEGORIES = [
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
   ...SEASONAL_ANIMATIONS,
+  ...TURTLE_ANIMATIONS,
   {
     id: 'jardin-de-lunas',
     codename: 'Dana2',
@@ -713,7 +716,7 @@ const COLOR_DEFAULTS = {
   'universo-de-flores': ['#ffd75a', '#ff9d3c'],
 };
 for (const anim of ANIMATIONS) {
-  anim.colorDefaults = COLOR_DEFAULTS[anim.id] || (anim.seasonalText ? anim.category === 'muertos' ? ['#ff9c34', '#ffe5a0'] : anim.kind === 'ghost' ? ['#ff85d4', '#ffd3ed'] : ['#b077ff', '#e2caff'] : null);
+  anim.colorDefaults = anim.colorDefaults || COLOR_DEFAULTS[anim.id] || (anim.seasonalText ? anim.category === 'muertos' ? ['#ff9c34', '#ffe5a0'] : anim.kind === 'ghost' ? ['#ff85d4', '#ffd3ed'] : ['#b077ff', '#e2caff'] : null);
   let loadAttempt = 0;
   // Un import fallido queda en la caché del documento. Un reintento explícito
   // necesita una URL nueva para volver a solicitar el módulo de la escena.

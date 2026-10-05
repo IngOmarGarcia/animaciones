@@ -4,6 +4,17 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { TURTLE_ANIMATIONS } from '../js/turtle-catalog.js';
+import { VISIBLE_ANIMATIONS } from '../js/catalog.js';
+if(process.argv.includes('--cinematic-all')) {
+ for(let scene=0;scene<TURTLE_ANIMATIONS.length;scene++) {
+  const code=await new Promise((resolve,reject)=>{const p=spawn(process.execPath,['tools/browser-check.mjs','--cinematic','--scene',String(scene)],{windowsHide:true,stdio:'inherit'});p.on('error',reject);p.on('exit',resolve);});
+  if(code!==0)throw Error(`Revisión cinematográfica falló: escena ${scene}`);
+ }
+ process.exit(0);
+}
+if(process.argv.includes('--cinematic')) { await import('./cinematic-check.mjs'); process.exit(0); }
+if(process.argv.includes('--turtle')) { await import('./turtle-browser-check.mjs'); process.exit(0); }
 const profile=await mkdtemp(path.join(tmpdir(),'viralcss-review-'));
 const browser=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--no-default-browser-check','--disable-gpu-sandbox','--remote-debugging-port=0',`--user-data-dir=${profile}`],{windowsHide:true,stdio:'ignore'});
 let ws;
@@ -28,11 +39,26 @@ try {
  const overflow=async label=>assert(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),`Desbordamiento horizontal: ${label}`);
  await call('Emulation.setDeviceMetricsOverride',{width:1365,height:1000,deviceScaleFactor:1,mobile:false});
  await navigate('/');await wait("document.querySelectorAll('#grid .card').length>0");
+ const homeIds=()=>evaluate("[...document.querySelectorAll('#grid .card')].map(x=>x.dataset.id)");
+ const firstPage=await homeIds();assert.equal(firstPage.length,40,'La portada debe mostrar 40 tarjetas');
+ assert.deepEqual(firstPage.slice(0,TURTLE_ANIMATIONS.length),TURTLE_ANIMATIONS.map(a=>a.id),'El último lote debe aparecer primero');
+ await evaluate('scrollTo(0,document.body.scrollHeight)');await delay(650);
+ assert.deepEqual(await homeIds(),firstPage,'Llegar al pie no debe cargar más tarjetas');
+ await screenshot('home-footer-desktop');
+ await evaluate("document.getElementById('gallery-more').click()");const secondPage=await homeIds();assert.equal(secondPage.length,40);
+ assert(secondPage.every(id=>!firstPage.includes(id)),'La segunda página no debe repetir tarjetas');
+ await evaluate("document.getElementById('gallery-more').click()");const lastPage=await homeIds();
+ assert.equal(lastPage.length,VISIBLE_ANIMATIONS.length-80);
+ assert.equal(new Set([...firstPage,...secondPage,...lastPage]).size,VISIBLE_ANIMATIONS.length);
+ assert(await evaluate("document.getElementById('gallery-more').hidden"),'No debe ofrecer páginas vacías');
+ await evaluate("document.getElementById('gallery-previous').click()");assert.deepEqual(await homeIds(),secondPage);
+ await evaluate("document.getElementById('gallery-previous').click()");assert.deepEqual(await homeIds(),firstPage);
+ await evaluate("document.querySelector('#chips button').click();scrollTo(0,0)");
  assert(await evaluate("document.querySelector('#grid .card-preview-link').getAttribute('href').startsWith('/animaciones/')"),'Portada no dirige a ficha');
  await overflow('portada escritorio');await screenshot('home-desktop');
  await navigate('/categorias/cumple.html');await wait("!document.querySelector('.collection-controls').hidden");
  await evaluate("document.querySelector('[data-filter]').value='interactive';document.querySelector('[data-filter]').dispatchEvent(new Event('change',{bubbles:true}))");
- assert.equal(await evaluate("[...document.querySelectorAll('.card')].filter(c=>!c.hidden).length"),3);
+ assert.equal(await evaluate("[...document.querySelectorAll('.card')].filter(c=>!c.hidden).length"),VISIBLE_ANIMATIONS.filter(a=>a.category==='cumple'&&a.interactive).length);
  await overflow('categoría escritorio');await screenshot('category-desktop');
  await navigate('/animaciones/pinata-sorpresa.html');await evaluate("document.getElementById('detail-play').click()");await wait("!document.getElementById('detail-pause').hidden");
  await evaluate("document.getElementById('detail-pause').click()");
@@ -100,9 +126,16 @@ try {
   await evaluate("document.querySelector('.header-menu-toggle').click()");assert.equal(await evaluate("document.querySelector('.mobile-nav').hidden"),false,'Menú móvil no abre');
   await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");assert.equal(await evaluate("document.querySelector('.mobile-nav').hidden"),true,'Escape no cierra menú');
  }
- // Importación y cuadros de las 73 escenas con valores reales de personalización.
+ // Mensajes de ejemplo específicos en formularios nuevos, sin sobrescribir borradores.
+ for(const id of ['mansion-imposible','pan-memoria','eclipse-corona']) {
+  await navigate('/crear.html?a='+id);await wait("document.querySelector('#phraseSuggestion').options.length>0");
+  const expected=TURTLE_ANIMATIONS.find(a=>a.id===id);
+  const actual=await evaluate("({message:document.querySelector('#form').elements.m.value,title:document.querySelector('#form').elements.p.placeholder,suggestion:document.querySelector('#phraseSuggestion').value})");
+  assert.equal(actual.message,expected.defaultMessage);assert.equal(actual.suggestion,expected.defaultMessage);assert(actual.title.includes(expected.exampleTitle));
+ }
+ // Importación y cuadros de todas las escenas con valores reales de personalización.
  await navigate('/tools/animation-qa.html');await wait("document.body.dataset.complete==='true'");
- const scenes=await evaluate('window.qaResult');assert.equal(scenes.length,73);assert(scenes.every(r=>r.ok),JSON.stringify(scenes.filter(r=>!r.ok)));
+ const scenes=await evaluate('window.qaResult');assert.equal(scenes.length,VISIBLE_ANIMATIONS.length);assert(scenes.every(r=>r.ok),JSON.stringify(scenes.filter(r=>!r.ok)));
  await screenshot('scenes-check');
  assert.equal(errors.length,0,errors.join('\n'));
  const report={passed:true,scenes:scenes.length,flows:['portada → ficha','categoría y filtro funcional','cargar, pausar y reiniciar','editor → enlace → destinatario','restaurar enlace en editor frente a borrador','volver a un documento conservado','reintentar descarga fallida','tipografía y colores compartidos','enlaces inválidos','menú móvil y Escape','sin desbordamiento a 390 y 1365 px'],runtimeErrors:errors};
