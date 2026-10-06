@@ -1,0 +1,6 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Revisión del logo</title><style>body{margin:0;background:#0d0a1f;color:#eaf6ff;font-family:system-ui}#frame{width:540px;height:360px;position:relative;max-width:100vw}canvas{width:100%;height:100%;display:block}#word{position:absolute;top:49%;width:100%;text-align:center;font-weight:800;font-size:70px;letter-spacing:-2px}#word span{color:#76c9f5}#tag{text-align:center;font-size:13px;letter-spacing:3px;color:#aec9dc}</style></head><body><div id="frame"><canvas aria-hidden="true"></canvas><div id="word">Viral<span>Css</span></div></div><p id="tag">CREA • PERSONALIZA • COMPARTE</p><script type="module">
+import {createLogoRenderer} from '../js/logo-renderer.js';import {logoCamera} from '../js/brand-logo.js';
+const canvas=document.querySelector('canvas'),renderer=createLogoRenderer(canvas);renderer.resize(540,360);
+window.drawLogo=time=>{const state=logoCamera(time);renderer.draw(state);document.getElementById('word').style.clipPath=`inset(0 ${(1-state.text)*100}% 0 0)`;document.getElementById('tag').style.opacity=state.text;return state;};window.drawLogo(0);window.ready=true;
+window.addEventListener('pagehide',()=>renderer.destroy());
+</script></body></html>

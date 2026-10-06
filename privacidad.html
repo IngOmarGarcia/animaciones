@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="canonical" href="https://viralcss.com/privacidad.html">
+  <link rel="canonical" href="https://viralcss.com/privacidad">
   <title>Aviso de privacidad | ViralCss</title>
   <meta name="description" content="Cómo tratamos tu información y el uso de cookies publicitarias.">
   <meta name="theme-color" content="#0d0a1f">
@@ -12,34 +12,35 @@
   <meta property="og:title" content="Aviso de privacidad de ViralCss">
   <meta property="og:description" content="Cómo tratamos tu información y el uso de cookies publicitarias.">
   <meta property="og:image" content="https://viralcss.com/img/og.jpg">
-  <meta property="og:url" content="https://viralcss.com/privacidad.html">
+  <meta property="og:url" content="https://viralcss.com/privacidad">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Aviso de privacidad de ViralCss">
   <meta name="twitter:description" content="Cómo tratamos tu información y el uso de cookies publicitarias.">
-  <link rel="icon" href="img/icon.png" type="image/png">
+  <link rel="icon" href="img/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="img/icon.png">
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
   <header class="site-header">
-    <a class="brand" href="./"><img src="img/logo.png" alt="" width="72" height="48"><span class="brand-name">Viral<span class="accent">Css</span></span></a>
-    <nav>
+    <a class="brand" href="./" aria-label="ViralCSS — Ir al inicio"><span class="brand-orb" aria-hidden="true"><img class="brand-static" src="img/logo.webp" alt="" width="72" height="48"><span class="brand-mark">Viral<span>Css</span></span></span><span class="brand-name">Viral<span class="accent">Css</span><small class="brand-tagline">CREA • PERSONALIZA • COMPARTE</small></span></a>
+    <nav class="header-desktop-nav">
       <a href="animaciones.html">Animaciones</a>
       <a class="header-suggestions" href="sugerencias.html">Sugerencias</a>
     </nav>
-  </header>
+  </header><noscript><style>@media(max-width:699px){.site-header .header-desktop-nav{display:flex!important}.site-header::after{display:none!important}}</style></noscript>
 
-  <main class="container prose">
+  <main id="contenido" class="container prose">
     <h1>Aviso de privacidad</h1>
-    <p><em>Última actualización: 30 de septiembre de 2026.</em></p>
+    <p><em>Última actualización: 4 de octubre de 2026.</em></p>
 
     <h2>Mensajes y nombres</h2>
     <p>El editor codifica el nombre, el mensaje, la firma, los recuerdos y las opciones de la animación dentro del enlace que genera. La herramienta no envía esos campos a una base de datos de dedicatorias. La codificación <strong>no es cifrado</strong>: cualquier persona que tenga el enlace puede leer el contenido.</p>
     <p>Al abrir un enlace, la dirección se solicita al servicio de alojamiento. Esa URL, la dirección IP y datos técnicos del navegador pueden aparecer en sus registros. También pueden quedar en el historial del navegador o en el servicio por el que la compartas. Evita información sensible y no trates el enlace como un archivo privado.</p>
     <h2>Borrador y fotos</h2>
     <p>El editor utiliza <code>sessionStorage</code> para conservar un borrador de texto y opciones por animación en la pestaña del navegador. Puedes eliminarlo con «Borrar borrador de esta escena». El navegador controla su duración; normalmente se elimina al cerrar la pestaña.</p>
-    <p>En Jardín de lunas doradas, una foto opcional se procesa y reduce en tu navegador. La imagen no se guarda en el borrador: se incorpora al enlace al compartirla. Quien reciba o reenvíe ese enlace podrá verla. Utiliza una foto que tengas permiso para compartir.</p>
+    <p>Jardín de lunas doradas y El retrato que guarda historias admiten una foto opcional. El editor la recorta, reduce y prepara en tu dispositivo; no utiliza reconocimiento facial ni un servicio externo para analizarla. La imagen no se guarda en el borrador de la pestaña: se incorpora dentro del enlace al compartirla. Quien reciba o reenvíe ese enlace puede verla. Utiliza solo una foto que tengas permiso para compartir.</p>
 
     <h2>Publicidad y cookies</h2>
     <p>Esta versión no carga el script de anuncios de Google AdSense. El editor y las pantallas de dedicatorias no incluyen ubicaciones de anuncios. La asociación del sitio con la cuenta de AdSense no implica que se cargue publicidad.</p>
@@ -65,6 +66,7 @@
     <nav>
       <a href="./">Inicio</a>
       <a href="acerca.html">Acerca y contacto</a>
+      <a href="terminos.html">Términos de Uso</a>
     </nav>
     <p>© 2026 ViralCss</p>
   </footer>

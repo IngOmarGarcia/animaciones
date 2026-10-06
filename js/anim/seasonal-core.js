@@ -55,7 +55,7 @@ function geometry(kind) {
 export function seasonal(kind, palette, caption) {
   return (ctx,w,h,dpr=1,stage={}) => {
     const rand=seeded(kind.split('').reduce((n,c)=>n+c.charCodeAt(0),17)),targets=geometry(kind);
-    const calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const calm=!stage.forceMotion&&matchMedia('(prefers-reduced-motion: reduce)').matches;
     const count=stage.preview?950:calm?1000:Math.min(3400,Math.max(1800,Math.floor(w*h/95)));
     const particles=Array.from({length:count},()=>{const p=targets[Math.floor(rand()*targets.length)];return {...p,z:(rand()-.5)*.3,phase:rand()*TAU,seed:rand(),startX:(rand()-.5)*3.8,startY:(rand()-.5)*4};});
     const colors=customPalette(stage, []),colored=colors.length>0;

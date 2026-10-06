@@ -3,6 +3,13 @@ import { spawn } from 'node:child_process';
 import { mkdtemp,readFile,mkdir,writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+if(process.argv.includes('--all')) {
+  for(let scene=0;scene<TURTLE_ANIMATIONS.length;scene++)await new Promise((resolve,reject)=>{
+    const check=spawn(process.execPath,[process.argv[1],'--scene',String(scene)],{windowsHide:true,stdio:'inherit'});
+    check.on('error',reject);check.on('exit',code=>code===0?resolve():reject(Error(`Falló la escena ${scene}: ${code}`)));
+  });
+  process.exit(0);
+}
 const profile=await mkdtemp(path.join(tmpdir(),'viralcss-cinema-'));
 const child=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-background-networking','--disable-extensions','--enable-unsafe-swiftshader','--no-startup-window','--remote-debugging-port=0',`--user-data-dir=${profile}`],{windowsHide:true,stdio:'ignore'});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));let ws;

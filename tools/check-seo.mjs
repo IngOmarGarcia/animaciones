@@ -11,7 +11,7 @@ const index = await read('animaciones.html');
 const home = await read('index.html');
 
 const categories = CATEGORIES.filter((c) => c.id !== 'todas' && VISIBLE_ANIMATIONS.some((a) => a.category === c.id));
-const pages = ['index.html', 'animaciones.html', 'sugerencias.html', 'acerca.html', 'privacidad.html'];
+const pages = ['index.html', 'animaciones.html', 'sugerencias.html', 'acerca.html', 'privacidad.html', 'terminos.html'];
 for (const c of categories) pages.push(`categorias/${c.id}.html`);
 for (const a of VISIBLE_ANIMATIONS) {
   const path = `animaciones/${a.id}.html`;
@@ -23,6 +23,9 @@ const titles = new Set();
 const descriptions = new Set();
 for (const page of pages) {
   const html = await read(page);
+  assert(html.includes('aria-label="ViralCSS — Ir al inicio"'),`La marca debe ser un enlace accesible: ${page}`);
+  assert(html.includes('class="brand-static"')&&html.includes('width="72" height="48"'),`Falta fallback del logo con dimensiones: ${page}`);
+  assert(html.includes('CREA • PERSONALIZA • COMPARTE'),`Falta la marca semántica: ${page}`);
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
   assert(title && !titles.has(title), `Título ausente o duplicado: ${page}`);
   titles.add(title);
@@ -33,8 +36,9 @@ for (const page of pages) {
   assert(description.length <= 160, `Description demasiado larga (${description.length}): ${page}`);
   descriptions.add(description);
 
-  const canonical = page === 'index.html' ? `${origin}/` : `${origin}/${page}`;
+  const canonical = page === 'index.html' ? `${origin}/` : `${origin}/${page.replace(/\.html$/, '')}`;
   assert(html.includes(`<link rel="canonical" href="${canonical}">`), `Canonical incorrecto: ${page}`);
+  assert(html.includes(`property="og:url" content="${canonical}"`),`OG no coincide con canonical: ${page}`);
   assert(sitemap.includes(`<loc>${canonical}</loc>`), `Falta en sitemap: ${page}`);
 
   assert((html.match(/<h1[\s>]/g) || []).length === 1, `Debe haber exactamente un H1: ${page}`);
@@ -48,7 +52,8 @@ for (const page of pages) {
 
   for (const block of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
     try {
-      JSON.parse(block[1]);
+      const schema=JSON.parse(block[1]);
+      assert(!JSON.stringify(schema).includes('.html'),`JSON-LD conserva URLs antiguas: ${page}`);
     } catch (error) {
       assert.fail(`JSON-LD inválido en ${page}: ${error.message}`);
     }
@@ -67,20 +72,20 @@ for (const page of [...pages, 'crear.html', 'codigo.html', 'v.html', 'encargos.h
     if (!clean) continue;
     const target = clean.startsWith('/') ? clean.slice(1) : `${dir}${clean}`;
     const file = target === '' || target.endsWith('/') ? `${target}index.html` : target;
-    if (!existsSync(file)) linkErrors.push(`${page} → ${href}`);
+    if (!existsSync(file) && !existsSync(file+'.html')) linkErrors.push(`${page} → ${href}`);
   }
 }
 assert.equal(linkErrors.length, 0, `Enlaces internos rotos:\n${linkErrors.join('\n')}`);
 
 // Páginas que deliberadamente no deben indexarse
 for (const a of ANIMATIONS.filter((a) => a.hidden)) {
-  assert(!sitemap.includes(`/animaciones/${a.id}.html`), `Escena oculta en el sitemap: ${a.id}`);
+  assert(!sitemap.includes(`/animaciones/${a.id}</loc>`)&&!sitemap.includes(`/animaciones/${a.id}.html`), `Escena oculta en el sitemap: ${a.id}`);
   assert(!existsSync(`animaciones/${a.id}.html`), `Escena oculta con página generada: ${a.id}`);
 }
 assert(/name="robots" content="noindex/.test(await read('v.html')), 'v.html debe llevar noindex');
 for(const file of ['crear.html','codigo.html','encargos.html']) {
   assert(/name="robots"[^>]*noindex/.test(await read(file)), `La utilidad ${file} debe llevar noindex`);
-  assert(!sitemap.includes(`/${file}</loc>`), `La utilidad ${file} no va en sitemap`);
+  assert(!sitemap.includes(`/${file}</loc>`)&&!sitemap.includes(`/${file.replace(/\.html$/,'')}</loc>`), `La utilidad ${file} no va en sitemap`);
 }
 assert(/name="robots" content="noindex/.test(await read('404.html')), '404.html debe llevar noindex');
 for (const file of await readdir('tools')) {
@@ -102,5 +107,7 @@ assert(home.includes('rel="manifest"'), 'La portada no enlaza el manifiesto');
 for (const c of categories) assert(home.includes(`categorias/${c.id}.html`), `La portada no enlaza la categoría ${c.id}`);
 
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+assert(sitemapUrls.every(url=>!url.endsWith('.html')),'El sitemap debe utilizar las rutas públicas sin extensión');
+for(const url of sitemapUrls){const p=new URL(url).pathname;assert(existsSync(p==='/'?'index.html':p.slice(1)+'.html'),`URL de sitemap sin página: ${url}`);}
 assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'URLs duplicadas en el sitemap');
 console.log(`${pages.length} páginas públicas, ${VISIBLE_ANIMATIONS.length} animaciones, ${sitemapUrls.length} URLs en sitemap y ${linkErrors.length} enlaces rotos`);

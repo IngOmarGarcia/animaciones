@@ -1,6 +1,6 @@
 import { cinematic,cinePart,cineLathe,cineFace,cineSphere,cineTube,cineLine,cineRandom,CINE_TAU } from './cinema.js';
 export function breadCinema(ctx,w,h,dpr,stage){return cinematic(ctx,w,h,dpr,stage,{
- palette:[[177,100,44],[246,220,160],[77,45,32],[229,179,105]],background:'#140f11',hint:'Toca para compartir · una mesa en el vapor',camera:s=>[-.20,.38,.99],center:.43,
+ palette:[[177,100,44],[246,220,160],[77,45,32],[229,179,105]],background:'#140f11',hint:'Toca para separar una porción · una mesa en el vapor',camera:s=>[-.20,.38,.99],center:.43,
  build(){const plate=cinePart(),parts=[plate],wedges=[],rand=cineRandom(73);cineLathe(plate,[[.40,0],[.40,.83],[.35,.86],[.32,.77],[.34,0]],[68,82,84],'metal',48);
  for(let j=0;j<12;j++){const p=cinePart();p.i=j;const vertex=(u,a)=>{const r=Math.sin(u*Math.PI/2)*.65;return[Math.cos(a)*r,.30-Math.cos(u*Math.PI/2)*.49,Math.sin(a)*r];};for(let k=0;k<14;k++)for(let i=0;i<5;i++){const a=j/12*CINE_TAU+i/60*CINE_TAU,b=a+CINE_TAU/60;cineFace(p,[vertex(k/14,a),vertex((k+1)/14,a),vertex((k+1)/14,b),vertex(k/14,b)],[166+k*3,84+k*4,31+k*2]);}
  for(const a of [j/12*CINE_TAU,(j+1)/12*CINE_TAU]){const outline=[[0,.30,0]];for(let k=14;k>=0;k--)outline.push(vertex(k/14,a));cineFace(p,outline,1);for(let k=0;k<22;k++){const r=rand()*.56,yy=.26-rand()*.25;p.dots.push({v:[Math.cos(a)*r,yy,Math.sin(a)*r],color:[157,120,68],size:.004});}}

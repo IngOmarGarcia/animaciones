@@ -1,6 +1,6 @@
 import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { buildShareUrl, cleanCard, encodeCard, decodeCard } from './share.js';
-import { fillOverlay } from './overlay.js';
+import { fillOverlay, setAccessibleReveal } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
 import './support.js';
@@ -77,7 +77,7 @@ if (sharedCard) {
 }
 
 if(anim.ageField) $('ageField').hidden=false;
-if(anim.photoField) { $('memoryPhotoFields').hidden=false; $('memoryPhotoFields').append($('dana2Photo').closest('label'),$('dana2PhotoStatus')); $('dana2PhotoStatus').textContent='Foto opcional. Se prepara en tu dispositivo y viaja dentro del enlace.'; }
+if(anim.photoField) { $('memoryPhotoFields').hidden=false; $('memoryPhotoFields').append($('dana2Photo').closest('label'),$('dana2PhotoStatus')); $('photoLabel').textContent='Imagen del retrato'; $('dana2PhotoStatus').textContent='Foto opcional. Se prepara en tu dispositivo y viaja dentro del enlace.'; }
 let player = null, previewPaused = false, previewVisible = true, previewLoading = true, previewFailed = false;
 const resumePreview = () => {
   if (player && !previewPaused && previewVisible && !document.hidden) player.play();
@@ -87,6 +87,7 @@ anim.load()
   .then((mod) => {
     player = createPlayer($('scene').querySelector('canvas'), mod.default, { card: readCard() });
     resumePreview();
+    $('previewPause').textContent=player.motionReduced?'Reproducir con movimiento':'Pausar vista previa';
   })
   .catch((err) => { player?.destroy(); player = null; previewFailed = true; $('previewStatus').textContent = 'No se pudo cargar la vista previa. Reiniciar permite reintentar; aún puedes crear el enlace.'; console.error(err); })
   .finally(() => { previewLoading = false; });
@@ -139,7 +140,7 @@ if (hasPhoto) {
     photoProcessing=false; form.querySelector('[type="submit"]').disabled=false;
     const file = event.target.files?.[0];
     photoData = '';
-    if (!file) { $('dana2PhotoStatus').textContent = 'Añade una imagen para el portal. La plantilla no trae foto.'; update(); return; }
+    if (!file) { $('dana2PhotoStatus').textContent = anim.photoField ? 'Foto opcional. Sin foto se conserva la escena de memoria.' : 'Añade una imagen para el portal. La plantilla no trae foto.'; update(); return; }
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { $('dana2PhotoStatus').textContent = 'Elige una imagen JPG, PNG o WebP.'; update();return; }
     $('dana2PhotoStatus').textContent='Preparando imagen…';update();
     photoProcessing=true;form.querySelector('[type="submit"]').disabled=true;
@@ -207,7 +208,7 @@ function update() {
   }
   const card = readCard();
   fillOverlay(overlay, card, anim);
-  if (player) player.stage.card = card;
+  if (player) {player.stage.card = card;player.redraw();}
   // El código descargable lleva el nombre y mensaje que ya escribieron.
   $('codeLink').href = Object.entries(card).some(([key, value]) => key !== 'a' && value)
     ? `codigo.html?s=${encodeCard(card)}`
@@ -269,7 +270,7 @@ nativeBtn.addEventListener('click', () => {
 
 renderGallery($('more'), relatedAnimations(anim, VISIBLE_ANIMATIONS));
 $('previewPause').addEventListener('click',()=>{
-  previewPaused=!previewPaused;
+  if(player?.motionReduced){player.enableMotion();previewPaused=false;}else previewPaused=!previewPaused;
   resumePreview();
   $('previewPause').textContent=previewPaused?'Continuar vista previa':'Pausar vista previa';
 });
@@ -279,14 +280,16 @@ $('previewRestart').addEventListener('click',async()=>{
   try {
     if(!player) player=createPlayer(previewCanvas,(await anim.load({ retry: previewFailed })).default,{card:readCard()});
     player.restart();previewPaused=false;resumePreview();previewFailed=false;
-    $('previewPause').textContent='Pausar vista previa';$('previewStatus').textContent=guideFor(anim).interaction;
+    $('previewPause').textContent=player.motionReduced?'Reproducir con movimiento':'Pausar vista previa';$('previewStatus').textContent=guideFor(anim).interaction;
   } catch(error) { player?.destroy();player=null;previewFailed=true;$('previewStatus').textContent='La escena no se pudo cargar. Revisa tu conexión e inténtalo de nuevo.'; }
   finally { previewLoading=false; $('previewRestart').disabled=false; }
 });
 const previewObserver=new IntersectionObserver(entries=>{previewVisible=entries[0].isIntersecting;resumePreview();});
+previewCanvas.addEventListener('motionpreferencechange',()=>{if(player)$('previewPause').textContent=player.motionReduced?'Reproducir con movimiento':previewPaused?'Continuar vista previa':'Pausar vista previa';});
 previewObserver.observe(previewCanvas);
+const accessibleTimer=setInterval(()=>{if(player)setAccessibleReveal(overlay,player.motionReduced||player.stage.revealed||!anim.interactive&&player.time>=anim.textDelay);},200);
 document.addEventListener('visibilitychange',resumePreview);
-window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {player?.destroy();previewObserver.disconnect();}});
+window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {clearInterval(accessibleTimer);player?.destroy();previewObserver.disconnect();}});
 window.addEventListener('pageshow',event=>{if(event.persisted)resumePreview();});
 $('clearDraft').addEventListener('click',()=>{
   try{sessionStorage.removeItem(DRAFT_KEY);}catch{}

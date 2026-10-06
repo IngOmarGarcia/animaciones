@@ -90,6 +90,11 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
   const code = await buildSceneCode(anim, readText);
   const host = new URL(SITE.url).host;
   return `<!doctype html>
+<!-- Animación y código original: OGR/ViralCSS.
+Uso permitido: descarga, ejecución, estudio y modificación únicamente para fines personales, educativos y experimentales.
+Uso comercial, venta, redistribución del código original o modificado y republicación en otra colección/plataforma requieren autorización.
+Un trabajo derivado mostrado públicamente debe atribuirse a ViralCSS; la atribución no sustituye los permisos necesarios.
+Términos completos: https://viralcss.com/terminos | Contacto: viralcss11@gmail.com -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -130,11 +135,16 @@ export async function buildStandaloneHtml(anim, card = {}, readText = fetchText)
     padding: 4px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.35);
     color: rgba(255, 255, 255, 0.6); font: 12px system-ui, sans-serif; text-decoration: none; white-space: nowrap;
   }
+  .sr-only {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+  .movimiento {position:fixed;top:12px;left:12px;z-index:2;padding:10px;background:#101324;color:white;border:1px solid #777;border-radius:12px;}
+  @media(prefers-reduced-motion:reduce){.mensaje{transition:none;transform:none;}}
   .repetir { position: fixed; top: 12px; right: 12px; padding: 8px 14px; border: 1px solid #777; border-radius: 20px; background: #101324; color: white; cursor: pointer; }
 </style>
 </head>
 <body>
-<canvas></canvas>
+<canvas tabindex="0" aria-label="${escapeHtml(anim.title)}"></canvas>
+<button id="movimiento" class="movimiento" type="button" hidden>Reproducir con movimiento</button>
+<div class="sr-only" id="textoAccesible" role="status" aria-live="polite" hidden></div>
 ${anim.turtleIndex !== undefined ? '<button class="repetir" id="repetir" type="button">Repetir</button>' : ''}
 <div class="mensaje" id="mensaje">
   <p class="para" id="para"></p>
@@ -164,11 +174,18 @@ ${code}
 // ---------- Reproductor ----------
 
 const lienzo = document.querySelector('canvas');
+// Drag scenes retain both axes; tap/hold scenes allow natural vertical gestures.
+lienzo.style.touchAction=${jsString(['catrina-encaje','retrato-historias','eclipse-corona','guitarra-resonancia'].includes(anim.id)?'none':'pan-y')};
 const pincel = lienzo.getContext('2d');
 const mensaje = document.getElementById('mensaje');
+const textoAccesible=document.getElementById('textoAccesible');
+textoAccesible.textContent=[PARA,MENSAJE,DE,CARTA_TITULO,CARTA,FRASES.split('|').join('. ').replaceAll('~',': ')].filter(Boolean).join('. ');
+const movimientoReducido=matchMedia('(prefers-reduced-motion: reduce)');
+let calm=movimientoReducido.matches, raf=0;
+const motionButton=document.getElementById('movimiento');motionButton.hidden=!calm;
 ${anim.id === 'galaxia-de-flores' ? "if (MENSAJE.length > 80) document.getElementById('texto').classList.add('largo');" : ''}
 const escena = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, revealed: false,
-  card: { p: PARA, m: MENSAJE, d: DE, tm: MODO_TEXTO, f: TIPOGRAFIA, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2, age: ${jsString(card.age)}, img: ${jsString(card.img)} } };
+  card: { a: ${jsString(anim.id)}, p: PARA, m: MENSAJE, d: DE, tm: MODO_TEXTO, f: TIPOGRAFIA, lt: CARTA_TITULO, l: CARTA, mem: FRASES, c1: COLOR_1, c2: COLOR_2, age: ${jsString(card.age)}, img: ${jsString(card.img)} } };
 
 for (const [id, texto] of [['para', ${anim.nameInScene ? "''" : "PARA && 'Para ' + PARA"}], ['texto', MENSAJE], ['de', ${anim.turtleIndex !== undefined ? "''" : anim.seasonalText ? 'DE' : "DE && 'Con cariño, ' + DE"}]]) {
   const nodo = document.getElementById(id);
@@ -195,10 +212,15 @@ function preparar() {
   escena.onDispose?.();
   escena.onDispose = null;
   escena.onPointerDown = null;
+  escena.forceMotion=!calm;
   dibujar = create(pincel, ancho, alto, escala, escena);
+  if(calm){for(let i=0;i<24;i++){pincel.setTransform(escala,0,0,escala,0,0);pincel.globalAlpha=1;pincel.globalCompositeOperation='source-over';pincel.clearRect(0,0,ancho,alto);dibujar(i*.75,.1);}tiempo=18;escena.revealed=true;paintStill();}
 }
 
+function paintStill(){pincel.setTransform(escala,0,0,escala,0,0);pincel.globalAlpha=1;pincel.globalCompositeOperation='source-over';pincel.clearRect(0,0,ancho,alto);dibujar(tiempo,0);mensaje.classList.add('visible');textoAccesible.hidden=!textoAccesible.textContent;}
+escena.requestRender=()=>{if(calm&&dibujar)paintStill();};
 function cuadro(ahora) {
+  if(calm||document.hidden)return;
   const dt = Math.min((ahora - anterior) / 1000, 0.1);
   anterior = ahora;
   tiempo += dt;
@@ -207,7 +229,8 @@ function cuadro(ahora) {
   pincel.globalCompositeOperation = 'source-over';
   dibujar(tiempo, dt);
   mensaje.classList.toggle('visible', ${anim.interactive ? 'escena.revealed' : 'tiempo >= TEXTO_APARECE'});
-  requestAnimationFrame(cuadro);
+  textoAccesible.hidden=!mensaje.classList.contains('visible')||!textoAccesible.textContent;
+  raf=requestAnimationFrame(cuadro);
 }
 
 addEventListener('resize', () => {
@@ -226,14 +249,21 @@ ${anim.interactive ? `addEventListener('pointerdown', (event) => {
   if(!escena.onPointerDown?.({ x:event.clientX,y:event.clientY,event })) escena.taps.push({ x: event.clientX, y: event.clientY });
 });
 for (const type of ['pointerup', 'pointercancel', 'pointerleave']) addEventListener(type, () => { escena.holding = false; });` : `addEventListener('click', (event) => {
-  if (event.target.closest('a')) return;
+  if (event.target.closest('a,button')) return;
   tiempo = 0;
   preparar();
 });`}
 
 preparar();
 ${anim.turtleIndex !== undefined ? `document.getElementById('repetir').addEventListener('click',()=>{tiempo=0;escena.holding=false;mensaje.classList.remove('visible');preparar();});` : ''}
-requestAnimationFrame(cuadro);
+if(!calm)raf=requestAnimationFrame(cuadro);
+motionButton.addEventListener('click',()=>{calm=false;motionButton.hidden=true;tiempo=0;preparar();anterior=performance.now();raf=requestAnimationFrame(cuadro);});
+movimientoReducido.addEventListener('change',()=>{cancelAnimationFrame(raf);calm=movimientoReducido.matches;motionButton.hidden=!calm;preparar();anterior=performance.now();if(!calm&&!document.hidden)raf=requestAnimationFrame(cuadro);});
+document.addEventListener('visibilitychange',()=>{cancelAnimationFrame(raf);anterior=performance.now();if(!calm&&!document.hidden)raf=requestAnimationFrame(cuadro);});
+addEventListener('pagehide',e=>{cancelAnimationFrame(raf);if(!e.persisted)escena.onDispose?.();});
+addEventListener('pageshow',e=>{if(e.persisted&&!calm&&!document.hidden){anterior=performance.now();raf=requestAnimationFrame(cuadro);}});
+lienzo.addEventListener('keydown',e=>{if(!['Enter',' '].includes(e.key)||e.repeat)return;e.preventDefault();escena.holding=true;if(!escena.onPointerDown?.({x:ancho/2,y:alto/2,nx:.5,ny:.5,event:e}))escena.taps.push({x:ancho/2,y:alto/2});if(calm)paintStill();});
+lienzo.addEventListener('keyup',e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();escena.holding=false;}});
 </script>
 </body>
 </html>

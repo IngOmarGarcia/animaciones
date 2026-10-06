@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import {writeFile,mkdir} from 'node:fs/promises';
+export async function runCorrections({call,ev,delay,getErrors}){
+ const base='http://localhost:8080',results={};
+ const wait=async expression=>{for(let i=0;i<200;i++){if(await ev(expression))return;await delay(100);}throw Error('Espera agotada: '+expression);};
+ const go=async p=>{await call('Page.navigate',{url:base+p});await wait("document.readyState==='complete'");};
+ await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+ await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ await go('/tools/adsense-functional-qa.html');await wait('window.ready');
+ results.reduced=await ev('checkReduced()');assert.equal(results.reduced.length,87);assert(results.reduced.every(x=>x.ok),JSON.stringify(results.reduced.filter(x=>!x.ok)));
+ for(const id of ['catrina-encaje','retrato-historias','eclipse-corona','guitarra-resonancia'])assert.equal(results.reduced.find(x=>x.id===id).gesture,'none');
+ for(const id of ['mansion-imposible','pan-memoria','grimorio-tinta-viva','herbario-luz'])assert.equal(results.reduced.find(x=>x.id===id).gesture,'pan-y');
+ results.optIn=await ev("checkOptIn('mansion-imposible')");assert(results.optIn.moving&&!results.optIn.reduced&&results.optIn.force);
+ await go('/crear.html?a=retrato-historias');await wait("document.getElementById('title')?.textContent==='El retrato que guarda historias' && document.querySelector('[data-accessible-dedication]')&&!document.documentElement.classList.contains('editor-pending')");
+ assert.equal(await ev("document.getElementById('photoLabel').textContent"),'Imagen del retrato');
+ await ev("(()=>{const f=document.getElementById('form');f.elements.tm.value='custom';f.elements.p.value='Historias de una familia';f.elements.m.value='Un mensaje largo y accesible con símbolos: ñ, 💛 y recuerdos compartidos.';f.elements.d.value='Familia';f.dispatchEvent(new Event('input',{bubbles:true}));})()");
+ await wait("!document.querySelector('[data-accessible-dedication]').hidden");
+ results.accessible=await ev("document.querySelector('[data-accessible-dedication]').textContent");assert(results.accessible.includes('Un mensaje largo y accesible')&&results.accessible.includes('Firma: Familia'));
+ await ev("(()=>{const f=document.getElementById('form');f.elements.tm.value='none';f.elements.tm.dispatchEvent(new Event('change',{bubbles:true}));})()");
+ assert(await ev("document.querySelector('[data-accessible-dedication]').hidden && document.querySelector('[data-accessible-dedication]').textContent===''") ,'Sin texto expone dedicatoria');
+ assert.equal(await ev("document.getElementById('previewPause').textContent"),'Reproducir con movimiento');
+ await ev("document.getElementById('previewPause').click()");assert.equal(await ev("document.getElementById('previewPause').textContent"),'Pausar vista previa');
+ const shared=await ev("import('/js/share.js').then(m=>m.encodeCard({a:'mansion-imposible',p:'Mensaje para el lector',m:'Dedicatoria recibida',d:'Familia',tm:'custom'}))");
+ await go('/v.html?autoplay=1&s='+encodeURIComponent(shared));
+ await wait("document.getElementById('viewerPause')?.textContent==='Reproducir con movimiento'&&!document.querySelector('[data-accessible-dedication]').hidden");
+ assert(await ev("document.querySelector('[data-accessible-dedication]').textContent.includes('Dedicatoria recibida')"));
+ await ev("document.getElementById('viewerPause').click()");
+ await wait("document.getElementById('viewerPause').textContent==='Pausar'&&document.querySelector('[data-accessible-dedication]').hidden");
+ results.viewerOptIn=true;
+ await call('Emulation.setEmulatedMedia',{features:[]});
+ await go('/animaciones/grimorio-tinta-viva.html');assert(!await ev("document.body.textContent.includes('Desliza para pasar')"));
+ await go('/animaciones/herbario-luz.html');assert(!await ev("document.body.textContent.includes('Desliza la página')"));
+ for(const id of ['catrina-encaje','retrato-historias','eclipse-corona','guitarra-resonancia']){await go('/animaciones/'+id+'.html');assert(!await ev("document.querySelector('.eyebrow').textContent.includes('abrir recuerdos')"));}
+ await go('/tools/adsense-functional-qa.html');await wait('window.ready');
+ const html=await ev("Promise.all([import('/js/catalog.js'),import('/js/standalone.js')]).then(async ([c,s])=>s.buildStandaloneHtml(c.getAnimation('mansion-imposible'),{a:'mansion-imposible',p:'Un título',m:'Texto accesible exportado',d:'Firma',tm:'custom'}))");
+ await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ await call('Page.navigate',{url:'about:blank'});await call('Page.setDocumentContent',{frameId:(await call('Page.getFrameTree')).frameTree.frame.id,html});await delay(800);
+ results.exported=await ev("({motionHidden:document.getElementById('movimiento').hidden,accessible:document.getElementById('textoAccesible').textContent,hidden:document.getElementById('textoAccesible').hidden,frozen:tiempo})");
+ assert(!results.exported.motionHidden&&!results.exported.hidden&&results.exported.accessible.includes('Texto accesible exportado'));assert.equal(results.exported.frozen,18);
+ await ev("document.getElementById('movimiento').click()");await delay(200);assert(await ev('tiempo>0 && tiempo<5'));
+ results.errors=getErrors();assert.equal(results.errors.length,0,JSON.stringify(results.errors));
+ await mkdir('tools/review',{recursive:true});await writeFile('tools/review/adsense-corrections.json',JSON.stringify(results,null,2));console.log(JSON.stringify({passed:true,reducedScenes:results.reduced.length,accessible:true,noText:true,touch:true,exported:true}));
+}

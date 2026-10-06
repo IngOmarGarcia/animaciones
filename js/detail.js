@@ -1,6 +1,6 @@
 import { getAnimation } from './catalog.js';
 import { createPlayer } from './anim/engine.js';
-import { fillOverlay } from './overlay.js';
+import { fillOverlay, setAccessibleReveal } from './overlay.js';
 import { enhanceGallery, setGalleryPaused } from './gallery.js';
 const $=id=>document.getElementById(id);
 const anim=getAnimation(document.body.dataset.animation);
@@ -17,14 +17,16 @@ async function load() {
   player=createPlayer($('detail-canvas'),mod.default,{card});player.restart();resume();failed=false;
   setGalleryPaused(true);button.hidden=true;pause.hidden=false;replay.hidden=false;
   status.textContent='Vista previa en reproducción. Prueba la interacción indicada abajo.';
-  timer=setInterval(()=>overlay.classList.toggle('show',anim.interactive?player.stage.revealed:player.time>=anim.textDelay),150);
+  pause.textContent=player.motionReduced?'Reproducir con movimiento':'Pausar';
+  timer=setInterval(()=>{const ready=player.motionReduced||(anim.interactive?player.stage.revealed:player.time>=anim.textDelay);overlay.classList.toggle('show',ready);setAccessibleReveal(overlay,ready);},150);
  } catch(error) {player?.destroy();player=null;failed=true;status.textContent='No se pudo cargar la escena. Puedes reintentar o continuar al editor.';button.disabled=false;button.textContent='Reintentar vista previa';console.error(error);}
 }
 button.addEventListener('click',load);
-pause.addEventListener('click',()=>{paused=!paused;pause.textContent=paused?'Continuar':'Pausar';status.textContent=paused?'Vista previa pausada.':'Vista previa en reproducción.';resume();});
-replay.addEventListener('click',()=>{overlay.classList.remove('show');player.restart();paused=false;pause.textContent='Pausar';resume();});
+pause.addEventListener('click',()=>{if(player?.motionReduced){player.enableMotion();paused=false;}else paused=!paused;pause.textContent=paused?'Continuar':'Pausar';status.textContent=paused?'Vista previa pausada.':'Vista previa en reproducción.';resume();});
+replay.addEventListener('click',()=>{overlay.classList.remove('show');setAccessibleReveal(overlay,false);player.restart();paused=false;pause.textContent=player.motionReduced?'Reproducir con movimiento':'Pausar';resume();});
 document.addEventListener('visibilitychange',resume);
 const visibility=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;resume();});visibility.observe($('detail-canvas'));
+$('detail-canvas').addEventListener('motionpreferencechange',()=>{if(player)pause.textContent=player.motionReduced?'Reproducir con movimiento':paused?'Continuar':'Pausar';});
 window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {clearInterval(timer);player?.destroy();visibility.disconnect();}});
 window.addEventListener('pageshow',event=>{if(event.persisted)resume();});
 for(const gallery of document.querySelectorAll('[data-gallery]'))enhanceGallery(gallery);

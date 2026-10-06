@@ -4,32 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>El carrusel de medianoche: vista previa y personalización | ViralCss</title>
-<meta name="description" content="Caballos suspendidos abandonan el carrusel y galopan en hélice.">
+<meta name="description" content="Una cubierta segmentada, luces pequeñas, plataforma y postes componen un carrusel de seis caballos. Las monturas se alejan de los postes y recorren un giro espa">
 <meta property="og:title" content="El carrusel de medianoche: vista previa y personalización | ViralCss">
-<meta property="og:description" content="Caballos suspendidos abandonan el carrusel y galopan en hélice.">
+<meta property="og:description" content="Una cubierta segmentada, luces pequeñas, plataforma y postes componen un carrusel de seis caballos. Las monturas se alejan de los postes y recorren un giro espa">
 <meta property="og:image" content="https://viralcss.com/img/og.jpg">
-<meta property="og:url" content="https://viralcss.com/animaciones/carrusel-medianoche.html">
+<meta property="og:url" content="https://viralcss.com/animaciones/carrusel-medianoche">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b1020">
-<link rel="canonical" href="https://viralcss.com/animaciones/carrusel-medianoche.html">
-<link rel="icon" href="/img/icon.png" type="image/png">
+<link rel="canonical" href="https://viralcss.com/animaciones/carrusel-medianoche">
+<link rel="icon" href="/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/css/styles.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://viralcss.com/"},{"@type":"ListItem","position":2,"name":"Halloween","item":"https://viralcss.com/categorias/halloween.html"},{"@type":"ListItem","position":3,"name":"El carrusel de medianoche","item":"https://viralcss.com/animaciones/carrusel-medianoche.html"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://viralcss.com/"},{"@type":"ListItem","position":2,"name":"Halloween","item":"https://viralcss.com/categorias/halloween"},{"@type":"ListItem","position":3,"name":"El carrusel de medianoche","item":"https://viralcss.com/animaciones/carrusel-medianoche"}]}</script>
 </head>
 <body data-animation="carrusel-medianoche">
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <header class="site-header">
-<a class="brand" href="/">
-<img src="/img/logo.png" alt="" width="72" height="48">
+<a class="brand" href="/" aria-label="ViralCSS — Ir al inicio">
+<span class="brand-orb" aria-hidden="true">
+<img class="brand-static" src="/img/logo.webp" alt="" width="72" height="48">
+<span class="brand-mark">Viral<span>Css</span>
+</span>
+</span>
 <span class="brand-name">Viral<span class="accent">Css</span>
+<small class="brand-tagline">CREA • PERSONALIZA • COMPARTE</small>
 </span>
 </a>
-<nav aria-label="Navegación principal">
+<nav class="header-desktop-nav" aria-label="Navegación principal">
 <a href="/animaciones.html">Animaciones</a>
 <a href="/acerca.html">Acerca</a>
 <a href="/sugerencias.html">Sugerencias</a>
 </nav>
 </header>
+<noscript>
+<style>@media(max-width:699px){.site-header .header-desktop-nav{display:flex!important}.site-header::after{display:none!important}}</style>
+</noscript>
 <main id="contenido" class="container content-page">
 <nav class="breadcrumbs" aria-label="Ruta">
 <a href="/">Inicio</a> / <a href="/categorias/halloween.html">Halloween</a> / El carrusel de medianoche</nav>
@@ -43,7 +51,7 @@
 <section class="preview-panel">
 <h2>Prueba la escena</h2>
 <div class="scene detail-scene">
-<canvas id="detail-canvas" aria-label="El carrusel de medianoche: Toca el carrusel. También avanza automáticamente y puedes repetirla sin recargar." tabindex="0" role="button">
+<canvas id="detail-canvas" aria-label="El carrusel de medianoche: Toca el carrusel para liberar las monturas antes del inicio automático. Los caballos siguen una coreografía propia; no se elige una montura ni se controla su dirección. Puedes volver a tocar para repetir el acontecimiento o usar Reiniciar para ver la formación inicial." tabindex="0" role="button">
 </canvas>
 <div class="overlay" id="detail-overlay">
 <span class="ov-to" id="ov-to">
@@ -60,13 +68,13 @@
 <button class="btn btn-ghost" id="detail-replay" hidden type="button">Reiniciar</button>
 </div>
 <p id="detail-status" class="hint" role="status">La vista previa usa texto de ejemplo. Se carga cuando la solicitas.</p>
-<p>Toca el carrusel. También avanza automáticamente y puedes repetirla sin recargar.</p>
+<p>Toca el carrusel para liberar las monturas antes del inicio automático. Los caballos siguen una coreografía propia; no se elige una montura ni se controla su dirección. Puedes volver a tocar para repetir el acontecimiento o usar Reiniciar para ver la formación inicial.</p>
 <p class="hint">Puedes tocar la escena o usar Intro o Espacio con el lienzo enfocado. En una pulsación mantenida, conserva la tecla presionada.</p>
 </section>
 <div class="detail-copy">
 <section>
 <h2>Qué ocurre en la escena</h2>
-<p>Caballos suspendidos abandonan el carrusel y galopan en hélice.</p>
+<p>Una cubierta segmentada, luces pequeñas, plataforma y postes componen un carrusel de seis caballos. Las monturas se alejan de los postes y recorren un giro espacial con estelas, mientras el techo y la base conservan la referencia del carrusel. Al concluir, los caballos regresan hacia sus posiciones.</p>
 </section>
 <section>
 <h2>Qué puedes personalizar</h2>
@@ -80,7 +88,7 @@
 <section>
 <h2>Qué verá el destinatario</h2>
 <p>El enlace muestra la figura, la frase y los colores elegidos. Si seleccionas Sin texto, recibe la animación sin título, mensaje ni firma.</p>
-<p>Una invitación, felicitación o dedicatoria con texto opcional.</p>
+<p>Una invitación festiva con tono de fantasía nocturna. El mensaje acompaña la salida de los caballos sin sustituir el carrusel. Los tonos editables afectan los acentos de la composición; la estructura y los detalles de las monturas siguen conservando sus materiales.</p>
 <p>El editor genera un enlace para copiar o compartir por WhatsApp. Quien tenga ese enlace puede abrirlo: evita incluir información privada.</p>
 <a class="btn btn-primary" href="/crear.html?a=carrusel-medianoche">Crear con El carrusel de medianoche</a> <a href="/codigo.html?a=carrusel-medianoche">Ver opción de código</a>
 </section>
@@ -160,6 +168,7 @@
 <div>
 <a href="/acerca.html">Acerca y contacto</a>
 <a href="/privacidad.html">Privacidad</a>
+<a href="/terminos.html">Términos de Uso</a>
 <a href="/animaciones.html">Todas las animaciones</a>
 </div>
 </footer>

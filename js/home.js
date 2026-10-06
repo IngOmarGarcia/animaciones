@@ -66,4 +66,4 @@ function render() {
 render();
 const motion=document.getElementById('homeMotion');
 const motionLabel=()=>{motion.textContent=galleryPaused()?'Animar miniaturas':'Pausar miniaturas';motion.setAttribute('aria-pressed',String(galleryPaused()));};
-motion.addEventListener('click',()=>{setGalleryPaused(!galleryPaused());motionLabel();});motionLabel();
+motion.addEventListener('click',()=>{setGalleryPaused(!galleryPaused(),{userInitiated:true});motionLabel();});motionLabel();

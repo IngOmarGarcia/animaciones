@@ -1,4 +1,11 @@
 import { supportConfig } from './config.js';
+import { initBrandLogo } from './brand-logo.js';
+// Keep local .html links usable while avoiding production redirect hops.
+if(typeof document!=='undefined'&&/^(www\.)?viralcss\.com$/.test(location.hostname)) {
+ const normalize=root=>{for(const a of [root,...(root.querySelectorAll?.('a[href]')||[])])if(a.matches?.('a[href]')){const url=new URL(a.href,location.href);if(url.origin===location.origin&&url.pathname.endsWith('.html')){url.pathname=url.pathname.slice(0,-5);a.href=url.href;}}};
+ normalize(document);
+ new MutationObserver(records=>{for(const r of records)for(const node of r.addedNodes)if(node.nodeType===1)normalize(node);}).observe(document.documentElement,{childList:true,subtree:true});
+}
 
 const formatClabe = (digits) => digits.replace(/^(\d{3})(\d{3})(\d{11})(\d)$/, '$1 $2 $3 $4');
 const clabeDigits = () => (supportConfig.clabe || '').replace(/\D/g, '');
@@ -123,6 +130,7 @@ export function initSupportUI() {
   const header = document.querySelector('.site-header');
   if (!header || header.dataset.supportReady) return;
   header.dataset.supportReady = '1';
+  initBrandLogo();
   const desktop = header.querySelector('nav');
   if (!desktop) return;
   desktop.classList.add('header-desktop-nav');

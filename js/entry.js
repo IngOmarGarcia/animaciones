@@ -11,4 +11,9 @@ if(params.has('s')&&(!card||!getAnimation(card.a)) || id&&!getAnimation(id) || p
  const heading=document.createElement('h1');heading.textContent='Este enlace no está disponible';
  const text=document.createElement('p');text.textContent='El enlace está incompleto o no corresponde a una animación del proyecto. Pide a quien lo compartió que copie el enlace completo, o elige otra escena.';
  const link=document.createElement('a');link.href='/animaciones.html';link.className='btn btn-primary';link.textContent='Explorar animaciones';main.append(heading,text,link);
-} else await import(`./${page}.js`);
+} else {
+ try {await import(`./${page}.js`);} catch(error) {
+  const notice=document.createElement('p');notice.setAttribute('role','alert');notice.textContent='No se pudo preparar la escena. Recarga la página para reintentar.';document.querySelector('main').prepend(notice);console.error(error);
+ }
+}
+document.documentElement.classList.remove('editor-pending');

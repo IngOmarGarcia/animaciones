@@ -1,6 +1,6 @@
 import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { decodeCard } from './share.js';
-import { fillOverlay } from './overlay.js';
+import { fillOverlay, setAccessibleReveal } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
 import './support.js';
@@ -42,10 +42,11 @@ $('codeLink').href = `codigo.html?a=${encodeURIComponent(anim.id)}`;
 $('codeLink').closest('.after-code').hidden = !!anim.noCode || isDana2;
 
 let player = null;
+canvas.addEventListener('motionpreferencechange',()=>{if(player)$('viewerPause').textContent=player.motionReduced?'Reproducir con movimiento':paused?'Continuar':'Pausar';});
 let watcher = 0;
 let paused=false, starting=false, failed=false;
 $('viewerPause').addEventListener('click',()=>{
-  paused=!paused;paused?player?.pause():player?.play();
+  if(player?.motionReduced){player.enableMotion();paused=false;start();return;}else {paused=!paused;paused?player?.pause():player?.play();}
   $('viewerPause').textContent=paused?'Continuar':'Pausar';$('viewerStatus').textContent=paused?'Animación pausada.':'Animación en reproducción.';
 });
 document.addEventListener('visibilitychange', () => {
@@ -78,19 +79,21 @@ async function start() {
   clearInterval(watcher);
   $('viewerStatus').className='sr-only';$('viewerStatus').textContent='Animación en reproducción.';
   overlay.classList.remove('show');
+  setAccessibleReveal(overlay,false);
   replay.hidden = true;
   hint.hidden = true;
-  paused=false;$('viewerPause').hidden=false;$('viewerPause').textContent='Pausar';
+  paused=false;$('viewerPause').hidden=false;$('viewerPause').textContent=player.motionReduced?'Reproducir con movimiento':'Pausar';
   // Se sigue el tiempo de la animación (no el reloj) para que en celulares lentos
   // el mensaje no aparezca antes de que florezca. Las interactivas avisan con stage.revealed.
   let shownAt = null;
   watcher = setInterval(() => {
-    const ready = anim.interactive ? player.stage.revealed : player.time >= anim.textDelay;
+    const ready = player.motionReduced || (anim.interactive ? player.stage.revealed : player.time >= anim.textDelay);
     if (ready && shownAt === null) {
       if (!isDana2) overlay.classList.add('show');
+      setAccessibleReveal(overlay,true);
       shownAt = player.time;
     }
-    if (shownAt !== null && player.time >= shownAt + 2.5) {
+    if (shownAt !== null && (player.motionReduced || player.time >= shownAt + 2.5)) {
       replay.hidden = false;
       hint.hidden = false;
       clearInterval(watcher);

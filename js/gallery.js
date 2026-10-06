@@ -1,11 +1,12 @@
 import { getAnimation } from './catalog.js';
 import { createPlayer } from './anim/engine.js';
-import { guideFor, MODE_LABELS } from './scene-guides.js';
+import { guideFor, modeLabelFor } from './scene-guides.js';
 
 const players = new Map();
 const visible = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let paused = reduced.matches;
+let motionRequested=false;
 const observer = new IntersectionObserver(entries => {
   for (const e of entries) e.isIntersecting && !e.target.hidden ? visible.add(e.target) : visible.delete(e.target);
   schedule();
@@ -28,6 +29,7 @@ async function activate(card) {
       if(!card.isConnected) return;
       player=createPlayer(card.querySelector('canvas'),mod.default,{loop:anim.previewLoop,preview:true});
       players.set(card,player);
+      if(motionRequested&&player.motionReduced)player.enableMotion();
       player.restart();
     } catch(error) {
       card.dataset.failed='1';
@@ -38,12 +40,12 @@ async function activate(card) {
   }
   if(player && !paused && !document.hidden && [...visible].filter(c=>c.isConnected&&!c.hidden).slice(0,matchMedia('(max-width:719px)').matches?2:4).includes(card)) player.play();
 }
-export function setGalleryPaused(value) {paused=value; schedule();}
+export function setGalleryPaused(value,{userInitiated=false}={}) {paused=value;if(userInitiated&&!value){motionRequested=true;for(const player of players.values())if(player.motionReduced)player.enableMotion();}schedule();}
 export function galleryPaused() {return paused;}
 export function enhanceGallery(container) {for(const card of container.querySelectorAll('.card[data-id]')) observer.observe(card);}
 export function refreshGallery(container) {for(const card of container.querySelectorAll('.card[data-id]')) {if(card.hidden)visible.delete(card);observer.unobserve(card);observer.observe(card);}schedule();}
 document.addEventListener('visibilitychange',schedule);
-reduced.addEventListener('change',()=>setGalleryPaused(reduced.matches));
+reduced.addEventListener('change',()=>{motionRequested=false;setGalleryPaused(reduced.matches);});
 window.addEventListener('pagehide',event=>{
   for(const player of players.values())event.persisted?player.pause():player.destroy();
   if(!event.persisted){players.clear();visible.clear();}
@@ -55,7 +57,7 @@ function createCard(anim) {
  const preview=document.createElement('a'); preview.className='card-preview-link'; preview.href=`/animaciones/${anim.id}.html`; preview.setAttribute('aria-label',`Ver ${anim.title}`);
  const thumb=document.createElement('div');thumb.className='thumb';
  const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');
- const badge=document.createElement('span');badge.className='badge';badge.textContent=MODE_LABELS[guideFor(anim).mode];thumb.append(canvas,badge);preview.append(thumb);
+ const badge=document.createElement('span');badge.className='badge';badge.textContent=modeLabelFor(anim);thumb.append(canvas,badge);preview.append(thumb);
  const body=document.createElement('div');body.className='card-body';
  const title=document.createElement('h3'), link=document.createElement('a');link.href=preview.href;link.textContent=anim.title;title.append(link);
  const desc=document.createElement('p');desc.textContent=anim.description;

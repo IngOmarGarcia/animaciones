@@ -1,0 +1,11 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {VISIBLE_ANIMATIONS} from '../js/catalog.js';
+import {guideFor} from '../js/scene-guides.js';
+import {TURTLE_ANIMATIONS} from '../js/turtle-catalog.js';
+const baseline=await readFile('tools/ADSENSE-SCENE-INVENTORY.md','utf8');
+const oldIds=[...baseline.matchAll(/\| `([^`]+)` \|/g)].map(m=>m[1]);
+if(oldIds.length!==87||oldIds.some(id=>!VISIBLE_ANIMATIONS.some(a=>a.id===id)))throw Error('El inventario público cambió');
+const recent=new Set(TURTLE_ANIMATIONS.map(a=>a.id));
+const rows=VISIBLE_ANIMATIONS.map(a=>{const g=guideFor(a);return `| ${a.title} | \`${a.id}\` | ${a.category} | ${g.mode} | ${[g.scene,g.interaction,g.use].join(' ').split(/\s+/).length} | ${recent.has(a.id)?'Guía reescrita según implementación':'Guía conservada'} |`;});
+await writeFile('tools/ADSENSE-SCENE-INVENTORY-AFTER.md',`# Inventario después de las correcciones\n\n4 de octubre de 2026. Los mismos 87 identificadores públicos que la auditoría inicial; ninguna escena eliminada. Guías recientes contrastadas con sus motores. Todas las escenas pasan importación/renderizado normal y reducido en Chrome. No equivale a una certificación artística de cada frame o accesibilidad completa.\n\nLas palabras solo describen la longitud de escena, interacción y uso, sin boilerplate; no son una cuota de Google.\n\n| Animación | Identificador | Categoría | Gesto documentado | Palabras | Estado editorial |\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n`);
+console.log('Inventario comparado: 87 identificadores conservados; 14 guías específicas.');

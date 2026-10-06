@@ -8,28 +8,36 @@
 <meta property="og:title" content="Flores amarillas: escenas, interacción y opciones | ViralCss">
 <meta property="og:description" content="Elige entre una flor que se abre sola, una figura que cambia al tocarla y un recorrido con recuerdos. El amarillo es parte del diseño de muchas escenas; solo la">
 <meta property="og:image" content="https://viralcss.com/img/og.jpg">
-<meta property="og:url" content="https://viralcss.com/categorias/flores.html">
+<meta property="og:url" content="https://viralcss.com/categorias/flores">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b1020">
-<link rel="canonical" href="https://viralcss.com/categorias/flores.html">
-<link rel="icon" href="/img/icon.png" type="image/png">
+<link rel="canonical" href="https://viralcss.com/categorias/flores">
+<link rel="icon" href="/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/css/styles.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://viralcss.com/"},{"@type":"ListItem","position":2,"name":"Animaciones","item":"https://viralcss.com/animaciones.html"},{"@type":"ListItem","position":3,"name":"Flores amarillas","item":"https://viralcss.com/categorias/flores.html"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://viralcss.com/"},{"@type":"ListItem","position":2,"name":"Animaciones","item":"https://viralcss.com/animaciones"},{"@type":"ListItem","position":3,"name":"Flores amarillas","item":"https://viralcss.com/categorias/flores"}]}</script>
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <header class="site-header">
-<a class="brand" href="/">
-<img src="/img/logo.png" alt="" width="72" height="48">
+<a class="brand" href="/" aria-label="ViralCSS — Ir al inicio">
+<span class="brand-orb" aria-hidden="true">
+<img class="brand-static" src="/img/logo.webp" alt="" width="72" height="48">
+<span class="brand-mark">Viral<span>Css</span>
+</span>
+</span>
 <span class="brand-name">Viral<span class="accent">Css</span>
+<small class="brand-tagline">CREA • PERSONALIZA • COMPARTE</small>
 </span>
 </a>
-<nav aria-label="Navegación principal">
+<nav class="header-desktop-nav" aria-label="Navegación principal">
 <a href="/animaciones.html">Animaciones</a>
 <a href="/acerca.html">Acerca</a>
 <a href="/sugerencias.html">Sugerencias</a>
 </nav>
 </header>
+<noscript>
+<style>@media(max-width:699px){.site-header .header-desktop-nav{display:flex!important}.site-header::after{display:none!important}}</style>
+</noscript>
 <main id="contenido" class="container content-page">
 <nav class="breadcrumbs" aria-label="Ruta">
 <a href="/">Inicio</a> / <a href="/animaciones.html">Animaciones</a> / Flores amarillas</nav>
@@ -50,7 +58,7 @@
 <p>En Origami amarillo el mensaje se dibuja dentro de una tarjeta de cinco líneas: funciona mejor una frase corta. En Flor de luz interactiva el destinatario mantiene pulsado para hacer crecer la flor; en Girasol o Rosa amarilla basta con mirar.</p>
 </section>
 <h2>Escenas de esta categoría</h2>
-<div class="collection-controls" hidden>
+<div class="collection-controls" data-pending>
 <label>Buscar por función <select data-filter>
 <option value="all">Todas las escenas</option>
 <option value="auto">Se reproducen solas</option>
@@ -64,12 +72,12 @@
 </p>
 </div>
 <div class="grid" data-gallery>
-<article class="card" data-id="herbario-luz" data-mode="explore" data-color="true" data-letter="false">
+<article class="card" data-id="herbario-luz" data-mode="tap" data-color="true" data-letter="false">
 <a class="card-preview-link" href="/animaciones/herbario-luz.html" aria-label="Ver Herbario de luz">
 <div class="thumb">
 <canvas aria-hidden="true">
 </canvas>
-<span class="badge">Explorar y abrir recuerdos</span>
+<span class="badge">Un toque</span>
 </div>
 </a>
 <div class="card-body">
@@ -474,6 +482,7 @@
 <div>
 <a href="/acerca.html">Acerca y contacto</a>
 <a href="/privacidad.html">Privacidad</a>
+<a href="/terminos.html">Términos de Uso</a>
 <a href="/animaciones.html">Todas las animaciones</a>
 </div>
 </footer>

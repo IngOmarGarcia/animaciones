@@ -8,6 +8,10 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('El navegador no pudo crear el lienzo de la animación.');
   const stage = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, preview, revealed: false, card };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let motionAllowed = !reduced.matches, snapshotReady = false, wantsPlayback=false;
+  stage.requestRender=()=>{if(!running&&!destroyed)render(0);};
+  const DRAG_SCENES = new Set(['catrina-encaje','retrato-historias','eclipse-corona','guitarra-resonancia','jardin-de-lunas','universo-de-flores']);
   const listeners = new AbortController();
   const add = (name, handler) => canvas.addEventListener(name, handler, { signal: listeners.signal });
   if (!preview) canvas.style.touchAction = 'pan-y';
@@ -15,6 +19,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     const rect = canvas.getBoundingClientRect();
     stage.pointer.x = (event.clientX - rect.left) / rect.width;
     stage.pointer.y = (event.clientY - rect.top) / rect.height;
+    if (!motionAllowed && stage.holding) render(0);
   });
   add('pointerdown', (event) => {
     stage.holding = true;
@@ -27,8 +32,9 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     if (!stage.onPointerDown?.({ x, y, nx: stage.pointer.x, ny: stage.pointer.y, event })) {
       stage.taps.push({ x, y });
     }
+    if (!motionAllowed) render(0);
   });
-  const release = () => { stage.holding = false; };
+  const release = () => { stage.holding = false; if (!motionAllowed && frame) render(0); };
   add('pointerup', release);
   add('pointercancel', release);
   add('pointerleave', release);
@@ -38,6 +44,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     const x = w * .5, y = h * .5;
     stage.pointer.x = stage.pointer.y = .5;
     if (!stage.onPointerDown?.({x,y,nx:.5,ny:.5,event})) stage.taps.push({x,y});
+    if (!motionAllowed) render(0);
   });
   add('keyup', event => { if (['Enter',' '].includes(event.key)) {event.preventDefault();release();} });
   add('blur', release);
@@ -71,20 +78,34 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     stage.onDispose?.();
     stage.onDispose = null;
     stage.onPointerDown = null;
+    snapshotReady = false;
+    stage.forceMotion = motionAllowed;
     frame = null;
     frame = create(ctx, w, h, dpr, stage);
-    if (!preview && stage.onPointerDown) canvas.style.touchAction = 'none';
+    if (!preview) canvas.style.touchAction = DRAG_SCENES.has(stage.card?.a) ? 'none' : 'pan-y';
     return true;
   }
 
   function render(dt) {
     if (!frame && !setup()) return;
+    if (!motionAllowed && !snapshotReady) {
+      snapshotReady = true;
+      // Construct a still from the same full-quality renderer. No RAF is left
+      // running; timeline sampling does not open letters or select memories.
+      const steps = preview ? 8 : 24;
+      for (let i=0;i<steps;i++) {
+        ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,w,h);
+        frame(i*18/steps,.1);
+      }
+      t=18;
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     // Limpiar evita que la luz aditiva se acumule donde una escena no pinta opaco
     ctx.clearRect(0, 0, w, h);
     frame(t, dt);
+    if (!motionAllowed) stage.revealed = true;
   }
 
   function tick(now) {
@@ -106,15 +127,18 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   resizeObserver.observe(canvas);
 
   function play() {
+    wantsPlayback=true;
     if (running || destroyed) return;
     if (!setup()) return;
     render(0);
+    if (!motionAllowed) return;
     running = true;
     last = performance.now();
     raf = requestAnimationFrame(tick);
   }
 
   function pause() {
+    wantsPlayback=false;
     running = false;
     cancelAnimationFrame(raf);
     stage.holding = false;
@@ -136,13 +160,23 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     destroyed = true;
     frame = null;
     stage.onDispose = null;
+    stage.requestRender = null;
   }
+  function enableMotion() {motionAllowed=true;t=0;setup(true);}
+  reduced.addEventListener('change',()=>{
+    const wanted=wantsPlayback;motionAllowed=!reduced.matches;pause();setup(true);render(0);wantsPlayback=wanted;
+    canvas.dispatchEvent(new CustomEvent('motionpreferencechange',{detail:{reduced:!motionAllowed}}));
+    if(motionAllowed&&wanted&&!document.hidden)play();
+  },{signal:listeners.signal});
 
   return {
     play,
     pause,
     restart,
     destroy,
+    enableMotion,
+    get motionReduced() {return !motionAllowed;},
+    redraw() {if(!running&&!destroyed)render(0);},
     stage,
     get time() { return t; },
   };

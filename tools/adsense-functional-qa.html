@@ -1,0 +1,16 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pruebas de correcciones AdSense</title></head><body><h1>Pruebas locales</h1><canvas id="scene" style="width:240px;height:320px"></canvas><pre id="result"></pre><script type="module">
+import {VISIBLE_ANIMATIONS} from '../js/catalog.js';
+import {createPlayer} from '../js/anim/engine.js';
+const canvas=document.getElementById('scene');window.ready=true;
+window.checkReduced=async()=>{
+ const results=[];
+ for(const a of VISIBLE_ANIMATIONS){let player;try{
+  player=createPlayer(canvas,(await a.load()).default,{card:{a:a.id,p:'Luna',m:'Un mensaje accesible',d:'Familia',f:'clear'}});
+  player.restart();player.play();const t=player.time;await new Promise(r=>setTimeout(r,15));
+  if(!player.motionReduced||player.time!==t||!player.stage.revealed)throw Error('La escena no permanece en un cuadro reducido revelado');
+  results.push({id:a.id,ok:true,t,gesture:canvas.style.touchAction});
+ }catch(e){results.push({id:a.id,ok:false,error:e.stack});}finally{player?.destroy();}}
+ document.getElementById('result').textContent=JSON.stringify(results);return results;
+};
+window.checkOptIn=async id=>{const a=VISIBLE_ANIMATIONS.find(x=>x.id===id),player=createPlayer(canvas,(await a.load()).default,{card:{a:id,p:'Luna',m:'Movimiento solicitado'}});try{player.restart();player.play();const frozen=player.time;player.enableMotion();player.play();await new Promise(r=>setTimeout(r,250));return {frozen,reduced:player.motionReduced,moving:player.time>0,force:player.stage.forceMotion};}finally{player.destroy();}};
+</script></body></html>
