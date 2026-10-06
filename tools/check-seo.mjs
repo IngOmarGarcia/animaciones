@@ -25,7 +25,7 @@ for (const page of pages) {
   const html = await read(page);
   assert(html.includes('aria-label="ViralCSS — Ir al inicio"'),`La marca debe ser un enlace accesible: ${page}`);
   assert(html.includes('class="brand-static"')&&html.includes('width="72" height="48"'),`Falta fallback del logo con dimensiones: ${page}`);
-  assert(html.includes('CREA • PERSONALIZA • COMPARTE'),`Falta la marca semántica: ${page}`);
+  assert(html.includes('class="brand-name">Viral'),`Falta la marca semántica: ${page}`);
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
   assert(title && !titles.has(title), `Título ausente o duplicado: ${page}`);
   titles.add(title);

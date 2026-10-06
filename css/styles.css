@@ -91,19 +91,8 @@ img { max-width: 100%; }
 .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.15rem; text-decoration: none; }
 .brand img { flex: none; }
 .site-header .brand { width:224px;height:48px;flex:none;gap:8px; }
-.brand-orb { display:block;position:relative;width:72px;height:48px;flex:none;overflow:hidden;isolation:isolate; }
-.brand-static,.brand-canvas { display:block;position:absolute;inset:0;width:72px;height:48px;pointer-events:none; }
-.brand-canvas { opacity:0; }
-.logo-active .brand-canvas { opacity:1; }
-.logo-active .brand-static { opacity:0; }
-.brand-mark { position:absolute;z-index:2;top:49%;left:0;width:100%;text-align:center;line-height:1.1;font-size:10px;font-weight:800;color:#edf7ff;letter-spacing:-.25px;pointer-events:none;opacity:0; }
-.logo-active .brand-mark { opacity:1;clip-path:inset(0 calc((1 - var(--logo-text, 1))*100%) 0 0);transform:translateY(calc((1 - var(--logo-text, 1))*3px));filter:blur(calc((1 - var(--logo-text, 1))*2px)); }
-.brand-mark span { color:#76c9f5; }
+.brand-static { display:block;width:72px;height:48px; }
 .site-header .brand-name { display:block;width:144px;line-height:1.15;white-space:nowrap; }
-.brand-tagline { display:block;margin-top:4px;font-size:8px;font-weight:600;line-height:1.2;letter-spacing:.05px;color:#b2c7dc; }
-.brand-live .brand-tagline { clip-path:inset(0 calc((1 - var(--logo-tag, 1))*100%) 0 0); }
-.brand-pressed .brand-name { transform:translateY(1px);color:#c9eeff; }
-@media(prefers-reduced-motion:reduce){.brand-pressed .brand-name{transform:none;}.brand-static{opacity:1!important}.brand-canvas,.brand-mark{opacity:0!important}.brand-tagline{clip-path:none!important}}
 /* El nombre junto al logo: "Viral" en blanco y "Css" con el degradado del logo */
 .brand-name { color: #fff; letter-spacing: 0.2px; }
 .brand-name .accent { color: #b06cf7; }
