@@ -6,6 +6,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { TURTLE_ANIMATIONS } from '../js/turtle-catalog.js';
 import { VISIBLE_ANIMATIONS } from '../js/catalog.js';
+import { EXPERT_ANIMATIONS } from '../js/expert-catalog.js';
 if(process.argv.includes('--cinematic-all')) {
  for(let scene=0;scene<TURTLE_ANIMATIONS.length;scene++) {
   const code=await new Promise((resolve,reject)=>{const p=spawn(process.execPath,['tools/browser-check.mjs','--cinematic','--scene',String(scene)],{windowsHide:true,stdio:'inherit'});p.on('error',reject);p.on('exit',resolve);});
@@ -41,7 +42,8 @@ try {
  await navigate('/');await wait("document.querySelectorAll('#grid .card').length>0");
  const homeIds=()=>evaluate("[...document.querySelectorAll('#grid .card')].map(x=>x.dataset.id)");
  const firstPage=await homeIds();assert.equal(firstPage.length,40,'La portada debe mostrar 40 tarjetas');
- assert.deepEqual(firstPage.slice(0,TURTLE_ANIMATIONS.length),TURTLE_ANIMATIONS.map(a=>a.id),'El último lote debe aparecer primero');
+ const latest=[...EXPERT_ANIMATIONS,...TURTLE_ANIMATIONS].map(a=>a.id);
+ assert.deepEqual(firstPage.slice(0,latest.length),latest,'Las experiencias nuevas deben aparecer primero');
  await evaluate('scrollTo(0,document.body.scrollHeight)');await delay(650);
  assert.deepEqual(await homeIds(),firstPage,'Llegar al pie no debe cargar más tarjetas');
  await screenshot('home-footer-desktop');

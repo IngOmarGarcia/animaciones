@@ -1,0 +1,52 @@
+{
+  "tool": "5.2.2 LTS",
+  "sourcePolygons": 101802,
+  "webPolygons": 17999,
+  "changes": [
+    "Decimated scanned log to about 18k faces",
+    "Log PBR textures resized to 512px, embedded in GLB",
+    "Ground maps resized for 512/1024px quality tiers"
+  ],
+  "files": [
+    {
+      "path": "assets/haunted-night/web/dead-tree-trunk.glb",
+      "bytes": 677932,
+      "sha256": "e55ad239227febffd3c4d7a2a7323796e2115d7bcba5379cfdbf1350ff95f56d"
+    },
+    {
+      "path": "assets/haunted-night/web/dead_tree_trunk_arm_1k.jpg",
+      "bytes": 61700,
+      "sha256": "f4e8f6678c167f073a17c7f209955c27ab5f41eb42430515a50fd5742a455ab8"
+    },
+    {
+      "path": "assets/haunted-night/web/dead_tree_trunk_diff_1k.jpg",
+      "bytes": 67812,
+      "sha256": "de933799dae7a86f09cc74a160da610495e73f6a50c31cbfdf40b88f2b4ec424"
+    },
+    {
+      "path": "assets/haunted-night/web/dead_tree_trunk_nor_gl_1k.jpg",
+      "bytes": 106282,
+      "sha256": "aa9d41cc6bbf0177d02a6f7451a34c07ba514729dddd692877df680d3d6a453b"
+    },
+    {
+      "path": "assets/haunted-night/web/forest-diff-1024.jpg",
+      "bytes": 483727,
+      "sha256": "988fad4acc34549dfa7d4deab16302d07574d5005facc73351bc420bc6cf03bc"
+    },
+    {
+      "path": "assets/haunted-night/web/forest-diff-512.jpg",
+      "bytes": 110701,
+      "sha256": "29591358a0bcb3486b59854f98e0fa811e430941703a275a7533ad3ebf70ee67"
+    },
+    {
+      "path": "assets/haunted-night/web/forest-nor_gl-1024.jpg",
+      "bytes": 545250,
+      "sha256": "975d5aca023406223b86d0e4fd1125b0f63ce8fc2b12dc4209061df641e0b87c"
+    },
+    {
+      "path": "assets/haunted-night/web/forest-rough-1024.jpg",
+      "bytes": 247213,
+      "sha256": "280629d7479b4316df6383d0408c35d62666c811e05b8226467b505e025d5598"
+    }
+  ]
+}

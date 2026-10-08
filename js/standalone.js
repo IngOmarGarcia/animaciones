@@ -51,6 +51,7 @@ function pickHelpers(decls, names) {
 }
 
 export async function buildSceneCode(anim, readText = fetchText) {
+  if(anim.exportMode==='project')throw new Error(`${anim.title} se exporta como un proyecto ZIP completo mediante project-export.js.`);
   // Algunas escenas cargan archivos externos (por ejemplo una nube de puntos .bin) y no caben
   // en un solo HTML: se marcan con `noCode` en el catálogo.
   if (anim.noCode) throw new Error(`${anim.title} necesita archivos externos y no tiene código descargable.`);

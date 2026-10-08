@@ -1,4 +1,6 @@
+import {SCENE_PALETTES} from './scene-palettes.js';
 import { TURTLE_ANIMATIONS } from './turtle-catalog.js';
+import { EXPERT_ANIMATIONS } from './expert-catalog.js';
 import { SEASONAL_ANIMATIONS } from './seasonal-catalog.js';
 export const CATEGORIES = [
   { id: 'todas', name: 'Todas' },
@@ -707,6 +709,9 @@ export const ANIMATIONS = [
   },
 ];
 
+const cinematicCategories={'eternal-bloom':'flores','soul-butterfly':'paisajes','event-horizon':'espacio','crystal-heartbeat':'amor','eternal-souls':'muertos','haunted-night':'halloween','dark-spell':'halloween'};
+for(const a of EXPERT_ANIMATIONS){a.category=cinematicCategories[a.id];a.colorControls=SCENE_PALETTES[a.id];a.colorDefaults=a.colorControls.slice(0,2).map(c=>c.value);}
+ANIMATIONS.push(...EXPERT_ANIMATIONS);
 const COLOR_DEFAULTS = {
   'medusas-bioluminiscentes': ['#5ae6ff', '#ff6ed2'],
   'mariposas-neon': ['#ff50c8', '#50e6ff'],
@@ -720,7 +725,7 @@ for (const anim of ANIMATIONS) {
   let loadAttempt = 0;
   // Un import fallido queda en la caché del documento. Un reintento explícito
   // necesita una URL nueva para volver a solicitar el módulo de la escena.
-  anim.load = ({ retry = false } = {}) => import(`./anim/${anim.file}.js${retry ? `?retry=${++loadAttempt}` : ''}`);
+  anim.load = ({ retry = false, preview = false } = {}) => import(`./anim/${preview&&anim.previewFile?anim.previewFile:anim.file}.js${retry ? `?retry=${++loadAttempt}` : ''}`);
 }
 
 // Las que se listan en el sitio. Una animación con `hidden: true` sigue funcionando por

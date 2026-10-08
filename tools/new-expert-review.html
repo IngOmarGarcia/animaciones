@@ -1,0 +1,33 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Revisión Expert Zone</title><style>body{margin:0;background:#010106}canvas{display:block}</style></head><body><canvas id="art"></canvas><script type="module">
+const id=new URLSearchParams(location.search).get('scene')||'soul-butterfly';
+const names={'eternal-bloom':'createBloomRenderer','soul-butterfly':'createSoulRenderer','event-horizon':'createHorizonRenderer','crystal-heartbeat':'createHeartbeatRenderer','eternal-souls':'createSoulsRenderer','haunted-night':'createHauntedRenderer','dark-spell':'createSpellRenderer'};
+const { [names[id]]:factory }=await import(`../js/anim/${id}-renderer.js`);
+const {default:create}=await import(`../js/anim/${id}.js`);
+let renderer,stage;const canvas=document.querySelector('canvas');
+function size(w,h){canvas.width=w;canvas.height=h;canvas.style.width=w+'px';canvas.style.height=h+'px';}
+window.drawScene=({t=20,w=540,h=960,low=false,assets=true,card={m:''},full=false}={})=>{
+ renderer?.dispose();renderer=null;stage?.onDispose?.();stage=null;size(w,h);
+ if(full){stage={card,pointer:{x:.5,y:.5},forceMotion:!card.__still};const frame=create(canvas.getContext('2d'),w,h,1,stage);frame(t,.016);return stage.diagnostics;}
+ renderer=factory(w,h,{low,assets});renderer.draw(t,.016,{x:.5,y:.5},true,card);canvas.getContext('2d').drawImage(renderer.canvas,0,0,w,h);return renderer.stats;
+};
+window.posterData=()=>canvas.toDataURL('image/webp',.94);
+window.sceneSignature=()=>{const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;let hash=2166136261;for(let i=0;i<data.length;i+=4){hash=Math.imul(hash^data[i],16777619);hash=Math.imul(hash^data[i+1],16777619);hash=Math.imul(hash^data[i+2],16777619);}return {hash:hash>>>0,stats:renderer?.stats||stage?.diagnostics};};
+window.stepScene=(t,card={})=>{renderer.draw(t,.016,{x:.5,y:.5},true,card);canvas.getContext('2d').drawImage(renderer.canvas,0,0,canvas.width,canvas.height);return renderer.stats;};
+window.benchmark=async({low=false,w=390,h=693,t=20}={})=>{
+ drawScene({low,w,h,t});const gl=renderer.canvas.getContext('webgl2'),ext=gl.getExtension('WEBGL_debug_renderer_info'),gpu=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
+ const times=[];let last=performance.now();for(let i=0;i<180;i++){await new Promise(requestAnimationFrame);const now=performance.now(),dt=(now-last)/1000;times.push(now-last);last=now;renderer.draw(t+i*.016,dt,{x:.5,y:.5},true,{m:''});canvas.getContext('2d').drawImage(renderer.canvas,0,0,w,h);}
+ const s=times.slice(90).sort((a,b)=>a-b),mean=s.reduce((a,b)=>a+b,0)/s.length;return {gpu,w,h,frames:180,measuredAfterWarmup:90,meanMs:mean,p95:s[Math.floor(s.length*.95)],fps:1000/mean,stats:renderer.stats};
+};
+window.checkControls=()=>{
+ drawScene({t:20,w:390,h:693});const first=renderer.canvas.toDataURL();for(let i=0;i<40;i++)renderer.draw(20,.016,{x:.95,y:.8},true,{m:''});const parallax=first!==renderer.canvas.toDataURL();for(let i=0;i<110;i++)renderer.draw(20,.05,{x:.5,y:.5},true,{m:''});const adaptive=renderer.stats;renderer.dispose();return {parallax,adaptive,disposed:renderer.stats};
+};
+window.checkLifecycle=async()=>{
+ window.disposeScene();renderer=null;stage=null;size(300,533);
+ const {createPlayer}=await import('../js/anim/engine.js'),player=createPlayer(canvas,create,{card:{a:id,m:'Una luz para recordar'}}),pause=ms=>new Promise(r=>setTimeout(r,ms));
+ player.restart();player.play();await pause(500);player.pause();const time=player.time,image=canvas.toDataURL();await pause(200);
+ const paused=time===player.time&&image===canvas.toDataURL();player.restart();const replayPreserved=image===canvas.toDataURL();
+ canvas.style.width='320px';canvas.style.height='568px';await pause(250);const resized=canvas.width===Math.round(320*Math.min(devicePixelRatio,2));
+ player.destroy();const after=player.time;await pause(200);return {paused,replayPreserved,resized,disposed:player.stage.onDispose===null&&player.stage.requestRender===null&&player.time===after};
+};
+window.disposeScene=()=>{renderer?.dispose();stage?.onDispose?.();};window.ready=true;
+</script></body></html>

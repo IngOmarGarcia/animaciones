@@ -1,0 +1,36 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Eternal Bloom · revisión</title><style>body{margin:0;background:#010103;color:#ddd;font:14px system-ui}canvas{display:block}#label{position:absolute;top:6px;left:10px}</style><canvas id="hero"></canvas><span id="label"></span><script type="module">
+import {createBloomRenderer} from '../js/anim/eternal-bloom-renderer.js';
+import create from '../js/anim/eternal-bloom.js';
+let renderer;
+window.drawBloom=({time=12,w=390,h=693,low=false}={})=>{
+ renderer?.dispose();renderer=createBloomRenderer(w,h,{low});renderer.draw(time,.016,{x:.5,y:.5},false);
+ const c=document.getElementById('hero');c.width=w;c.height=h;c.style.width=w+'px';c.style.height=h+'px';c.getContext('2d').drawImage(renderer.canvas,0,0,w,h);document.getElementById('label').textContent='';return renderer.stats;
+};
+window.posterData=()=>document.getElementById('hero').toDataURL('image/webp',.94);
+let stage;
+window.drawFull=({time=14,w=390,h=693,card={a:'eternal-bloom',m:'Para ti, que haces florecer mi mundo',f:'classic'}}={})=>{
+ renderer?.dispose();stage?.onDispose?.();const c=document.getElementById('hero');c.width=w;c.height=h;c.style.width=w+'px';c.style.height=h+'px';stage={card,pointer:{x:.5,y:.5},forceMotion:true};const frame=create(c.getContext('2d'),w,h,1,stage);frame(time,.016);return {diagnostics:stage.diagnostics,revealed:stage.revealed};
+};
+window.benchmarkBloom=async({low=false}={})=>{
+ renderer?.dispose();stage?.onDispose?.();renderer=createBloomRenderer(390,693,{low});
+ const gl=renderer.canvas.getContext('webgl2'),ext=gl.getExtension('WEBGL_debug_renderer_info');
+ const gpu=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
+ renderer.draw(14,.016);const timings=[];let last=performance.now();
+ for(let i=0;i<100;i++){await new Promise(requestAnimationFrame);const now=performance.now();timings.push(now-last);last=now;renderer.draw(14+i*.016,.016);document.getElementById('hero').getContext('2d').drawImage(renderer.canvas,0,0,390,693);}
+ const sorted=timings.slice(10).sort((a,b)=>a-b),mean=sorted.reduce((a,b)=>a+b,0)/sorted.length;
+ return {gpu,requested:low?'low':'high',stats:renderer.stats,meanFrameMs:mean,p95FrameMs:sorted[Math.floor(sorted.length*.95)],observedFps:1000/mean};
+};
+window.loseBloom=()=>renderer.canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();
+window.checkBloomControls=()=>{
+ renderer?.dispose();stage?.onDispose?.();renderer=createBloomRenderer(390,693);
+ renderer.draw(14,.016,{x:.5,y:.5},true);const before=renderer.canvas.toDataURL();
+ for(let i=0;i<45;i++)renderer.draw(14,.016,{x:.95,y:.8},true);
+ const parallax=before!==renderer.canvas.toDataURL();
+ // Deliberately slow deltas exercise quality reduction, not a hardware benchmark.
+ for(let i=0;i<100;i++)renderer.draw(14,.05,{x:.5,y:.5},true);
+ return {parallax,adaptive:renderer.stats};
+};
+window.bloomStats=()=>renderer.stats;
+window.lostBloomFails=()=>{try{renderer.draw(14,.016);return false;}catch{return true;}};
+window.disposeBloom=()=>{renderer?.dispose();stage?.onDispose?.();};window.ready=true;drawBloom({});
+</script></html>

@@ -57,6 +57,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   let raf = 0;
   let running = false;
   let destroyed = false;
+  let replayFrame = null;
 
   // Recrea la escena solo si cambió el tamaño (conserva el tiempo).
   function setup(force = false) {
@@ -105,6 +106,11 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     // Limpiar evita que la luz aditiva se acumule donde una escena no pinta opaco
     ctx.clearRect(0, 0, w, h);
     frame(t, dt);
+    if(replayFrame){
+      const progress=Math.min(1,t/create.fadeReplay);
+      ctx.save();ctx.globalAlpha=1-progress*progress*(3-2*progress);ctx.drawImage(replayFrame,0,0,w,h);ctx.restore();
+      if(progress>=1)replayFrame=null;
+    }
     if (!motionAllowed) stage.revealed = true;
   }
 
@@ -131,7 +137,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     if (running || destroyed) return;
     if (!setup()) return;
     render(0);
-    if (!motionAllowed) return;
+    if (!motionAllowed || preview && create.staticPreview) return;
     running = true;
     last = performance.now();
     raf = requestAnimationFrame(tick);
@@ -146,6 +152,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
 
   function restart() {
     if (destroyed) return;
+    if(frame&&motionAllowed&&create.fadeReplay){replayFrame=document.createElement('canvas');replayFrame.width=canvas.width;replayFrame.height=canvas.height;replayFrame.getContext('2d').drawImage(canvas,0,0);}else replayFrame=null;
     t = 0;
     setup(true);
     if (!running) render(0);
@@ -158,6 +165,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     resizeObserver.disconnect();
     listeners.abort();
     destroyed = true;
+    replayFrame = null;
     frame = null;
     stage.onDispose = null;
     stage.requestRender = null;

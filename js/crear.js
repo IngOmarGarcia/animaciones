@@ -14,10 +14,20 @@ const anim = getAnimation(sharedCard?.a || params.get('a')) || VISIBLE_ANIMATION
 const DRAFT_KEY = `detallito-borrador-${anim.id}`;
 const isDana2 = anim.codename === 'Dana2';
 const hasPhoto = isDana2 || !!anim.photoField;
-const isSeasonal = !!anim.seasonalText;
+const isSeasonal = !!anim.seasonalText || !!anim.cinematic;
 const $ = (id) => document.getElementById(id);
 const form = $('form');
 const fields = form.elements;
+const colorKeys=anim.colorControls?.map(c=>c.key)||['c1','c2'];
+if(anim.colorControls){
+ const inputs=$('colorInputs');inputs.replaceChildren(...anim.colorControls.map(control=>{
+  const label=document.createElement('label');label.textContent=control.label;
+  const input=document.createElement('input');input.type='color';input.name=control.key;input.value=control.value;label.append(input);return label;
+ }));
+ const reset=document.createElement('button');reset.type='button';reset.className='btn btn-ghost';reset.id='resetColors';reset.textContent='Restablecer colores originales';
+ reset.addEventListener('click',()=>{for(const c of anim.colorControls)fields[c.key].value=c.value;$('colorsEnabled').checked=false;update();});$('animationColors').append(reset);
+ const help=document.createElement('small');help.textContent='Los colores conservan el detalle de los materiales y la intensidad de las luces. El fondo mantiene una luminosidad nocturna; en escenas con niebla también cambia su tono.';$('animationColors').append(help);
+}
 const overlay = $('overlay');
 const result = $('result');
 const link = $('link');
@@ -30,12 +40,13 @@ $('desc').textContent = anim.description;
 $('detailLink').href = `/animaciones/${anim.id}.html`;
 $('previewStatus').textContent = guideFor(anim).interaction;
 const previewCanvas=$('scene').querySelector('canvas');
-if(guideFor(anim).mode==='auto') {previewCanvas.removeAttribute('role');previewCanvas.removeAttribute('tabindex');previewCanvas.setAttribute('aria-label',anim.description);}
+if(guideFor(anim).mode==='auto'||anim.cinematic) {previewCanvas.removeAttribute('role');previewCanvas.removeAttribute('tabindex');previewCanvas.setAttribute('aria-label',anim.description);}
 fields.m.placeholder = anim.defaultMessage;
 $('textFont').replaceChildren(...FONT_OPTIONS.map(font => {
   const option = document.createElement('option'); option.value = font.id; option.textContent = font.label; return option;
 }));
 fields.f.value = 'clear';
+if(anim.cinematic){fields.f.value='classic';fields.m.value=anim.defaultMessage;document.body.classList.add('cinematic-experience');}
 if (anim.colorDefaults) {
   $('animationColors').hidden = false;
   [fields.c1.value, fields.c2.value] = anim.colorDefaults;
@@ -62,18 +73,19 @@ if (isDana2) {
 
 try {
   const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}');
-  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'tm', 'f', 'age']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'tm', 'f', 'age']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
   $('colorsEnabled').checked = !!anim.colorDefaults && (draft.colorsEnabled === true || (draft.colorsEnabled === undefined && anim.letterFields && !isDana2 && !!draft.c1));
 } catch {
   // sessionStorage no disponible: se empieza en blanco
 }
 
 if (sharedCard) {
-  if (anim.colorDefaults) [fields.c1.value, fields.c2.value] = [sharedCard.c1 || anim.colorDefaults[0], sharedCard.c2 || anim.colorDefaults[1]];
+  if(anim.colorControls)for(const c of anim.colorControls)fields[c.key].value=sharedCard[c.key]||c.value;
+  else if (anim.colorDefaults) [fields.c1.value, fields.c2.value] = [sharedCard.c1 || anim.colorDefaults[0], sharedCard.c2 || anim.colorDefaults[1]];
   for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'age']) if (fields[key]) fields[key].value = sharedCard[key] || '';
   fields.f.value = sharedCard.f || 'elegant';
   if (isSeasonal) fields.tm.value = sharedCard.tm || 'suggest';
-  $('colorsEnabled').checked = !!anim.colorDefaults && !!sharedCard.c1 && !!sharedCard.c2;
+  $('colorsEnabled').checked = !!anim.colorDefaults && (anim.colorControls ? colorKeys.some(key=>!!sharedCard[key]) : !!sharedCard.c1 && !!sharedCard.c2);
 }
 
 if(anim.ageField) $('ageField').hidden=false;
@@ -182,8 +194,7 @@ const readCard = () => cleanCard({
   d: isSeasonal && fields.tm.value === 'none' ? '' : fields.d.value,
   tm: isSeasonal ? fields.tm.value : '',
   f: fields.f.value,
-  c1: anim.colorDefaults && $('colorsEnabled').checked ? fields.c1.value : '',
-  c2: anim.colorDefaults && $('colorsEnabled').checked ? fields.c2.value : '',
+  ...Object.fromEntries(colorKeys.map(key=>[key,anim.colorDefaults&&$('colorsEnabled').checked?fields[key].value:''])),
   ...(anim.letterFields ? {
     lt: fields.lt.value, l: fields.l.value, mem: isDana2
       ? memoryFields.map(({ titleInput, bodyInput }) => `${titleInput.value.replace(/[|~]/g, ' ').trim()}~${bodyInput.value.replace(/[|~]/g, ' ').trim()}`).join('|')
@@ -218,7 +229,7 @@ function update() {
   try {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p: fields.p.value, m: fields.m.value, d: fields.d.value,
       lt: fields.lt?.value, l: fields.l?.value, mem: card.mem,
-      age: fields.age?.value, c1: fields.c1?.value, c2: fields.c2?.value, tm: isSeasonal ? fields.tm.value : '',
+      age: fields.age?.value, ...Object.fromEntries(colorKeys.map(key=>[key,fields[key].value])), tm: isSeasonal ? fields.tm.value : '',
       f: fields.f.value, colorsEnabled: $('colorsEnabled').checked }));
   } catch {
     // ignorar
@@ -226,7 +237,7 @@ function update() {
 }
 
 form.addEventListener('input', update);
-for (const control of [$('colorsEnabled'), fields.c1, fields.c2]) control.addEventListener('change', () => { update(); player?.restart(); });
+for(const control of [$('colorsEnabled'),...colorKeys.map(key=>fields[key])])control.addEventListener('change',()=>{update();if(!anim.cinematic)player?.restart();});
 if (isSeasonal) {
   $('phraseSuggestion').addEventListener('change', () => { fields.m.value = $('phraseSuggestion').value; update(); });
   fields.tm.addEventListener('change', () => {
@@ -243,7 +254,7 @@ form.addEventListener('submit', (event) => {
   if(photoProcessing) return;
   const card = readCard();
   const url = buildShareUrl(card);
-  shareText = isSeasonal ? `${anim.category === 'muertos' ? 'Una animación para celebrar y recordar este Día de Muertos 🕯️' : 'Un poquito de magia para Halloween 🎃'}${card.p ? `: ${card.p}` : ''}` : card.p ? `${card.p}, tengo una sorpresa para ti 💛` : 'Tengo una sorpresa para ti 💛';
+  shareText = anim.cinematic ? `${anim.title}${card.p ? ` · ${card.p}` : ''}` : isSeasonal ? `${anim.category === 'muertos' ? 'Una animación para celebrar y recordar este Día de Muertos 🕯️' : 'Un poquito de magia para Halloween 🎃'}${card.p ? `: ${card.p}` : ''}` : card.p ? `${card.p}, tengo una sorpresa para ti 💛` : 'Tengo una sorpresa para ti 💛';
   link.value = url;
   $('wa').href = `https://wa.me/?text=${encodeURIComponent(`${shareText} Ábrela aquí: ${url}`)}`;
   $('open').href = url;

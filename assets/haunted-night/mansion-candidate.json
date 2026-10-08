@@ -1,0 +1,24 @@
+{
+  "verifiedAt": "2026-10-08T18:31:39.095Z",
+  "status": "Not downloaded or integrated; official download API requires authentication.",
+  "source": "https://sketchfab.com/3d-models/haunted-mansion-94e1f8e882014d95a0ab14f195372443",
+  "name": "HAUNTED MANSION",
+  "author": {
+    "name": "n-malmberg",
+    "url": "https://sketchfab.com/n-malmberg"
+  },
+  "license": {
+    "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+    "label": "CC Attribution",
+    "fullName": "Creative Commons Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/",
+    "slug": "by"
+  },
+  "faceCount": 68606,
+  "vertexCount": 40345,
+  "materialCount": 1,
+  "textureCount": 5,
+  "pbrType": "metalness",
+  "isDownloadable": true
+}

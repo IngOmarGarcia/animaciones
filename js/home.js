@@ -14,7 +14,7 @@ const previous = document.getElementById('gallery-previous');
 const pageStatus = document.getElementById('gallery-page-status');
 // Los dos lotes recientes primero; el resto conserva su orden editorial.
 const recentIds = new Set([...TURTLE_ANIMATIONS, ...SEASONAL_ANIMATIONS].map(a=>a.id));
-const homeAnimations = [...TURTLE_ANIMATIONS, ...SEASONAL_ANIMATIONS, ...VISIBLE_ANIMATIONS.filter(a=>!recentIds.has(a.id))].filter(a=>!a.hidden);
+const homeAnimations = [...VISIBLE_ANIMATIONS.filter(a=>a.cinematic),...TURTLE_ANIMATIONS, ...SEASONAL_ANIMATIONS, ...VISIBLE_ANIMATIONS.filter(a=>!a.cinematic&&!recentIds.has(a.id))].filter(a=>!a.hidden);
 let current = new URLSearchParams(location.search).get('cat') || 'todas';
 if (!CATEGORIES.some(c=>c.id===current)) current='todas';
 let list = [];

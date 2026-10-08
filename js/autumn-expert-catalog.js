@@ -1,0 +1,6 @@
+const entries=[
+ ['eternal-souls','Eternal Souls','Un altar de memoria: pétalos de cempasúchil guían la mirada hacia una calavera de cristal ornamentada y un recuerdo escrito en luz.','Mientras viva en nuestros recuerdos, nunca se irá.',16,'El recuerdo eterno'],
+ ['haunted-night','Haunted Night','Un recorrido entre árboles y niebla revela una mansión gótica, ventanas habitadas y una puerta que se abre bajo la luz de la tormenta.','Esta noche, las sombras tienen secretos. Happy Halloween.',18,'La mansión olvidada'],
+ ['dark-spell','Dark Spell','En una biblioteca antigua, un libro se abre por sí solo. Lanza un hechizo para convertir tu nombre en símbolos y recuperar la dedicatoria.','Que la magia de esta noche te acompañe. ✨',17,'El libro prohibido'],
+];
+export const AUTUMN_EXPERT_ANIMATIONS=entries.map(([id,title,description,defaultMessage,textDelay,exampleTitle])=>({id,file:id,previewFile:id,livePreview:true,collection:'autumn',cinematic:true,premiumEligible:true,exportMode:'project',seasonalText:true,title,description,defaultMessage,nameInScene:true,ownMessage:true,interactive:true,textPosition:'below',textDelay,previewLoop:0,sourcePackage:id,exampleTitle,phrases:[defaultMessage]}));

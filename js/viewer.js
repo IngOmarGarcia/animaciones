@@ -1,5 +1,5 @@
 import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
-import { decodeCard } from './share.js';
+import { decodeCard,encodeCard } from './share.js';
 import { fillOverlay, setAccessibleReveal } from './overlay.js';
 import { renderGallery } from './gallery.js';
 import { createPlayer } from './anim/engine.js';
@@ -18,7 +18,7 @@ const hint = $('hint');
 const canvas=$('scene').querySelector('canvas');
 canvas.removeAttribute('aria-hidden');
 canvas.setAttribute('aria-label',`${anim.title}. ${guideFor(anim).interaction}`);
-if(anim.interactive){canvas.tabIndex=0;canvas.setAttribute('role','button');}
+if(anim.interactive&&!anim.cinematic){canvas.tabIndex=0;canvas.setAttribute('role','button');}
 const isDana2 = anim.codename === 'Dana2';
 if (isDana2) {
   // Dana2 dibuja sus propios textos y su carta dentro del canvas.
@@ -31,28 +31,34 @@ fillOverlay(overlay, card, anim);
 document.title = card.p ? `Una sorpresa para ${card.p} 💛` : 'Tienes una sorpresa 💛';
 $('gateTo').textContent = card.p ? `Para ${card.p}` : 'Tienes una sorpresa';
 $('gateFrom').textContent = card.d ? `${card.d} te envió algo especial` : 'Alguien te envió algo especial';
-if (anim.seasonalText) {
+if (anim.seasonalText || anim.cinematic) {
   document.title = card.tm !== 'none' && card.p ? `${card.p} · ${anim.title}` : anim.title;
   $('gateTo').textContent = card.tm !== 'none' && card.p ? card.p : anim.title;
   $('gateFrom').textContent = anim.category === 'muertos' ? 'Celebra la vida y la memoria' : anim.category === 'halloween' ? 'La noche está llena de magia' : 'Una experiencia creada para compartir';
 }
 $('cta').href = `crear.html?a=${encodeURIComponent(anim.id)}`;
-// Sin el mensaje de quien la envió: solo la animación.
-$('codeLink').href = `codigo.html?a=${encodeURIComponent(anim.id)}`;
+// Exporta la misma dedicatoria y paleta que se está viendo.
+$('codeLink').href = `codigo.html?s=${encodeCard({...card,a:anim.id})}`;
 $('codeLink').closest('.after-code').hidden = !!anim.noCode || isDana2;
+if(anim.cinematic)document.body.classList.add('cinematic-experience');
 
 let player = null;
 canvas.addEventListener('motionpreferencechange',()=>{if(player)$('viewerPause').textContent=player.motionReduced?'Reproducir con movimiento':paused?'Continuar':'Pausar';});
 let watcher = 0;
-let paused=false, starting=false, failed=false;
+let paused=false, starting=false, failed=false,sceneVisible=true;
+const sceneObserver=anim.cinematic?new IntersectionObserver(entries=>{
+ sceneVisible=entries[0].isIntersecting;
+ if(!sceneVisible)player?.pause();else if(!paused&&!document.hidden)player?.play();
+}):null;
+sceneObserver?.observe(canvas);
 $('viewerPause').addEventListener('click',()=>{
-  if(player?.motionReduced){player.enableMotion();paused=false;start();return;}else {paused=!paused;paused?player?.pause():player?.play();}
+  if(player?.motionReduced){player.enableMotion();paused=false;start();return;}else {paused=!paused;paused?player?.pause():sceneVisible&&!document.hidden&&player?.play();}
   $('viewerPause').textContent=paused?'Continuar':'Pausar';$('viewerStatus').textContent=paused?'Animación pausada.':'Animación en reproducción.';
 });
 document.addEventListener('visibilitychange', () => {
   if (!player) return;
   if (document.hidden) player.pause();
-  else if(!paused) player.play();
+  else if(!paused&&sceneVisible) player.play();
 });
 
 async function start() {
@@ -63,7 +69,7 @@ async function start() {
     if (player) player.restart();
     else player=createPlayer(canvas, mod.default, {card});
     paused=false;
-    if(!document.hidden)player.play();
+    if(!document.hidden&&sceneVisible)player.play();
     failed=false;
   } catch (err) {
     player?.destroy();player=null;failed=true;
@@ -113,5 +119,5 @@ if (params.has('autoplay') || (anim.codename === 'Dana2' && params.has('s'))) {
 }
 
 renderGallery($('more'), relatedAnimations(anim, VISIBLE_ANIMATIONS));
-window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {clearInterval(watcher);player?.destroy();}});
-window.addEventListener('pageshow',event=>{if(event.persisted&&!paused&&!document.hidden)player?.play();});
+window.addEventListener('pagehide',event=>{if(event.persisted)player?.pause();else {clearInterval(watcher);sceneObserver?.disconnect();player?.destroy();}});
+window.addEventListener('pageshow',event=>{if(event.persisted&&!paused&&!document.hidden&&sceneVisible)player?.play();});

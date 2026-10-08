@@ -4,6 +4,7 @@ import { guideFor, modeLabelFor, relatedAnimations } from '../js/scene-guides.js
 import { CATEGORY_GUIDES } from '../js/category-guides.js';
 
 const origin = 'https://viralcss.com';
+const onlyIds=new Set(process.argv.find(s=>s.startsWith('--only='))?.slice(7).split(',').filter(Boolean)||[]);
 const publicPath = path => path.replace(/\.html$/, '');
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const aurl = a => `/animaciones/${a.id}.html`;
@@ -13,10 +14,10 @@ const categories = CATEGORIES.filter(c=>c.id!=='todas' && animations.some(a=>a.c
 const cname = id => categories.find(c=>c.id===id).name.replace(/^\S+\s/,'');
 const particleNames = new Set(['corazon-de-girasoles','flor-holografica','cascada-de-petalos-invertida','corazon-de-energia','constelacion-con-tu-nombre','fuegos-con-tu-nombre']);
 const shortNames = new Set(['corazon-de-energia','constelacion-con-tu-nombre','fuegos-con-tu-nombre']);
-const options = a => `${a.seasonalText?'Frases o sin texto':a.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${a.colorDefaults?' · Dos colores':''}`;
+const options = a => `${a.seasonalText||a.cinematic?'Frases o sin texto':a.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${a.colorControls?' · Colores editables':a.colorDefaults?' · Dos colores':''}`;
 function card(a) {
  const g=guideFor(a);
- return `<article class="card" data-id="${a.id}" data-mode="${g.mode}" data-color="${!!a.colorDefaults}" data-letter="${!!a.letterFields}"><a class="card-preview-link" href="${aurl(a)}" aria-label="Ver ${esc(a.title)}"><div class="thumb"><canvas aria-hidden="true"></canvas><span class="badge">${modeLabelFor(a)}</span></div></a><div class="card-body"><h3><a href="${aurl(a)}">${esc(a.title)}</a></h3><p>${esc(a.description)}</p><p class="card-options">${options(a)}</p><div class="card-links"><a href="${aurl(a)}">Ver escena y detalles</a><a href="${edit(a)}">Personalizar<span class="sr-only"> ${esc(a.title)}</span> →</a></div></div></article>`;
+ return `<article class="card${''}" data-id="${a.id}" data-mode="${g.mode}" data-color="${!!a.colorDefaults}" data-letter="${!!a.letterFields}"><a class="card-preview-link" href="${aurl(a)}" aria-label="Ver ${esc(a.title)}"><div class="thumb"><canvas aria-hidden="true"></canvas><span class="badge">${modeLabelFor(a)}</span></div></a><div class="card-body"><h3><a href="${aurl(a)}">${esc(a.title)}</a></h3><p>${esc(a.description)}</p><p class="card-options">${options(a)}</p><div class="card-links"><a href="${aurl(a)}">Ver escena y detalles</a><a href="${edit(a)}">Personalizar<span class="sr-only"> ${esc(a.title)}</span> →</a></div></div></article>`;
 }
 const controls = `<div class="collection-controls" data-pending><label>Buscar por función <select data-filter><option value="all">Todas las escenas</option><option value="auto">Se reproducen solas</option><option value="interactive">Con interacción</option><option value="color">Con colores editables</option><option value="letter">Con carta y recuerdos</option></select></label><button class="btn btn-ghost" type="button" data-motion>Pausar miniaturas</button><p data-count role="status"></p></div>`;
 function grid(list) {return `<div class="grid" data-gallery>${list.map(card).join('\n')}</div>`;}
@@ -29,7 +30,13 @@ function layout(config) {
 const breadcrumb = entries => ({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:entries.map(([name,url],i)=>({'@type':'ListItem',position:i+1,name,item:origin+publicPath(url)}))});
 function personalization(a) {
  const items=[];
- if(a.seasonalText) {
+ if(a.collection==='autumn') {
+  items.push('Nombre opcional de hasta 40 caracteres, dedicatoria de hasta 140 y firma. El texto acompaña la escena sin reemplazar su protagonista.');
+  items.push('Sin texto oculta nombre, mensaje y firma. Los materiales y la dirección artística se conservan.');
+ } else if(a.cinematic) {
+  items.push('Nombre o título opcional de hasta 40 caracteres y mensaje de hasta 140, con tipografía integrada en la composición. Puedes editar la frase inicial o dejarla vacía.');
+  items.push('Sin texto muestra solo la obra y oculta el nombre, la dedicatoria y la firma. La escena conserva sus materiales y efectos.');
+ } else if(a.seasonalText) {
   items.push('Frase sugerida editable, texto propio de hasta 140 caracteres o Sin texto. Esta última opción oculta también el título y la firma.');
   items.push(a.turtleIndex!==undefined?'Nombre o título opcional de hasta 40 caracteres, integrado en la composición sin reemplazar su protagonista.':'Título opcional de hasta 40 caracteres: las partículas lo forman después de dispersarse. Sin título, reconstruyen la figura.');
  } else {
@@ -40,22 +47,26 @@ function personalization(a) {
  if(a.ageField) items.push('Edad opcional de 1 a 999, construida con dulces. Sin edad se dibuja un motivo festivo de siete brazos.');
  if(a.photoField) items.push('Foto opcional preparada en el navegador y conservada dentro del enlace. Sin foto permanecen las escenas de memoria. No se usa reconocimiento facial.');
  if(a.letterFields) items.push(a.id==='jardin-de-lunas'?'Título y texto de la carta, siete recuerdos y una foto opcional. Los recuerdos acompañan el recorrido por las islas y la carta se abre en el corazón final.':'Título y texto de la carta, y recuerdos separados por el signo |. El destinatario abre la carta al terminar la secuencia.');
- if(a.colorDefaults) items.push('Dos colores opcionales para los elementos de luz. Puedes desactivar la paleta personalizada para recuperar el diseño original; el fondo y algunos detalles mantienen sus colores.');
+ if(a.colorControls) items.push('Colores editables para materiales, partículas, iluminación y texto según la escena, con restablecimiento de la paleta original.');
+ else if(a.colorDefaults) items.push('Dos colores opcionales para los elementos de luz. Puedes desactivar la paleta personalizada para recuperar el diseño original; el fondo y algunos detalles mantienen sus colores.');
  return `<ul>${items.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
 }
 await mkdir('animaciones',{recursive:true}); await mkdir('categorias',{recursive:true});
 const catalogBody=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / Animaciones</nav><h1>Elige una escena antes de dedicarla</h1><p class="lead">Compara cómo se mueve, qué gesto necesita y qué puedes editar. Abre su ficha para probarla o entra directamente al editor si ya la conoces.</p><nav class="category-links" aria-label="Categorías">${categories.map(c=>`<a href="${curl(c.id)}">${esc(c.name)}</a>`).join('')}</nav><p>Las escenas automáticas funcionan con solo mirar. Las interactivas responden al toque, a una pulsación mantenida o a varios golpes. Los recorridos con carta requieren más tiempo para llegar al final.</p>${controls}${grid(animations)}`;
 await writeFile('animaciones.html',layout({title:'Animaciones para personalizar y compartir | ViralCss',description:'Compara animaciones por interacción, cartas, recuerdos y colores. Prueba cada escena antes de crear y compartir tu dedicatoria.',path:'/animaciones.html',body:catalogBody,schema:breadcrumb([['Inicio','/'],['Animaciones','/animaciones.html']])}));
 for(const c of categories) {
+ if(onlyIds.size&&!animations.some(a=>onlyIds.has(a.id)&&a.category===c.id))continue;
  const guide=CATEGORY_GUIDES[c.id]; if(!guide) throw Error(`Falta guía ${c.id}`);
  const list=animations.filter(a=>a.category===c.id);
  const body=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / <a href="/animaciones.html">Animaciones</a> / ${esc(cname(c.id))}</nav><h1>${esc(cname(c.id))}: encuentra tu escena</h1><p class="lead">${esc(guide.intro)}</p><section class="selection-guide"><h2>Cómo elegir</h2><ul>${guide.picks.map(([id,reason])=>{const a=animations.find(a=>a.id===id);if(!a)throw Error(id);return `<li><a href="${aurl(a)}">${esc(a.title)}</a>: ${esc(reason)}</li>`;}).join('')}</ul><p>${esc(guide.advice)}</p></section><h2>Escenas de esta categoría</h2>${controls}${grid(list)}<p><a href="/animaciones.html">Comparar con todas las categorías →</a></p>`;
- await writeFile(`categorias/${c.id}.html`,layout({title:`${cname(c.id)}: escenas, interacción y opciones | ViralCss`,description:guide.intro,path:curl(c.id),body,schema:breadcrumb([['Inicio','/'],['Animaciones','/animaciones.html'],[cname(c.id),curl(c.id)]])}));
+ await writeFile(`categorias/${c.id}.html`,layout({title:`${cname(c.id)}: escenas, interacción y opciones | ViralCss`,description:guide.intro,path:curl(c.id),body,id:c.id==='expert-zone'?'expert-zone':'',schema:breadcrumb([['Inicio','/'],['Animaciones','/animaciones.html'],[cname(c.id),curl(c.id)]])}));
 }
 for(const a of animations) {
- const g=guideFor(a); const interactive=g.mode!=='auto';
+ if(onlyIds.size&&!onlyIds.has(a.id))continue;
+ const g=guideFor(a); const interactive=g.mode!=='auto'&&!a.cinematic;
  const body=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / <a href="${curl(a.category)}">${esc(cname(a.category))}</a> / ${esc(a.title)}</nav><p class="eyebrow">${esc(cname(a.category))} · ${modeLabelFor(a)}</p><h1>${esc(a.title)}</h1><p class="lead">${esc(a.description)}</p><p><a class="btn btn-primary" href="${edit(a)}">Personalizar esta escena</a></p><div class="detail-layout"><section class="preview-panel"><h2>Prueba la escena</h2><div class="scene detail-scene"><canvas id="detail-canvas" aria-label="${esc(a.title)}: ${esc(g.interaction)}"${interactive?' tabindex="0" role="button"':''}></canvas><div class="overlay" id="detail-overlay"><span class="ov-to" id="ov-to"></span><p class="ov-msg" id="ov-msg"></p><span class="ov-from" id="ov-from"></span></div><button id="detail-play" class="btn btn-primary" type="button">Cargar vista previa</button></div><div class="preview-controls"><button class="btn btn-ghost" id="detail-pause" hidden type="button">Pausar</button><button class="btn btn-ghost" id="detail-replay" hidden type="button">Reiniciar</button></div><p id="detail-status" class="hint" role="status">La vista previa usa texto de ejemplo. Se carga cuando la solicitas.</p><p>${esc(g.interaction)}</p>${interactive?'<p class="hint">Puedes tocar la escena o usar Intro o Espacio con el lienzo enfocado. En una pulsación mantenida, conserva la tecla presionada.</p>':''}</section><div class="detail-copy"><section><h2>Qué ocurre en la escena</h2><p>${esc(g.scene)}</p></section><section><h2>Qué puedes personalizar</h2>${personalization(a)}</section><section><h2>Qué verá el destinatario</h2><p>${a.letterFields?'El enlace abre la escena y su recorrido con recuerdos. La carta queda disponible al final; el destinatario puede leerla en la misma pantalla.':a.seasonalText?'El enlace muestra la figura, la frase y los colores elegidos. Si seleccionas Sin texto, recibe la animación sin título, mensaje ni firma.':'El enlace abre esta misma animación con tu nombre, frase y firma. No necesita crear una cuenta ni instalar una aplicación.'}</p><p>${esc(g.use)}</p><p>El editor genera un enlace para copiar o compartir por WhatsApp. Quien tenga ese enlace puede abrirlo: evita incluir información privada.</p><a class="btn btn-primary" href="${edit(a)}">Crear con ${esc(a.title)}</a>${!a.noCode&&a.id!=='jardin-de-lunas'?` <a href="/codigo.html?a=${a.id}">Ver opción de código</a>`:''}</section></div></div><section><h2>Otras escenas para comparar</h2>${grid(relatedAnimations(a,animations))}<p><a href="${curl(a.category)}">Ver guía de ${esc(cname(a.category))} →</a></p></section>`;
- await writeFile(`animaciones/${a.id}.html`,layout({title:`${a.title}: vista previa y personalización | ViralCss`,description:g.scene,path:aurl(a),body,id:a.id,script:'detail',schema:breadcrumb([['Inicio','/'],[cname(a.category),curl(a.category)],[a.title,aurl(a)]])}));
+ const detailBody=body;
+ await writeFile(`animaciones/${a.id}.html`,layout({title:`${a.title}: vista previa y personalización | ViralCss`,description:g.scene,path:aurl(a),body:detailBody,id:a.id,script:'detail',schema:breadcrumb([['Inicio','/'],[cname(a.category),curl(a.category)],[a.title,aurl(a)]])}));
 }
 // Solo páginas públicas de descubrimiento. Editor, código y enlaces personales son utilidades sin indexación.
 // Se omite lastmod: regenerar HTML no significa que la escena haya cambiado.
@@ -65,7 +76,7 @@ await writeFile('sitemap.xml',`<?xml version="1.0" encoding="UTF-8"?>\n<urlset x
 const recent=(await import('../js/turtle-catalog.js')).TURTLE_ANIMATIONS;
 const seasonal=(await import('../js/seasonal-catalog.js')).SEASONAL_ANIMATIONS;
 const ids=new Set([...recent,...seasonal].map(a=>a.id));
-const first=[...recent,...seasonal,...animations.filter(a=>!ids.has(a.id))].slice(0,40);
+const first=[...animations.filter(a=>a.cinematic),...recent,...seasonal,...animations.filter(a=>!a.cinematic&&!ids.has(a.id))].slice(0,40);
 let home=await (await import('node:fs/promises')).readFile('index.html','utf8');
 home=home.replace(/(<div class="grid" id="grid">)[\s\S]*?(<\/div>\s*<p id="gallery-page-status")/, '$1'+first.map(card).join('\n')+'$2');
 home=home.replace(/(<div class="chips" id="chips"[^>]*>)[\s\S]*?<\/div>/, '$1'+CATEGORIES.map(c=>'<button type="button" class="chip" aria-pressed="'+(c.id==='todas')+'">'+esc(c.name)+'</button>').join('')+'</div>');

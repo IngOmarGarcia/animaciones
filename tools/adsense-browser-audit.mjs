@@ -16,7 +16,11 @@ const target=await send('Target.createTarget',{url:'about:blank'}),{sessionId}=a
 await call('Runtime.enable');await call('Page.enable');await call('Network.enable');
 await call('Page.addScriptToEvaluateOnNewDocument',{source:`window.auditCLS=0;window.auditShifts=[];window.auditLCP=0;window.auditLong=[];new PerformanceObserver(l=>l.getEntries().forEach(e=>{if(!e.hadRecentInput){window.auditCLS+=e.value;window.auditShifts.push({value:e.value,time:e.startTime,sources:e.sources?.map(s=>({node:s.node?.id||s.node?.className||s.node?.tagName,previous:s.previousRect.toJSON(),current:s.currentRect.toJSON()}))});}})).observe({type:'layout-shift',buffered:true});new PerformanceObserver(l=>l.getEntries().forEach(e=>window.auditLCP=e.startTime)).observe({type:'largest-contentful-paint',buffered:true});new PerformanceObserver(l=>window.auditLong.push(...l.getEntries().map(e=>e.duration))).observe({type:'longtask',buffered:true});`});
 const ev=async expression=>{const r=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;};
-if(process.argv.includes('--corrections')){
+if(process.argv.includes('--expert-new')){
+ await (await import('./new-expert-browser-check.mjs')).runNewExpert({call,ev,delay,getErrors:()=>errors});
+} else if(process.argv.includes('--expert')){
+ await (await import('./expert-browser-check.mjs')).runExpertChecks({call,ev,delay,getErrors:()=>errors});
+} else if(process.argv.includes('--corrections')){
  await (await import('./adsense-corrections-check.mjs')).runCorrections({call,ev,delay,getErrors:()=>errors});
 } else if(process.argv.includes('--assets')){
  await call('Page.navigate',{url:'http://localhost:8080/acerca.html'});await delay(1000);

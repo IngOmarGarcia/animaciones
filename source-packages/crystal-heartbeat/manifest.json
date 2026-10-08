@@ -1,0 +1,8 @@
+{
+ "id":"crystal-heartbeat","status":"planned","delivery":"complete-project","runtime":"browser-es-modules-webgl2",
+ "entry":"js/anim/crystal-heartbeat.js",
+ "sources":["js/anim/crystal-heartbeat.js","js/anim/crystal-heartbeat-renderer.js","js/anim/crystal-heartbeat-geometry.js","js/anim/crystal-heartbeat-material.js","js/anim/expert-runtime.js","js/anim/expert-adapter.js","js/anim/expert-typography.js","js/anim/engine.js","js/anim/text-style.js"],
+ "dependencies":[{"name":"three","version":"0.180.0","path":"js/vendor/three","license":"MIT","licenseFile":"js/vendor/three/LICENSE"}],
+ "assets":["img/crystal-heartbeat.webp"],"documentation":["tools/EXPERT-ZONE-NEW-EXPERIENCES.md","source-packages/crystal-heartbeat/README.md"],
+ "purchaseEnabled":false,"downloadEnabled":false
+}

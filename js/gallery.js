@@ -7,12 +7,22 @@ const visible = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let paused = reduced.matches;
 let motionRequested=false;
+let preferredLiveCard=null;
+const enhanced=new WeakSet();
+function activeCards(){
+ const candidates=[...visible].filter(c=>c.isConnected&&!c.hidden);
+ const live=candidates.includes(preferredLiveCard)?preferredLiveCard:candidates.find(c=>getAnimation(c.dataset.id)?.livePreview);
+ return [...(live?[live]:[]),...candidates.filter(c=>!getAnimation(c.dataset.id)?.livePreview)].slice(0,matchMedia('(max-width:719px)').matches?2:4);
+}
 const observer = new IntersectionObserver(entries => {
   for (const e of entries) e.isIntersecting && !e.target.hidden ? visible.add(e.target) : visible.delete(e.target);
   schedule();
 }, {rootMargin:'0px'});
 function schedule() {
-  const active = [...visible].filter(c=>c.isConnected&&!c.hidden).slice(0,matchMedia('(max-width:719px)').matches?2:4);
+  const active = activeCards();
+  // Only one new WebGL miniature is alive at once. Other thumbnails retain a
+  // representative poster; hover or keyboard focus chooses the live artwork.
+  for(const [card,player]of players)if(getAnimation(card.dataset.id)?.livePreview&&!active.includes(card)){player.destroy();players.delete(card);}
   for(const [card,player] of players) if(paused||document.hidden||!active.includes(card)) player.pause();
   for(const card of visible) if(card.isConnected&&!card.hidden) activate(card);
   if(players.size>8) for(const [card,player] of players) {
@@ -20,13 +30,14 @@ function schedule() {
   }
 }
 async function activate(card) {
+  if(getAnimation(card.dataset.id)?.livePreview&&!activeCards().includes(card))return;
   let player=players.get(card);
   if(!player) {
     if(card.dataset.loading || card.dataset.failed) return;
     card.dataset.loading='1';
     try {
-      const anim=getAnimation(card.dataset.id), mod=await anim.load();
-      if(!card.isConnected) return;
+      const anim=getAnimation(card.dataset.id), mod=await anim.load({preview:true});
+      if(!card.isConnected||(anim.livePreview&&!activeCards().includes(card))) return;
       player=createPlayer(card.querySelector('canvas'),mod.default,{loop:anim.previewLoop,preview:true});
       players.set(card,player);
       if(motionRequested&&player.motionReduced)player.enableMotion();
@@ -38,11 +49,17 @@ async function activate(card) {
       console.error('Vista previa no disponible',card.dataset.id,error);
     } finally {delete card.dataset.loading;}
   }
-  if(player && !paused && !document.hidden && [...visible].filter(c=>c.isConnected&&!c.hidden).slice(0,matchMedia('(max-width:719px)').matches?2:4).includes(card)) player.play();
+  if(player && !paused && !document.hidden && activeCards().includes(card)) player.play();
 }
 export function setGalleryPaused(value,{userInitiated=false}={}) {paused=value;if(userInitiated&&!value){motionRequested=true;for(const player of players.values())if(player.motionReduced)player.enableMotion();}schedule();}
 export function galleryPaused() {return paused;}
-export function enhanceGallery(container) {for(const card of container.querySelectorAll('.card[data-id]')) observer.observe(card);}
+export function enhanceGallery(container) {for(const card of container.querySelectorAll('.card[data-id]')) {
+ if(getAnimation(card.dataset.id)?.livePreview&&!enhanced.has(card)){
+  enhanced.add(card);card.querySelector('.thumb').style.background=`#010106 url('/img/${card.dataset.id}.webp') center 30% / cover no-repeat`;
+  const prefer=()=>{preferredLiveCard=card;schedule();};card.addEventListener('pointerenter',prefer);card.addEventListener('focusin',prefer);
+ }
+ observer.observe(card);
+}}
 export function refreshGallery(container) {for(const card of container.querySelectorAll('.card[data-id]')) {if(card.hidden)visible.delete(card);observer.unobserve(card);observer.observe(card);}schedule();}
 document.addEventListener('visibilitychange',schedule);
 reduced.addEventListener('change',()=>{motionRequested=false;setGalleryPaused(reduced.matches);});
@@ -61,7 +78,7 @@ function createCard(anim) {
  const body=document.createElement('div');body.className='card-body';
  const title=document.createElement('h3'), link=document.createElement('a');link.href=preview.href;link.textContent=anim.title;title.append(link);
  const desc=document.createElement('p');desc.textContent=anim.description;
- const features=document.createElement('p');features.className='card-options';features.textContent=`${anim.seasonalText?'Frases o sin texto':anim.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${anim.colorDefaults?' · Dos colores':''}`;
+ const features=document.createElement('p');features.className='card-options';features.textContent=`${anim.seasonalText||anim.cinematic?'Frases o sin texto':anim.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${anim.colorControls?' · Colores editables':anim.colorDefaults?' · Dos colores':''}`;
  const links=document.createElement('div');links.className='card-links';const detail=document.createElement('a');detail.href=preview.href;detail.textContent='Ver escena y detalles';
  const editor=document.createElement('a');editor.href=`/crear.html?a=${anim.id}`;editor.textContent='Personalizar →';editor.setAttribute('aria-label',`Personalizar ${anim.title}`);links.append(detail,editor);
  body.append(title,desc,features,links);card.append(preview,body);return card;

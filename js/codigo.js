@@ -1,6 +1,7 @@
 import { VISIBLE_ANIMATIONS, getAnimation } from './catalog.js';
 import { decodeCard } from './share.js';
 import { buildStandaloneHtml } from './standalone.js';
+import {projectCodePage} from './project-export.js';
 import './support.js';
 import { relatedAnimations } from './scene-guides.js';
 
@@ -9,6 +10,7 @@ const params = new URLSearchParams(location.search);
 // ?s= trae el nombre y mensaje que escribieron en crear; ?a= solo la animación.
 const card = decodeCard(params.get('s')) || { a: params.get('a') || '', p: '', m: '', d: '' };
 const anim = getAnimation(card.a) || VISIBLE_ANIMATIONS[0];
+if(anim.exportMode==='project'){await projectCodePage(anim,card);}else{
 const fileName = `${anim.id}.html`;
 const createHref = `crear.html?a=${encodeURIComponent(anim.id)}`;
 
@@ -78,3 +80,4 @@ $('try').addEventListener('click', () => {
   window.open(url, '_blank', 'noopener');
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 });
+}

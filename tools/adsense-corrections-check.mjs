@@ -7,7 +7,7 @@ export async function runCorrections({call,ev,delay,getErrors}){
  await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await go('/tools/adsense-functional-qa.html');await wait('window.ready');
- results.reduced=await ev('checkReduced()');assert.equal(results.reduced.length,87);assert(results.reduced.every(x=>x.ok),JSON.stringify(results.reduced.filter(x=>!x.ok)));
+ results.reduced=await ev('checkReduced()');assert.equal(results.reduced.length,(await import('../js/catalog.js')).VISIBLE_ANIMATIONS.length);assert(results.reduced.every(x=>x.ok),JSON.stringify(results.reduced.filter(x=>!x.ok)));
  for(const id of ['catrina-encaje','retrato-historias','eclipse-corona','guitarra-resonancia'])assert.equal(results.reduced.find(x=>x.id===id).gesture,'none');
  for(const id of ['mansion-imposible','pan-memoria','grimorio-tinta-viva','herbario-luz'])assert.equal(results.reduced.find(x=>x.id===id).gesture,'pan-y');
  results.optIn=await ev("checkOptIn('mansion-imposible')");assert(results.optIn.moving&&!results.optIn.reduced&&results.optIn.force);

@@ -564,6 +564,15 @@ a[href]:not(:where(.btn, .brand, .card-preview-link, .gift, .skip-link)):active 
 #gallery-title { scroll-margin-top: 20px; }
 .card-links a { flex: 1 1 130px; }
 .site-footer > div { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.expert-card { border-color:rgba(211,176,112,.45);background:linear-gradient(145deg,#151310,#0c0c12); }
+.expert-card .badge,.expert-label { color:#ead2a5;letter-spacing:.12em;text-transform:uppercase;font-size:.7rem; }
+.expert-card .badge { border:1px solid #6a5736;background:#17130dde; }
+.expert-source-panel { display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:22px;border:1px solid #645134;border-radius:18px;background:linear-gradient(125deg,#18150f,#0b0b10);margin:24px 0; }
+.expert-source-panel p { width:100%;margin:0;color:#c3b59e;font-size:.9rem; }
+.expert-source:disabled { color:#d9c39c;border:1px solid #6a5736;background:#17130f;opacity:1;cursor:default; }
+.cinematic-experience .scene,[data-animation="eternal-bloom"] .detail-scene { background:#010103;border-color:#4c4030; }
+a[href*="/categorias/expert-zone"] { border-color:#6a5736!important;color:#ead2a5!important; }
+[data-animation="expert-zone"] .lead,[data-animation="eternal-bloom"] .lead { color:#d4c2a6; }
 @media (max-width: 699px) {
   .site-header.seo-header { flex-wrap: wrap; }
   .site-header.seo-header nav { width: 100%; justify-content: space-between; }

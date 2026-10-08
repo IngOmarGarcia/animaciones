@@ -1,0 +1,13 @@
+{
+  "id":"eternal-bloom",
+  "status":"planned",
+  "delivery":"complete-project",
+  "runtime":"browser-es-modules-webgl2",
+  "entry":"js/anim/eternal-bloom.js",
+  "sources":["js/anim/eternal-bloom.js","js/anim/eternal-bloom-renderer.js","js/anim/eternal-bloom-geometry.js","js/anim/eternal-bloom-light.js","js/anim/eternal-bloom-particles.js","js/anim/eternal-bloom-preview.js","js/anim/engine.js","js/anim/text-style.js"],
+  "dependencies":[{"name":"three","version":"0.180.0","path":"js/vendor/three","license":"MIT","licenseFile":"js/vendor/three/LICENSE"}],
+  "assets":["img/eternal-bloom.webp"],
+  "documentation":["tools/ETERNAL-BLOOM.md","source-packages/eternal-bloom/README.md"],
+  "purchaseEnabled":false,
+  "downloadEnabled":false
+}

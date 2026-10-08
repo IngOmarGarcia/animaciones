@@ -1,0 +1,8 @@
+{
+ "id":"event-horizon","status":"planned","delivery":"complete-project","runtime":"browser-es-modules-webgl2",
+ "entry":"js/anim/event-horizon.js",
+ "sources":["js/anim/event-horizon.js","js/anim/event-horizon-renderer.js","js/anim/event-horizon-shader.js","js/anim/expert-runtime.js","js/anim/expert-adapter.js","js/anim/expert-typography.js","js/anim/engine.js","js/anim/text-style.js"],
+ "dependencies":[{"name":"three","version":"0.180.0","path":"js/vendor/three","license":"MIT","licenseFile":"js/vendor/three/LICENSE"}],
+ "assets":["img/event-horizon.webp"],"documentation":["tools/EXPERT-ZONE-NEW-EXPERIENCES.md","source-packages/event-horizon/README.md"],
+ "purchaseEnabled":false,"downloadEnabled":false
+}

@@ -1,0 +1,8 @@
+{
+ "id":"soul-butterfly","status":"planned","delivery":"complete-project","runtime":"browser-es-modules-webgl2",
+ "entry":"js/anim/soul-butterfly.js",
+ "sources":["js/anim/soul-butterfly.js","js/anim/soul-butterfly-renderer.js","js/anim/soul-butterfly-geometry.js","js/anim/expert-runtime.js","js/anim/expert-adapter.js","js/anim/expert-typography.js","js/anim/engine.js","js/anim/text-style.js"],
+ "dependencies":[{"name":"three","version":"0.180.0","path":"js/vendor/three","license":"MIT","licenseFile":"js/vendor/three/LICENSE"}],
+ "assets":["img/soul-butterfly.webp"],"documentation":["tools/EXPERT-ZONE-NEW-EXPERIENCES.md","source-packages/soul-butterfly/README.md"],
+ "purchaseEnabled":false,"downloadEnabled":false
+}
