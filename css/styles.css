@@ -53,6 +53,10 @@ img { max-width: 100%; }
 .detail-copy h2, .preview-panel h2 { font-size: 1.25rem; }
 .detail-scene { position: relative; height: 520px; max-height: 70svh; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .detail-scene canvas { width: 100%; height: 100%; display: block; }
+.emotional-experience .detail-scene { width: min(100%, 430px); height: auto; aspect-ratio: 9 / 16; max-height: none; margin-inline: auto; background: #050711; }
+.emotional-experience .scene { background: #050711; }
+.emotional-experience .particle-tuning { display: grid; gap: 14px; }
+.emotional-experience .particle-tuning input[type="range"] { width: 100%; accent-color: #d8b477; }
 #detail-play { position: absolute; top: 45%; left: 50%; transform: translateX(-50%); width: max-content; max-width: 90%; }
 .preview-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .preview-unavailable { position: absolute; top: 40%; left: 8%; right: 8%; text-align: center; color: var(--muted); }
@@ -464,9 +468,15 @@ details p { margin: 8px 0 0; }
   .support-modal[open], .support-copied { animation: none; }
 }
 
-.gifts-section { margin-block: 32px; text-align: left; }
-.gifts-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.gifts-kicker { margin: 0 0 2px; color: var(--muted); font-size: 0.9rem; }
+.gifts-section {
+  margin-block: 32px; padding: clamp(16px, 3vw, 28px); text-align: left;
+  background: #202536; color: #e2e5ed;
+  border: 1px solid #414555; border-top: 3px solid #9a8752; border-radius: 20px;
+}
+.gifts-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.gifts-head > :first-child { flex: 1 1 220px; }
+.gifts-kicker { margin: 0 0 6px; color: #c4b68e; font-size: 0.9rem; }
+.gifts-context { margin: 10px 0 0; color: #b5bdcf; font-size: 0.85rem; line-height: 1.5; }
 .gifts-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: clamp(1.1rem, 4vw, 1.3rem); line-height: 1.25; }
 .gifts-title img { flex: none; }
 .gifts-nav { display: flex; flex: none; gap: 6px; }
@@ -476,6 +486,7 @@ details p { margin: 8px 0 0; }
   background: var(--card); color: var(--text); font: inherit; font-size: 1.5rem; line-height: 1; cursor: pointer;
 }
 .gifts-arrow:disabled { opacity: 0.35; cursor: default; }
+.gifts-section .gifts-arrow { background: #2a3042; color: #e2e5ed; border-color: #4b5266; }
 /* Carrusel: se desliza con el dedo o con las flechas; en celular se asoma la siguiente carta */
 .gifts {
   display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 10px) / 2.3); gap: 10px;
@@ -491,16 +502,23 @@ details p { margin: 8px 0 0; }
   text-decoration: none; transition: border-color 0.2s;
 }
 .gift:hover { border-color: rgba(255, 230, 0, 0.5); }
+.gifts-section .gift { background: #282e40; border-color: #41495d; color: #e2e5ed; }
+.gifts-section .gift:hover { border-color: #a29162; }
+.gifts-section .gift-cta { color: #dccb93; }
+.gifts-section .gift-img { background: #cbd0d9; }
+.gifts-section .gift-img img { filter: brightness(0.85); }
+.gifts-section :is(.gift, .gifts-arrow):focus-visible { outline: 3px solid #c4b68e; outline-offset: 2px; }
+@media (max-width: 480px) { .gifts-section .gifts { grid-auto-columns: calc((100% - 10px) / 1.65); } }
 .gift-emoji { font-size: 1.8rem; }
 .gift-img {
   display: block; aspect-ratio: 1; margin: -4px -4px 6px; overflow: hidden;
   border-radius: 10px; background: #fff;
 }
 .gift-img img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.gift-title { font-size: 0.92rem; font-weight: 600; line-height: 1.3; }
+.gift-title { font-size: 0.92rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .gift-cta { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; color: #ffe600; font-size: 0.8rem; }
 .gift-cta img { flex: none; }
-.gifts-note { margin: 10px 0 0; color: var(--muted); font-size: 0.75rem; }
+.gifts-note { margin: 14px 0 0; color: #b5bdcf; font-size: 0.75rem; line-height: 1.6; }
 
 .pricing {
   margin-block: 24px; padding: 20px;

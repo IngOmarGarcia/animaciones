@@ -78,7 +78,7 @@ function createCard(anim) {
  const body=document.createElement('div');body.className='card-body';
  const title=document.createElement('h3'), link=document.createElement('a');link.href=preview.href;link.textContent=anim.title;title.append(link);
  const desc=document.createElement('p');desc.textContent=anim.description;
- const features=document.createElement('p');features.className='card-options';features.textContent=`${anim.seasonalText||anim.cinematic?'Frases o sin texto':anim.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${anim.colorControls?' · Colores editables':anim.colorDefaults?' · Dos colores':''}`;
+ const features=document.createElement('p');features.className='card-options';features.textContent=anim.emotional?'Frase de partículas · Ritmo y brillo ajustables':`${anim.seasonalText||anim.cinematic?'Frases o sin texto':anim.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${anim.colorControls?' · Colores editables':anim.colorDefaults?' · Dos colores':''}`;
  const links=document.createElement('div');links.className='card-links';const detail=document.createElement('a');detail.href=preview.href;detail.textContent='Ver escena y detalles';
  const editor=document.createElement('a');editor.href=`/crear.html?a=${anim.id}`;editor.textContent='Personalizar →';editor.setAttribute('aria-label',`Personalizar ${anim.title}`);links.append(detail,editor);
  body.append(title,desc,features,links);card.append(preview,body);return card;

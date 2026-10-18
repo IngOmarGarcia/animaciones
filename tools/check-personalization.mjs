@@ -11,14 +11,15 @@ for (const font of FONT_OPTIONS) {
   const card = cleanCard({a:'fantasmita-rosa',f:font.id,c1:'#32cfff',c2:'#ffaaff'});
   assert.deepEqual(decodeCard(encodeCard(card)), card);
   assert(canvasTextFont({card},'700 20px').endsWith(font.family));
-  const html=await buildStandaloneHtml(VISIBLE_ANIMATIONS[0],card,readText);
+  const html=await buildStandaloneHtml(VISIBLE_ANIMATIONS.find(a=>a.id===card.a),card,readText);
   assert(html.includes(`font-family: ${font.family}`));
   new vm.Script(html.match(/\n<script>\n([\s\S]*?)<\/script>/)[1]);
 }
-for (const anim of VISIBLE_ANIMATIONS.filter(a=>a.colorDefaults || ['origami-amarillo','vitral-de-flores','adn-de-flores','flor-infinita-de-espejo','reloj-de-petalos','flor-liquida','flor-de-luz-interactiva'].includes(a.id))) {
+for (const anim of VISIBLE_ANIMATIONS.filter(a=>!a.noCode&&a.exportMode!=='project'&&(a.colorDefaults || ['origami-amarillo','vitral-de-flores','adn-de-flores','flor-infinita-de-espejo','reloj-de-petalos','flor-liquida','flor-de-luz-interactiva'].includes(a.id)))) {
   const html=await buildStandaloneHtml(anim,{a:anim.id,f:'classic',c1:'#32cfff',c2:'#ffaaff'},readText);
   new vm.Script(html.match(/\n<script>\n([\s\S]*?)<\/script>/)[1]);
 }
+for(const anim of VISIBLE_ANIMATIONS.filter(a=>a.noCode||a.exportMode==='project'))await assert.rejects(buildStandaloneHtml(anim,{a:anim.id},readText),/no tiene código descargable|proyecto ZIP/);
 assert.equal(cleanCard({f:'arbitrary',c1:'bad',c2:'red'}).f,'');
 assert.equal(cleanCard({c1:'bad'}).c1,'');
 assert(textFamily('').includes('Dancing Script'), 'Los enlaces existentes mantienen su tipografía');

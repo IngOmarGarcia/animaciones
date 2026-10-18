@@ -1,5 +1,6 @@
 import { textFamily } from './anim/text-style.js';
 export function fillOverlay(el, card, anim) {
+  if(anim.emotional)card={...card,m:anim.defaultMessage,d:'',p:anim.allowName?card.p:''};
   el.style.setProperty('--message-font', textFamily(card.f));
   const noText = (anim.seasonalText || anim.cinematic) && card.tm === 'none';
   let accessible=el.parentElement.querySelector('[data-accessible-dedication]');

@@ -1,4 +1,5 @@
 import { TURTLE_ANIMATIONS } from './turtle-catalog.js';
+import { EMOTIONAL_SCENES } from './emotional-catalog.js';
 export const CATEGORY_GUIDES = {
   'expert-zone':{intro:'Experiencias 3D de autor, con geometrías, materiales e iluminación desarrollados para cada obra. Personaliza y comparte la escena completa; su código fuente no se ofrece como un único HTML.',picks:[['eternal-bloom','Una rosa translúcida se ensambla y florece bajo una luz dorada que recorre sus pétalos.'],['soul-butterfly','Una mariposa de alas curvas emprende un vuelo y convierte sus partículas en palabras.'],['event-horizon','Un disco de plasma con espesor rodea un horizonte oscuro que curva la luz del campo estelar.'],['crystal-heartbeat','Fragmentos curvos se fusionan en un corazón de cristal con energía interior y un latido doble.']],advice:'Las nuevas miniaturas alternan una vista animada de calidad reducida con imágenes representativas: acerca el puntero o enfoca una tarjeta para verla viva. Eternal Bloom conserva su miniatura estática. Abre cada ficha para reproducir la secuencia completa. La calidad se adapta al dispositivo y se respeta movimiento reducido. El código fuente figura como Próximamente: no hay compras ni desbloqueos disponibles.'},
   flores: { intro:'Elige entre una flor que se abre sola, una figura que cambia al tocarla y un recorrido con recuerdos. El amarillo es parte del diseño de muchas escenas; solo las que muestran el selector de color permiten modificar su paleta.', picks:[['ramo-flores-amarillas','Para enviar un ramo sin pedir interacción: las flores se abren por etapas y el mensaje queda sobre la escena.'],['corazon-de-girasoles','Si quieres revelar un nombre con la propia animación: el corazón floral se transforma en letras después del toque.'],['jardin-de-lunas','Para una carta y varios recuerdos: el viaje pasa por siete islas antes del corazón final. Es un recorrido más largo que una floración.']], advice:'En Origami amarillo el mensaje se dibuja dentro de una tarjeta de cinco líneas: funciona mejor una frase corta. En Flor de luz interactiva el destinatario mantiene pulsado para hacer crecer la flor; en Girasol o Rosa amarilla basta con mirar.' },
@@ -22,3 +23,17 @@ CATEGORY_GUIDES.halloween.intro='Figuras, arquitectura y hilos de Halloween. Las
 CATEGORY_GUIDES.halloween.advice='Puedes elegir texto propio, sugerido o Sin texto. Las nuevas experiencias conservan su protagonista y permiten repetir la transformación.';
 CATEGORY_GUIDES.cumple.advice+=' La máquina de dulces también permite seleccionar una edad de 1 a 999.';
 CATEGORY_GUIDES.muertos.advice+=' El retrato admite una foto local opcional. El bordado es una composición artística original.';
+for(const category of new Set(EMOTIONAL_SCENES.map(s=>s.category))){
+  const scenes=EMOTIONAL_SCENES.filter(s=>s.category===category);
+  const advice='Las experiencias emocionales conservan su frase y su composición. Ajusta dos colores, brillo, velocidad y densidad; el nombre solo está disponible cuando la escena lo admite. Las letras están construidas con partículas y la lectura avanza sin necesidad de tocar.';
+  const introductions={
+    desamor:'Frases de desamor construidas con partículas: silencios, mensajes que sostenían una relación y letras que aprenden a separarse. El desenlace conserva el peso de cada pensamiento.',
+    'san-valentin':'Una confesión para San Valentín que se atreve a llegar. Las partículas forman la frase y después abren una flor, con colores y movimiento que puedes ajustar.',
+    aniversario:'Una experiencia de aniversario para los días compartidos que no quedaron en fotografías. Las palabras se construyen con luz y se convierten en una constelación íntima.',
+    'anio-nuevo':'Una frase de Año Nuevo sobre empezar de tu propio lado. Las partículas abandonan una órbita repetida, forman las letras y abren un arco hacia adelante.',
+    historias:'Pensamientos confesionales en bloques de lectura: nostalgia, alivio y la dificultad de recibir cuidado. Las propias partículas construyen, deforman y liberan las palabras.',
+  };
+  if(!CATEGORY_GUIDES[category])CATEGORY_GUIDES[category]={intro:introductions[category],picks:[],advice};
+  else CATEGORY_GUIDES[category].advice+=' '+advice;
+  for(const scene of scenes)CATEGORY_GUIDES[category].picks.push([scene.id,scene.description]);
+}

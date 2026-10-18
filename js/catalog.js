@@ -2,6 +2,7 @@ import {SCENE_PALETTES} from './scene-palettes.js';
 import { TURTLE_ANIMATIONS } from './turtle-catalog.js';
 import { EXPERT_ANIMATIONS } from './expert-catalog.js';
 import { SEASONAL_ANIMATIONS } from './seasonal-catalog.js';
+import { EMOTIONAL_ANIMATIONS } from './emotional-catalog.js';
 export const CATEGORIES = [
   { id: 'todas', name: 'Todas' },
   { id: 'general', name: 'General y motivación' },
@@ -12,6 +13,11 @@ export const CATEGORIES = [
   { id: 'futbol', name: '⚽ Fútbol' },
   { id: 'gamer', name: '🎮 Gamer' },
   { id: 'amor', name: '❤️ Amor' },
+  { id: 'desamor', name: '🌧️ Desamor' },
+  { id: 'san-valentin', name: '💌 San Valentín' },
+  { id: 'aniversario', name: '✨ Aniversario' },
+  { id: 'anio-nuevo', name: '🌅 Año Nuevo' },
+  { id: 'historias', name: '🫧 Historias emocionales' },
   { id: 'espacio', name: '🌌 Espacio y cielo' },
   { id: 'paisajes', name: '🏞️ Paisajes' },
   { id: 'cumple', name: '🎂 Cumpleaños y fiesta' },
@@ -22,6 +28,7 @@ export const CATEGORIES = [
 // textPosition: 'top' | 'center'. textDelay: segundos antes de mostrar el mensaje.
 // previewLoop: cada cuántos segundos se reinicia en las vistas previas.
 export const ANIMATIONS = [
+  ...EMOTIONAL_ANIMATIONS,
   ...SEASONAL_ANIMATIONS,
   ...TURTLE_ANIMATIONS,
   {

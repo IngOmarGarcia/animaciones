@@ -1,0 +1,29 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Revisión local · Frases de partículas</title><style>html,body{margin:0;background:#03050a;color:#ddd;font:14px system-ui}canvas{display:block;width:100vw;height:100svh}#info{position:fixed;bottom:8px;left:12px;opacity:.5;font-size:10px;pointer-events:none}</style></head><body><canvas id="scene"></canvas><span id="info"></span><script type="module">
+import {emotionalExperience} from '../js/anim/emotional-particles.js';
+import {EMOTIONAL_SCENES} from '../js/emotional-catalog.js';
+import energyHeart from '../js/anim/corazon-energia.js';
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');
+let previous=null;
+window.emotionalScenes=EMOTIONAL_SCENES;
+window.renderEmotional=(id,target,options={})=>{
+ const w=innerWidth,h=innerHeight;
+ const cacheKey=JSON.stringify([id,w,h,options]);
+ if(previous?.key!==cacheKey||target<previous.time||options.snapshot){canvas.width=w;canvas.height=h;previous=null;}
+ const stage={card:{a:id,...options.card},preview:!!options.preview,forceMotion:!options.reduced,forceFallback:!!options.fallback,taps:[],holding:false,pointer:{x:.5,y:.5}};
+ const liveStage=previous?.stage||stage,frame=previous?.frame||emotionalExperience(id)(ctx,w,h,1,liveStage),costs=[];
+ if(options.reduced||options.preview||options.snapshot)frame(target,.016);
+ else for(let t=previous?previous.time+1/30:0;t<=target+.0001;t+=1/30){const start=performance.now();frame(t,1/30);if(t>4)costs.push(performance.now()-start);}
+ if(options.tap){stage.taps.push({x:w/2,y:h/2});frame(target+.1,.033);}
+ document.getElementById('info').textContent=`${id} · ${target.toFixed(1)} s · ${liveStage.emotionalStats.active} puntos`;
+ const report={...liveStage.emotionalStats,meanMs:costs.length?costs.reduce((a,b)=>a+b,0)/costs.length:0,p95Ms:costs.length?costs.sort((a,b)=>a-b)[Math.floor(costs.length*.95)]:0};
+ previous={key:cacheKey,frame,stage:liveStage,time:target};window.emotionalStage=liveStage;window.emotionalFrame=frame;return report;
+};
+window.renderEnergyReference=target=>{
+ previous=null;canvas.width=innerWidth;canvas.height=innerHeight;
+ const stage={card:{a:'corazon-de-energia'},taps:[],pointer:{x:.5,y:.5},auto:false};
+ const frame=energyHeart(ctx,innerWidth,innerHeight,1,stage);
+ for(let t=0;t<=target;t+=1/30)frame(t,1/30);
+ document.getElementById('info').textContent='Referencia: Corazón de energía';
+};
+document.body.dataset.ready='true';
+</script></body></html>

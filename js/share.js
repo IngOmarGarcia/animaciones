@@ -1,6 +1,6 @@
 // Los datos de la tarjeta viajan dentro del enlace (base64url de un JSON),
 // así no se necesita base de datos y el mensaje no se ve a simple vista en el chat.
-const LIMITS = { age: 3, p: 40, m: 140, d: 40, tm: 7, f: 7, lt: 65, l: 650, mem: 1200, c1: 7, c2: 7, c3: 7, c4: 7, c5: 7, c6: 7, img: 22000 };
+const LIMITS = { age: 3, p: 40, m: 140, d: 40, tm: 7, f: 7, lt: 65, l: 650, mem: 1200, c1: 7, c2: 7, c3: 7, c4: 7, c5: 7, c6: 7, img: 22000, glow: 5, speed: 5, density: 5 };
 
 function toBase64Url(text) {
   let binary = '';
@@ -28,6 +28,9 @@ export function cleanCard(raw) {
   if (!['suggest', 'custom', 'none'].includes(card.tm)) card.tm = '';
   if (!['clear', 'elegant', 'classic', 'rounded', 'mono'].includes(card.f)) card.f = '';
   for (const key of ['c1', 'c2','c3','c4','c5','c6']) if (!/^#[0-9a-f]{6}$/i.test(card[key])) card[key] = '';
+  for(const [key,min,max] of [['glow',.4,1.4],['speed',.75,1.25],['density',.65,1.2]]){
+    if(card[key])card[key]=/^\d+(?:\.\d+)?$/.test(card[key])?String(Math.max(min,Math.min(max,Number(card[key])))):'';
+  }
   return card;
 }
 

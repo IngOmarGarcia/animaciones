@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { VISIBLE_ANIMATIONS as animations, CATEGORIES } from '../js/catalog.js';
 import { guideFor, modeLabelFor, relatedAnimations } from '../js/scene-guides.js';
 import { CATEGORY_GUIDES } from '../js/category-guides.js';
+import { EMOTIONAL_ANIMATIONS } from '../js/emotional-catalog.js';
 
 const origin = 'https://viralcss.com';
 const onlyIds=new Set(process.argv.find(s=>s.startsWith('--only='))?.slice(7).split(',').filter(Boolean)||[]);
@@ -14,7 +15,7 @@ const categories = CATEGORIES.filter(c=>c.id!=='todas' && animations.some(a=>a.c
 const cname = id => categories.find(c=>c.id===id).name.replace(/^\S+\s/,'');
 const particleNames = new Set(['corazon-de-girasoles','flor-holografica','cascada-de-petalos-invertida','corazon-de-energia','constelacion-con-tu-nombre','fuegos-con-tu-nombre']);
 const shortNames = new Set(['corazon-de-energia','constelacion-con-tu-nombre','fuegos-con-tu-nombre']);
-const options = a => `${a.seasonalText||a.cinematic?'Frases o sin texto':a.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${a.colorControls?' · Colores editables':a.colorDefaults?' · Dos colores':''}`;
+const options = a => a.emotional?'Frase de partículas · Ritmo y brillo ajustables':`${a.seasonalText||a.cinematic?'Frases o sin texto':a.letterFields?'Carta y recuerdos':'Nombre y mensaje'}${a.colorControls?' · Colores editables':a.colorDefaults?' · Dos colores':''}`;
 function card(a) {
  const g=guideFor(a);
  return `<article class="card${''}" data-id="${a.id}" data-mode="${g.mode}" data-color="${!!a.colorDefaults}" data-letter="${!!a.letterFields}"><a class="card-preview-link" href="${aurl(a)}" aria-label="Ver ${esc(a.title)}"><div class="thumb"><canvas aria-hidden="true"></canvas><span class="badge">${modeLabelFor(a)}</span></div></a><div class="card-body"><h3><a href="${aurl(a)}">${esc(a.title)}</a></h3><p>${esc(a.description)}</p><p class="card-options">${options(a)}</p><div class="card-links"><a href="${aurl(a)}">Ver escena y detalles</a><a href="${edit(a)}">Personalizar<span class="sr-only"> ${esc(a.title)}</span> →</a></div></div></article>`;
@@ -29,6 +30,7 @@ function layout(config) {
 }
 const breadcrumb = entries => ({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:entries.map(([name,url],i)=>({'@type':'ListItem',position:i+1,name,item:origin+publicPath(url)}))});
 function personalization(a) {
+ if(a.emotional)return `<ul><li>Selecciona una de las experiencias de frases. La frase, la tipografía y el desenlace conservan su composición original.</li><li>Dos colores, brillo, velocidad y densidad de partículas con límites que protegen la lectura.</li><li>${a.allowName?'Nombre opcional de hasta 24 caracteres, formado con partículas al terminar la frase.':'Esta experiencia conserva únicamente la frase; no admite nombres ni mensajes libres.'}</li></ul>`;
  const items=[];
  if(a.collection==='autumn') {
   items.push('Nombre opcional de hasta 40 caracteres, dedicatoria de hasta 140 y firma. El texto acompaña la escena sin reemplazar su protagonista.');
@@ -65,7 +67,7 @@ for(const a of animations) {
  if(onlyIds.size&&!onlyIds.has(a.id))continue;
  const g=guideFor(a); const interactive=g.mode!=='auto'&&!a.cinematic;
  const body=`<nav class="breadcrumbs" aria-label="Ruta"><a href="/">Inicio</a> / <a href="${curl(a.category)}">${esc(cname(a.category))}</a> / ${esc(a.title)}</nav><p class="eyebrow">${esc(cname(a.category))} · ${modeLabelFor(a)}</p><h1>${esc(a.title)}</h1><p class="lead">${esc(a.description)}</p><p><a class="btn btn-primary" href="${edit(a)}">Personalizar esta escena</a></p><div class="detail-layout"><section class="preview-panel"><h2>Prueba la escena</h2><div class="scene detail-scene"><canvas id="detail-canvas" aria-label="${esc(a.title)}: ${esc(g.interaction)}"${interactive?' tabindex="0" role="button"':''}></canvas><div class="overlay" id="detail-overlay"><span class="ov-to" id="ov-to"></span><p class="ov-msg" id="ov-msg"></p><span class="ov-from" id="ov-from"></span></div><button id="detail-play" class="btn btn-primary" type="button">Cargar vista previa</button></div><div class="preview-controls"><button class="btn btn-ghost" id="detail-pause" hidden type="button">Pausar</button><button class="btn btn-ghost" id="detail-replay" hidden type="button">Reiniciar</button></div><p id="detail-status" class="hint" role="status">La vista previa usa texto de ejemplo. Se carga cuando la solicitas.</p><p>${esc(g.interaction)}</p>${interactive?'<p class="hint">Puedes tocar la escena o usar Intro o Espacio con el lienzo enfocado. En una pulsación mantenida, conserva la tecla presionada.</p>':''}</section><div class="detail-copy"><section><h2>Qué ocurre en la escena</h2><p>${esc(g.scene)}</p></section><section><h2>Qué puedes personalizar</h2>${personalization(a)}</section><section><h2>Qué verá el destinatario</h2><p>${a.letterFields?'El enlace abre la escena y su recorrido con recuerdos. La carta queda disponible al final; el destinatario puede leerla en la misma pantalla.':a.seasonalText?'El enlace muestra la figura, la frase y los colores elegidos. Si seleccionas Sin texto, recibe la animación sin título, mensaje ni firma.':'El enlace abre esta misma animación con tu nombre, frase y firma. No necesita crear una cuenta ni instalar una aplicación.'}</p><p>${esc(g.use)}</p><p>El editor genera un enlace para copiar o compartir por WhatsApp. Quien tenga ese enlace puede abrirlo: evita incluir información privada.</p><a class="btn btn-primary" href="${edit(a)}">Crear con ${esc(a.title)}</a>${!a.noCode&&a.id!=='jardin-de-lunas'?` <a href="/codigo.html?a=${a.id}">Ver opción de código</a>`:''}</section></div></div><section><h2>Otras escenas para comparar</h2>${grid(relatedAnimations(a,animations))}<p><a href="${curl(a.category)}">Ver guía de ${esc(cname(a.category))} →</a></p></section>`;
- const detailBody=body;
+ const detailBody=a.emotional?body.replace('El enlace abre esta misma animación con tu nombre, frase y firma. No necesita crear una cuenta ni instalar una aplicación.','El enlace reproduce la frase original con los colores, brillo, velocidad y densidad elegidos. No necesita crear una cuenta ni instalar una aplicación.'):body;
  await writeFile(`animaciones/${a.id}.html`,layout({title:`${a.title}: vista previa y personalización | ViralCss`,description:g.scene,path:aurl(a),body:detailBody,id:a.id,script:'detail',schema:breadcrumb([['Inicio','/'],[cname(a.category),curl(a.category)],[a.title,aurl(a)]])}));
 }
 // Solo páginas públicas de descubrimiento. Editor, código y enlaces personales son utilidades sin indexación.
@@ -75,13 +77,14 @@ await writeFile('sitemap.xml',`<?xml version="1.0" encoding="UTF-8"?>\n<urlset x
 // Static first page avoids late insertion shifting the footer and controls.
 const recent=(await import('../js/turtle-catalog.js')).TURTLE_ANIMATIONS;
 const seasonal=(await import('../js/seasonal-catalog.js')).SEASONAL_ANIMATIONS;
-const ids=new Set([...recent,...seasonal].map(a=>a.id));
-const first=[...animations.filter(a=>a.cinematic),...recent,...seasonal,...animations.filter(a=>!a.cinematic&&!ids.has(a.id))].slice(0,40);
+const ids=new Set([...EMOTIONAL_ANIMATIONS,...recent,...seasonal].map(a=>a.id));
+const first=[...EMOTIONAL_ANIMATIONS,...animations.filter(a=>a.cinematic),...recent,...seasonal,...animations.filter(a=>!a.cinematic&&!ids.has(a.id))].slice(0,40);
 let home=await (await import('node:fs/promises')).readFile('index.html','utf8');
 home=home.replace(/(<div class="grid" id="grid">)[\s\S]*?(<\/div>\s*<p id="gallery-page-status")/, '$1'+first.map(card).join('\n')+'$2');
 home=home.replace(/(<div class="chips" id="chips"[^>]*>)[\s\S]*?<\/div>/, '$1'+CATEGORIES.map(c=>'<button type="button" class="chip" aria-pressed="'+(c.id==='todas')+'">'+esc(c.name)+'</button>').join('')+'</div>');
 home=home.replace(/<p id="categoryGuide">[\s\S]*?<\/p>/,'<p id="categoryGuide"><a href="animaciones.html">Comparar por interacción, colores o cartas →</a></p>');
 home=home.replace(/(<p id="gallery-page-status"[^>]*>)[\s\S]*?<\/p>/,'$1Mostrando 1–40 de '+animations.length+' animaciones</p>');
+home=home.replace(/(<ul class="seo-category-list">)[\s\S]*?<\/ul>/,'$1'+categories.map(c=>`<li><a href="categorias/${c.id}.html">${esc(c.name)}</a></li>`).join('\n')+'</ul>');
 home=home.replace(/(id="gallery-more"[^>]*?) hidden/,'$1');
 await writeFile('index.html',home);
 console.log(`Generadas ${animations.length} fichas y ${categories.length} guías de categorías; ${paths.length} URLs públicas.`);

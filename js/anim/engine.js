@@ -65,7 +65,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     const rect = canvas.getBoundingClientRect();
     const nw = Math.round(rect.width);
     const nh = Math.round(rect.height);
-    const ndpr = Math.min(window.devicePixelRatio || 1, 2);
+    const ndpr = Math.min(window.devicePixelRatio || 1, create.maxDpr || 2);
     if (!nw || !nh) return false;
     if (!force && frame && nw === w && nh === h && ndpr === dpr) return true;
     w = nw;

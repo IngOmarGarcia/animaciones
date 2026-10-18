@@ -1,3 +1,5 @@
+import { GIFT_PREVIEWS } from './gift-previews.js';
+
 // Datos del sitio que cambian con frecuencia. Edita solo este archivo.
 export const SITE = {
   url: 'https://viralcss.com',
@@ -19,7 +21,7 @@ export const supportConfig = {
 
 // Regalos con enlace de afiliado de Mercado Libre (cuenta gaom3053613).
 // Genera cada `url` desde el programa de afiliados (meli.la/...); un enlace normal no da comisión.
-// category: 'flores' | 'mexico' | 'todas'. En cada página se muestran 4 al azar, primero los de su categoría.
+// category: categoría de la animación o 'todas'. categories permite varias categorías.
 // image: foto principal del producto en Mercado Libre (clic derecho → copiar dirección de imagen).
 // Si no tiene `image`, la carta muestra el `emoji`.
 const ML_IMG = 'https://http2.mlstatic.com/D_NQ_NP_';
@@ -37,3 +39,19 @@ export const GIFTS = [
   { category: 'todas', emoji: '👔', title: 'Set de cartera para caballero', url: 'https://meli.la/1gqRPAo', image: `${ML_IMG}774491-MLA96855963885_102025-O.webp` },
   { category: 'todas', emoji: '🎁', title: 'Kit de cumpleaños para él: cartera y cinturón', url: 'https://meli.la/2U2ra26', image: `${ML_IMG}847871-MLM95430302403_102025-O.webp` },
 ];
+
+// Productos verificados con las vistas previas de Mercado Libre.
+const SEASONAL_GIFT_CODES = [
+  '2HmGcRf', '1QmnoSg', '2Ha8Whv', '1CV1pMB', '1x6ckp7',
+  '21UHh4D', '1oZPhKT', '19MY6PA', '31kDjpV', '2Q37yRV',
+  '2BuvJ9g', '2vMyEgS', '1cd25EB', '1DcSpDW', '2McBcuo',
+  '15N6axS', '11X2fJU', '2W9hDd2', '2BzGvQW', '2Gh8qCv',
+];
+const SHARED_SEASONAL_CODES = new Set(['2HmGcRf', '1QmnoSg']);
+const MUERTOS_CODES = new Set(['15N6axS', '11X2fJU', '2W9hDd2', '2BzGvQW', '2Gh8qCv']);
+GIFTS.push(...SEASONAL_GIFT_CODES.map(code => ({
+  categories: SHARED_SEASONAL_CODES.has(code) ? ['halloween', 'muertos'] : [MUERTOS_CODES.has(code) ? 'muertos' : 'halloween'],
+  emoji: MUERTOS_CODES.has(code) ? '🕯️' : '🎃',
+  ...GIFT_PREVIEWS[code],
+  url: `https://meli.la/${code}`,
+})));

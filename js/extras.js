@@ -36,7 +36,7 @@ function giftVisual(gift) {
 
 function mlIcon(size) {
   const img = document.createElement('img');
-  img.src = 'img/mercadolibre.svg';
+  img.src = '/img/mercadolibre.svg';
   img.alt = '';
   img.width = size;
   img.height = size;
@@ -50,21 +50,28 @@ function arrow(label, symbol) {
   return button;
 }
 
-// Carrusel de regalos con enlaces de afiliado: todos al azar, primero los de la categoría de la animación.
+export function giftsForCategory(category) {
+  const matching = GIFTS.filter(g => g.category === category || g.categories?.includes(category));
+  // Las recomendaciones de temporada quedan limitadas a esas escenas.
+  if (category === 'halloween' || category === 'muertos') return shuffle(matching);
+  return [...shuffle(matching), ...shuffle(GIFTS.filter(g => g.category === 'todas' && g.category !== category))];
+}
+
+// Carrusel de regalos con enlaces de afiliado relacionados con la categoría.
 // Se marca claramente como Mercado Libre para que no se confunda con las funciones del sitio.
 export function renderGifts(container, category) {
-  const items = [
-    ...shuffle(GIFTS.filter((g) => g.category === category)),
-    ...shuffle(GIFTS.filter((g) => g.category === 'todas')),
-  ];
+  const items = giftsForCategory(category);
   if (!items.length) {
     container.hidden = true;
     return;
   }
+  container.hidden = false;
 
   const track = el('div', 'gifts');
   for (const gift of items) {
     const link = el('a', 'gift');
+    link.title = gift.title;
+    link.setAttribute('aria-label', `${gift.title} · Ver en Mercado Libre`);
     link.href = gift.url;
     link.target = '_blank';
     link.rel = 'sponsored noopener';
@@ -87,9 +94,11 @@ export function renderGifts(container, category) {
   new ResizeObserver(updateArrows).observe(track);
 
   const title = el('h2', 'gifts-title');
-  title.append(mlIcon(28), 'Mira estos productos de Mercado Libre');
+  title.append(mlIcon(28), 'Productos de Mercado Libre');
   const heading = el('div');
-  heading.append(el('p', 'gifts-kicker', '🎁 ¿Quieres regalar algo de verdad?'), title);
+  const label = category === 'halloween' ? '🎃 Ideas para tu celebración de Halloween' : category === 'muertos' ? '🕯️ Ideas para celebrar el Día de Muertos' : '🎁 Ideas para acompañar esta animación';
+  heading.append(el('p', 'gifts-kicker', label), title,
+    el('p', 'gifts-context', 'Recomendaciones de ViralCss · Al elegir un producto, abres Mercado Libre en otra pestaña.'));
   const nav = el('div', 'gifts-nav');
   nav.append(prev, next);
   const head = el('div', 'gifts-head');

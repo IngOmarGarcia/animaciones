@@ -7,6 +7,7 @@ import './support.js';
 import { relatedAnimations, guideFor } from './scene-guides.js';
 import { DANA_DEFAULTS } from './anim/dana2-core.js';
 import { FONT_OPTIONS } from './anim/text-style.js';
+import { EMOTIONAL_SCENES } from './emotional-catalog.js';
 
 const params = new URLSearchParams(location.search);
 const sharedCard = decodeCard(params.get('s'));
@@ -71,9 +72,29 @@ if (isDana2) {
   fields.mem.value = DANA_DEFAULTS.memories.join('|');
 }
 
+if(anim.emotional){
+  document.body.classList.add('emotional-experience');
+  fields.m.value=anim.defaultMessage;
+  const group=document.createElement('div');group.className='particle-tuning';
+  const label=document.createElement('label');label.textContent='Elige una experiencia';
+  const select=document.createElement('select');select.id='emotionalScene';
+  for(const scene of EMOTIONAL_SCENES){const option=document.createElement('option');option.value=scene.id;option.textContent=scene.phrase;select.append(option);}
+  select.value=anim.id;select.addEventListener('change',()=>{location.href=`crear.html?a=${encodeURIComponent(select.value)}`;});label.append(select);group.append(label);
+  const note=document.createElement('p');note.className='muted';note.textContent='Cada frase conserva su composición y su desenlace. Ajusta el ambiente sin cambiar la historia.';group.append(note);
+  for(const [name,title,min,max] of [['glow','Intensidad del brillo',.4,1.4],['speed','Velocidad de movimiento',.75,1.25],['density','Densidad de partículas',.65,1.2]]){
+    const label=document.createElement('label');label.textContent=title;
+    const input=document.createElement('input');input.type='range';input.name=name;input.min=min;input.max=max;input.step='.05';input.value='1';label.append(input);group.append(label);
+  }
+  form.prepend(group);
+  $('recipientCaption').textContent='Nombre al final (opcional)';fields.p.maxLength=24;
+  fields.p.placeholder=anim.category==='muertos'?'Ej. En memoria de Ana':'Ej. Sofía';
+  form.querySelector('.editor-options summary').textContent='Colores de la experiencia';
+  $('codeLink').closest('.code-link').hidden=true;
+}
+
 try {
   const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}');
-  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'tm', 'f', 'age']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'tm', 'f', 'age', 'glow', 'speed', 'density']) if (fields[key] && typeof draft[key] === 'string' && (key !== 'tm' || ['suggest', 'custom', 'none'].includes(draft[key])) && (key !== 'f' || FONT_OPTIONS.some(font => font.id === draft[key]))) fields[key].value = draft[key];
   $('colorsEnabled').checked = !!anim.colorDefaults && (draft.colorsEnabled === true || (draft.colorsEnabled === undefined && anim.letterFields && !isDana2 && !!draft.c1));
 } catch {
   // sessionStorage no disponible: se empieza en blanco
@@ -82,7 +103,7 @@ try {
 if (sharedCard) {
   if(anim.colorControls)for(const c of anim.colorControls)fields[c.key].value=sharedCard[c.key]||c.value;
   else if (anim.colorDefaults) [fields.c1.value, fields.c2.value] = [sharedCard.c1 || anim.colorDefaults[0], sharedCard.c2 || anim.colorDefaults[1]];
-  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'age']) if (fields[key]) fields[key].value = sharedCard[key] || '';
+  for (const key of ['p', 'm', 'd', 'lt', 'l', 'mem', 'age', 'glow', 'speed', 'density']) if (fields[key]) fields[key].value = sharedCard[key] || (['glow','speed','density'].includes(key)?'1':'');
   fields.f.value = sharedCard.f || 'elegant';
   if (isSeasonal) fields.tm.value = sharedCard.tm || 'suggest';
   $('colorsEnabled').checked = !!anim.colorDefaults && (anim.colorControls ? colorKeys.some(key=>!!sharedCard[key]) : !!sharedCard.c1 && !!sharedCard.c2);
@@ -189,9 +210,9 @@ if (hasPhoto) {
 
 const readCard = () => cleanCard({
   a: anim.id,
-  p: isSeasonal && fields.tm.value === 'none' ? '' : fields.p.value,
-  m: isSeasonal && fields.tm.value === 'none' ? '' : fields.m.value,
-  d: isSeasonal && fields.tm.value === 'none' ? '' : fields.d.value,
+  p: anim.emotional ? anim.allowName?fields.p.value.slice(0,24):'' : isSeasonal && fields.tm.value === 'none' ? '' : fields.p.value,
+  m: anim.emotional || isSeasonal && fields.tm.value === 'none' ? '' : fields.m.value,
+  d: anim.emotional || isSeasonal && fields.tm.value === 'none' ? '' : fields.d.value,
   tm: isSeasonal ? fields.tm.value : '',
   f: fields.f.value,
   ...Object.fromEntries(colorKeys.map(key=>[key,anim.colorDefaults&&$('colorsEnabled').checked?fields[key].value:''])),
@@ -202,6 +223,7 @@ const readCard = () => cleanCard({
   } : {}),
   age: anim.ageField ? fields.age.value : '',
   img: hasPhoto ? photoData : '',
+  ...(anim.emotional?{glow:fields.glow.value,speed:fields.speed.value,density:fields.density.value}:{}),
 });
 // Campos extra (carta, recuerdos y colores) para las escenas que los usan
 if (anim.letterFields) $('galaxyFields').hidden = false;
@@ -217,6 +239,11 @@ function update() {
     $('suggestionLabel').hidden = fields.tm.value !== 'suggest';
     $('textModeHelp').textContent = noText ? 'Solo la experiencia visual, sin nombre, frase ni firma.' : 'El título y la firma son opcionales. También puedes dejar la frase vacía.';
   }
+  if(anim.emotional){
+    fields.m.value=anim.defaultMessage;
+    $('messageLabel').hidden=true;$('senderLabel').hidden=true;$('fontLabel').hidden=true;
+    $('recipientLabel').hidden=!anim.allowName;
+  }
   const card = readCard();
   fillOverlay(overlay, card, anim);
   if (player) {player.stage.card = card;player.redraw();}
@@ -230,7 +257,8 @@ function update() {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ p: fields.p.value, m: fields.m.value, d: fields.d.value,
       lt: fields.lt?.value, l: fields.l?.value, mem: card.mem,
       age: fields.age?.value, ...Object.fromEntries(colorKeys.map(key=>[key,fields[key].value])), tm: isSeasonal ? fields.tm.value : '',
-      f: fields.f.value, colorsEnabled: $('colorsEnabled').checked }));
+      f: fields.f.value, colorsEnabled: $('colorsEnabled').checked,
+      ...(anim.emotional?{glow:fields.glow.value,speed:fields.speed.value,density:fields.density.value}:{}) }));
   } catch {
     // ignorar
   }
@@ -238,6 +266,7 @@ function update() {
 
 form.addEventListener('input', update);
 for(const control of [$('colorsEnabled'),...colorKeys.map(key=>fields[key])])control.addEventListener('change',()=>{update();if(!anim.cinematic)player?.restart();});
+if(anim.emotional)for(const name of ['speed','density'])fields[name].addEventListener('change',()=>player?.restart());
 if (isSeasonal) {
   $('phraseSuggestion').addEventListener('change', () => { fields.m.value = $('phraseSuggestion').value; update(); });
   fields.tm.addEventListener('change', () => {
@@ -254,7 +283,7 @@ form.addEventListener('submit', (event) => {
   if(photoProcessing) return;
   const card = readCard();
   const url = buildShareUrl(card);
-  shareText = anim.cinematic ? `${anim.title}${card.p ? ` · ${card.p}` : ''}` : isSeasonal ? `${anim.category === 'muertos' ? 'Una animación para celebrar y recordar este Día de Muertos 🕯️' : 'Un poquito de magia para Halloween 🎃'}${card.p ? `: ${card.p}` : ''}` : card.p ? `${card.p}, tengo una sorpresa para ti 💛` : 'Tengo una sorpresa para ti 💛';
+  shareText = anim.emotional ? anim.defaultMessage : anim.cinematic ? `${anim.title}${card.p ? ` · ${card.p}` : ''}` : isSeasonal ? `${anim.category === 'muertos' ? 'Una animación para celebrar y recordar este Día de Muertos 🕯️' : 'Un poquito de magia para Halloween 🎃'}${card.p ? `: ${card.p}` : ''}` : card.p ? `${card.p}, tengo una sorpresa para ti 💛` : 'Tengo una sorpresa para ti 💛';
   link.value = url;
   $('wa').href = `https://wa.me/?text=${encodeURIComponent(`${shareText} Ábrela aquí: ${url}`)}`;
   $('open').href = url;

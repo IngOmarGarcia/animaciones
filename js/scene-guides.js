@@ -1,4 +1,5 @@
 import { RECENT_GUIDES } from './recent-guides.js';
+import { EMOTIONAL_GUIDES } from './emotional-catalog.js';
 // Editorial information checked against each js/anim/<file>.js and its shared core.
 // Keep scene behaviour here, separate from catalogue labels and rendering geometry.
 const rows = [
@@ -78,6 +79,7 @@ const rows = [
 ];
 export const SCENE_GUIDES = Object.fromEntries(rows.map(([id, scene, interaction, use, mode]) => [id, { scene, interaction, use, mode }]));
 Object.assign(SCENE_GUIDES, RECENT_GUIDES);
+Object.assign(SCENE_GUIDES, EMOTIONAL_GUIDES);
 SCENE_GUIDES['eternal-bloom']={scene:'Partículas doradas se atraen en una espiral tridimensional. Un tallo de cristal asciende y veintinueve pétalos de superficies curvas se reúnen y abren por capas. Una luz cálida recorre el vidrio, la cámara cambia suavemente de perspectiva y aparece tu dedicatoria. La rosa permanece abierta y viva después de la revelación.',interaction:'Mueve el puntero o desliza suavemente el dedo para cambiar la perspectiva. La floración avanza sola. Reiniciar vuelve a presentar la secuencia; con movimiento reducido se muestra la rosa abierta y el mensaje, sin movimiento continuo.',use:'Para compartir una dedicatoria con una rosa de cristal en 3D. Puedes personalizar nombre, mensaje, firma y tipografía. Requiere WebGL 2 para la experiencia animada; si no está disponible, se muestra una imagen de la misma obra.',mode:'explore'};
 export const MODE_LABELS = {auto:'Se reproduce sola',tap:'Un toque',hold:'Mantener pulsado',triple:'Tres toques',explore:'Explorar la escena'};
 SCENE_GUIDES['crystal-heartbeat']={scene:'Una pequeña luz roja comienza a pulsar. Veinticuatro fragmentos curvos de una superficie de cristal se acercan y cierran un corazón con volumen continuo. La energía circula dentro; un latido doble deforma el cuerpo en tres dimensiones y enciende microfracturas ópticas sin romperlo.',interaction:'Mueve el puntero o desliza suavemente para cambiar la perspectiva. El ensamblaje y los latidos son automáticos. Puedes pausar o repetir; movimiento reducido muestra el corazón completo y quieto con la dedicatoria.',use:'Edita nombre, mensaje, firma y tipografía, o elige Sin texto. La transmisión y la refracción son aproximaciones en tiempo real. La calidad se adapta al dispositivo; si WebGL no está disponible, se conserva una imagen de esta obra con tu texto.',mode:'explore'};
@@ -94,5 +96,5 @@ export function guideFor(anim) {
 }
 export function relatedAnimations(anim, all, count=3) {
   const guide=guideFor(anim);
-  return all.filter(a=>a.id!==anim.id).map((a,index)=>({a,index,score:(a.category===anim.category?8:0)+(guideFor(a).mode===guide.mode?3:0)+(!!a.colorDefaults===!!anim.colorDefaults?1:0)})).sort((a,b)=>b.score-a.score||a.index-b.index).slice(0,count).map(item=>item.a);
+  return all.filter(a=>a.id!==anim.id).map((a,index)=>({a,index,score:(anim.emotional&&a.emotional?16:0)+(a.category===anim.category?8:0)+(guideFor(a).mode===guide.mode?3:0)+(!!a.colorDefaults===!!anim.colorDefaults?1:0)})).sort((a,b)=>b.score-a.score||a.index-b.index).slice(0,count).map(item=>item.a);
 }

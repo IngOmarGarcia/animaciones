@@ -31,7 +31,7 @@ fillOverlay(overlay, card, anim);
 document.title = card.p ? `Una sorpresa para ${card.p} 💛` : 'Tienes una sorpresa 💛';
 $('gateTo').textContent = card.p ? `Para ${card.p}` : 'Tienes una sorpresa';
 $('gateFrom').textContent = card.d ? `${card.d} te envió algo especial` : 'Alguien te envió algo especial';
-if (anim.seasonalText || anim.cinematic) {
+if (anim.seasonalText || anim.cinematic || anim.emotional) {
   document.title = card.tm !== 'none' && card.p ? `${card.p} · ${anim.title}` : anim.title;
   $('gateTo').textContent = card.tm !== 'none' && card.p ? card.p : anim.title;
   $('gateFrom').textContent = anim.category === 'muertos' ? 'Celebra la vida y la memoria' : anim.category === 'halloween' ? 'La noche está llena de magia' : 'Una experiencia creada para compartir';
@@ -41,12 +41,13 @@ $('cta').href = `crear.html?a=${encodeURIComponent(anim.id)}`;
 $('codeLink').href = `codigo.html?s=${encodeCard({...card,a:anim.id})}`;
 $('codeLink').closest('.after-code').hidden = !!anim.noCode || isDana2;
 if(anim.cinematic)document.body.classList.add('cinematic-experience');
+if(anim.emotional)document.body.classList.add('emotional-experience');
 
 let player = null;
 canvas.addEventListener('motionpreferencechange',()=>{if(player)$('viewerPause').textContent=player.motionReduced?'Reproducir con movimiento':paused?'Continuar':'Pausar';});
 let watcher = 0;
 let paused=false, starting=false, failed=false,sceneVisible=true;
-const sceneObserver=anim.cinematic?new IntersectionObserver(entries=>{
+const sceneObserver=anim.cinematic||anim.emotional?new IntersectionObserver(entries=>{
  sceneVisible=entries[0].isIntersecting;
  if(!sceneVisible)player?.pause();else if(!paused&&!document.hidden)player?.play();
 }):null;

@@ -2,8 +2,17 @@ import { getAnimation } from './catalog.js';
 import { createPlayer } from './anim/engine.js';
 import { fillOverlay, setAccessibleReveal } from './overlay.js';
 import { enhanceGallery, setGalleryPaused } from './gallery.js';
+import { renderGifts } from './extras.js';
 const $=id=>document.getElementById(id);
 const anim=getAnimation(document.body.dataset.animation);
+if(anim?.emotional)document.body.classList.add('emotional-experience');
+if (anim && !anim.hidden) {
+  const gifts = document.createElement('section');
+  gifts.className = 'gifts-section';
+  gifts.setAttribute('aria-label', 'Productos relacionados en Mercado Libre');
+  document.querySelector('.detail-layout').after(gifts);
+  renderGifts(gifts, anim.category);
+}
 const button=$('detail-play'), pause=$('detail-pause'), replay=$('detail-replay'), status=$('detail-status'), overlay=$('detail-overlay');
 let player, timer, paused=false, visible=true, failed=false;
 function resume() {if(player&&!paused&&!document.hidden&&visible)player.play();else player?.pause();}
@@ -12,7 +21,7 @@ async function load() {
  try {
   if(!anim||anim.hidden)throw Error('Escena no disponible');
   const mod=await anim.load({retry:failed});
-  const card={a:anim.id,p:anim.exampleTitle || 'Tu nombre',m:anim.defaultMessage,d:'Tu firma',f:anim.cinematic?'classic':'clear',...(anim.seasonalText?{tm:'suggest'}:{})};
+  const card={a:anim.id,p:anim.emotional?'':anim.exampleTitle || 'Tu nombre',m:anim.defaultMessage,d:anim.emotional?'':'Tu firma',f:anim.cinematic?'classic':'clear',...(anim.seasonalText?{tm:'suggest'}:{})};
   fillOverlay(overlay,card,anim);
   player=createPlayer($('detail-canvas'),mod.default,{card});player.restart();resume();failed=false;
   setGalleryPaused(true);button.hidden=true;pause.hidden=false;replay.hidden=false;

@@ -75,6 +75,14 @@ elige animación y texto, y descarga un video vertical de 1080×1920 con la marc
 
 ## Antes de publicar
 
+La colección de once frases emocionales se define en `js/emotional-catalog.js`; sus módulos usan `js/anim/emotional-particles.js`. Comparte con Corazón de energía el renderizador WebGL de puntos aditivos, estelas y bloom de `util.js`, mediante `emotional-energy-renderer.js`. `emotional-energy-shapes.js` aporta superficies, interior y contornos volumétricos. Las letras visibles son partículas atraídas a objetivos tipográficos; la explosión aplica velocidades en tres dimensiones antes de reconstruir cada figura. Las narrativas avanzan por bloques y conservan sus finales de dispersión. Las miniaturas son una composición estática de partículas para evitar reproducir múltiples simulaciones a la vez.
+
+El texto usa la misma familia Arial Black de Corazón de energía, con peso 900 y encuadre amplio. Una parte de las partículas forma el volumen de las letras y otra orbita en profundidad con alturas distintas, además de una capa que se desprende de los trazos. El salto de línea se adapta al ancho y conserva todas las palabras.
+
+El editor permite elegir experiencia, dos colores, brillo, velocidad de movimiento y densidad. Solo las escenas compatibles ofrecen un nombre de hasta 24 caracteres. La velocidad no acorta las ventanas de lectura. Los ajustes viajan en el enlace y el texto original se conserva. Movimiento reducido muestra la frase completa sin animación; el presupuesto de partículas baja automáticamente si aumenta el costo de renderizado.
+
+Comprobaciones de la colección: `node tools/check-emotional.mjs` y, con localhost activo, `node tools/browser-check.mjs --emotional`. Las capturas y mediciones quedan en `tools/review/`, excluido de Git. La herramienta local `tools/emotional-qa.html` permite revisar los desenlaces por tiempo.
+
 1. El sitio está en `https://viralcss.com` (también responde en `animaciones.pages.dev`). Si cambias de dominio, reemplaza la dirección en `js/config.js` y en los HTML (las imágenes `og:image` deben ser URL absolutas para que WhatsApp muestre la vista previa).
 2. Si cambias el nombre "ViralCss", búscalo y reemplázalo en los HTML.
 3. Regenera `img/og.png` si cambias el diseño: abre `tools/og.html` y toma una captura de 1200x630.
