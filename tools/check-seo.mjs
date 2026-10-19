@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { VISIBLE_ANIMATIONS, ANIMATIONS, CATEGORIES } from '../js/catalog.js';
+import { EMOTIONAL_SCENES } from '../js/emotional-catalog.js';
+import { CATEGORY_HELP } from '../js/editorial-guides.js';
 
 const origin = 'https://viralcss.com';
 const read = (path) => readFile(path, 'utf8');
@@ -17,7 +19,23 @@ for (const a of VISIBLE_ANIMATIONS) {
   const path = `animaciones/${a.id}.html`;
   pages.push(path);
   assert(index.includes(`/${path}`), `Falta enlace interno: ${path}`);
+  const html=await read(path);
+  assert(existsSync(`img/previews/${a.id}.webp`),`Falta imagen de la escena: ${a.id}`);
+  assert(html.includes(`property="og:image" content="${origin}/img/previews/${a.id}.webp"`),`Imagen social incorrecta: ${a.id}`);
+  assert(html.includes('class="scene-poster"'),`Falta vista previa sin JavaScript: ${a.id}`);
+  assert(html.includes('class="scene-quote"')&&!html.includes('<p>undefined</p>'),`Falta mensaje de muestra: ${a.id}`);
 }
+for(const scene of EMOTIONAL_SCENES){
+ const html=await read(`animaciones/${scene.id}.html`);
+ assert(html.includes(`<p>${scene.phrase}</p>`),`La frase original debe poder leerse sin Canvas: ${scene.id}`);
+ assert(html.includes('class="emotional-experience"'),`Falta formato vertical sin JavaScript: ${scene.id}`);
+}
+for(const c of categories){
+ const html=await read(`categorias/${c.id}.html`),help=CATEGORY_HELP[c.id];
+ assert(help&&html.includes(help.title)&&html.includes(help.answer),`Falta guía propia de la categoría: ${c.id}`);
+}
+assert((await read('categorias/general.html')).includes('<h1>General y motivación:'),'Título de General truncado');
+assert(!(await read('categorias/anio-nuevo.html')).includes('abren un arco'),'Descripción antigua de Año Nuevo');
 
 const titles = new Set();
 const descriptions = new Set();

@@ -23,14 +23,21 @@ CATEGORY_GUIDES.halloween.intro='Figuras, arquitectura y hilos de Halloween. Las
 CATEGORY_GUIDES.halloween.advice='Puedes elegir texto propio, sugerido o Sin texto. Las nuevas experiencias conservan su protagonista y permiten repetir la transformación.';
 CATEGORY_GUIDES.cumple.advice+=' La máquina de dulces también permite seleccionar una edad de 1 a 999.';
 CATEGORY_GUIDES.muertos.advice+=' El retrato admite una foto local opcional. El bordado es una composición artística original.';
+CATEGORY_GUIDES.amor.intro='Elige entre una apertura con un toque, una floración tranquila, un nombre que se forma con luz o una frase original de partículas. La ficha distingue los mensajes editables de las experiencias que conservan sus palabras.';
+CATEGORY_GUIDES['expert-zone'].advice='Las miniaturas visibles se reproducen con calidad reducida. Abre la ficha para ver la secuencia completa y sus controles. Se respeta movimiento reducido, y puedes activar el movimiento desde los controles. Si WebGL no está disponible, las experiencias que ofrecen una imagen alternativa la conservan. El código de estas obras no se ofrece como un único HTML.';
+CATEGORY_GUIDES.mexico.intro='Pirotecnia, papel picado y una guitarra de luz ofrecen tres formas de acompañar un saludo mexicano. Elige un ambiente de fiesta o una dedicatoria que siga la resonancia de las cuerdas.';
+CATEGORY_GUIDES.mexico.advice='Los fuegos y el papel picado avanzan automáticamente con su diseño original. Guitarra de resonancia permite variar la perspectiva; sus ondas reúnen la dedicatoria. La ficha de cada escena indica los colores que puedes editar.';
+CATEGORY_GUIDES.navidad.intro='Un árbol iluminado, una esfera de nieve, un taller de juguetes y un deseo escrito con partículas proponen distintos ritmos de Navidad. Elige entre un mensaje propio y una frase original con desenlace prediseñado.';
+CATEGORY_GUIDES.navidad.advice='La esfera agita los copos con un toque; el árbol se ilumina automáticamente. El taller ensambla un tren para entregar una tarjeta. Mi deseo de Navidad conserva su frase, admite un nombre opcional y permite ajustar colores, brillo, velocidad y densidad.';
+CATEGORY_GUIDES.cumple.advice='El pastel y los globos son automáticos; la piñata pide tres toques y Vela de deseo se apaga con un toque. La máquina de dulces permite elegir una edad de 1 a 999. La parte de mí que nunca se rindió conserva su frase y termina formando una vela; sus partículas, colores y velocidad tienen controles propios.';
 for(const category of new Set(EMOTIONAL_SCENES.map(s=>s.category))){
   const scenes=EMOTIONAL_SCENES.filter(s=>s.category===category);
   const advice='Las experiencias emocionales conservan su frase y su composición. Ajusta dos colores, brillo, velocidad y densidad; el nombre solo está disponible cuando la escena lo admite. Las letras están construidas con partículas y la lectura avanza sin necesidad de tocar.';
   const introductions={
     desamor:'Frases de desamor construidas con partículas: silencios, mensajes que sostenían una relación y letras que aprenden a separarse. El desenlace conserva el peso de cada pensamiento.',
     'san-valentin':'Una confesión para San Valentín que se atreve a llegar. Las partículas forman la frase y después abren una flor, con colores y movimiento que puedes ajustar.',
-    aniversario:'Una experiencia de aniversario para los días compartidos que no quedaron en fotografías. Las palabras se construyen con luz y se convierten en una constelación íntima.',
-    'anio-nuevo':'Una frase de Año Nuevo sobre empezar de tu propio lado. Las partículas abandonan una órbita repetida, forman las letras y abren un arco hacia adelante.',
+    aniversario:'Una experiencia de aniversario para los días compartidos que no quedaron en fotografías. Las palabras estallan en luz y forman un corazón de estrellas con volumen y un latido suave.',
+    'anio-nuevo':'Una frase de Año Nuevo sobre empezar de tu propio lado. Las partículas forman las letras, estallan y siguen viajando por la oscuridad sin construir otra figura.',
     historias:'Pensamientos confesionales en bloques de lectura: nostalgia, alivio y la dificultad de recibir cuidado. Las propias partículas construyen, deforman y liberan las palabras.',
   };
   if(!CATEGORY_GUIDES[category])CATEGORY_GUIDES[category]={intro:introductions[category],picks:[],advice};

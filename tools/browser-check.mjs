@@ -39,6 +39,245 @@ try {
  await mkdir('tools/review',{recursive:true});
  const screenshot=async name=>{const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(`tools/review/${name}.png`,Buffer.from(r.data,'base64'));};
  const overflow=async label=>assert(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),`Desbordamiento horizontal: ${label}`);
+ if(process.argv.includes('--ad-policy')){
+  await (await import('./ad-policy-browser-check.mjs')).reviewAdPolicy({call,ws,evaluate,navigate,wait,delay,screenshot,overflow,errors});
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--content-review')){
+  await (await import('./content-browser-check.mjs')).reviewContent({call,evaluate,navigate,wait,overflow,screenshot,errors});
+  await send('Browser.close');ws.close();browser.kill();await delay(500);
+  if(!path.resolve(profile).startsWith(path.resolve(tmpdir())+path.sep))throw Error('Perfil fuera del directorio temporal');
+  await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:300});process.exit(0);
+ }
+ if(process.argv.includes('--capture-posters')){
+  try {
+   await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+   await (await import('./capture-scene-posters.mjs')).capturePosters({navigate,evaluate,wait});
+  } finally {
+   await send('Browser.close');ws.close();browser.kill();await delay(500);
+   if(!path.resolve(profile).startsWith(path.resolve(tmpdir())+path.sep))throw Error('Perfil fuera del directorio temporal');
+   await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:300});
+  }
+  process.exit(0);
+ }
+ if(process.argv.includes('--gallery-controls')){
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+  for(const [width,height] of [[390,844],[1365,900]]){
+   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
+   await navigate('/');await wait("!!document.querySelector('#chips [data-category]')");
+   await evaluate("import('/js/gallery.js').then(m=>{window.galleryModule=m;return true})");
+   await evaluate("document.querySelector('#grid .card').scrollIntoView({block:'start',behavior:'instant'})");
+   await wait('galleryModule.galleryDiagnostics().filter(d=>d.visible&&d.playing).length>=2');
+   for(let i=0;i<2;i++){
+    await evaluate("document.getElementById('homeMotion').click()");await wait('galleryModule.galleryDiagnostics().every(d=>!d.playing)');
+    const paused=await evaluate('galleryModule.galleryDiagnostics().map(d=>[d.id,d.time])');await delay(250);
+    assert.deepEqual(await evaluate('galleryModule.galleryDiagnostics().map(d=>[d.id,d.time])'),paused);
+    await evaluate("document.getElementById('homeMotion').click()");await wait('galleryModule.galleryDiagnostics().filter(d=>d.visible).every(d=>d.playing)');
+   }
+   await screenshot(`gallery-controls-playing-${width}`);
+   await evaluate("document.getElementById('gallery-more').scrollIntoView({block:'center',behavior:'instant'});document.getElementById('gallery-more').click()");
+   await wait("document.querySelectorAll('#grid .card').length===80 && document.getElementById('grid').getAttribute('aria-busy')==='false'");
+   await evaluate("document.querySelectorAll('#grid .card')[40].scrollIntoView({block:'start',behavior:'instant'})");
+   await wait('galleryModule.galleryDiagnostics().filter(d=>d.visible&&d.playing).length>=2');
+   assert(await evaluate('galleryModule.galleryDiagnostics().filter(d=>!d.visible).every(d=>!d.playing)'));
+  }
+  assert.equal(errors.length,0,errors.join('\n'));console.log('OK: reproducción automática real en portada, dos ciclos de pausa/reproducción, tarjetas añadidas y pausa fuera de pantalla.');
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--gallery-autoplay')){
+  const report=[],unchanged=[];
+  await call('Emulation.setDeviceMetricsOverride',{width:1365,height:900,deviceScaleFactor:1,mobile:false});
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+  await navigate('/tools/gallery-motion-qa.html');await wait("document.body.dataset.ready==='true'");
+  async function checkBatch(ids){
+   console.log('Miniaturas: '+ids.join(', '));
+   await evaluate(`window.previewQA.show(${JSON.stringify(ids)})`);
+   await wait(`window.previewQA.diagnostics().filter(d=>d.playing&&${JSON.stringify(ids)}.includes(d.id)).length===${ids.length}`);
+   await delay(250);
+   const before=await evaluate("({players:previewQA.diagnostics(),pixels:previewQA.pixels()})");
+   await delay(950);
+   let after=await evaluate("({players:previewQA.diagnostics(),pixels:previewQA.pixels()})");
+   if(before.pixels.some(p=>after.pixels.find(q=>q.id===p.id).hash===p.hash)){await delay(2000);after=await evaluate("({players:previewQA.diagnostics(),pixels:previewQA.pixels()})");}
+   for(const id of ids){
+    const b=before.players.find(d=>d.id===id),a=after.players.find(d=>d.id===id);
+    assert(a.playing&&a.time!==b.time,id+' no avanza');assert.notEqual(a.renderer,'static-fallback',id);
+    const changed=before.pixels.find(p=>p.id===id).hash!==after.pixels.find(p=>p.id===id).hash;
+    if(!changed)unchanged.push(id);report.push({...a,changed});
+   }
+  }
+  for(let start=0;start<VISIBLE_ANIMATIONS.length;start+=4)await checkBatch(VISIBLE_ANIMATIONS.slice(start,start+4).map(a=>a.id));
+  await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+  const mobileIds=[...EMOTIONAL_SCENES.map(s=>s.id),...EXPERT_ANIMATIONS.map(s=>s.id)];
+  for(let start=0;start<mobileIds.length;start+=2)await checkBatch(mobileIds.slice(start,start+2));
+  await evaluate('previewQA.pause(true)');const paused=await evaluate('previewQA.diagnostics()');await delay(300);
+  assert.deepEqual(await evaluate('previewQA.diagnostics().map(d=>d.time)'),paused.map(d=>d.time));
+  await evaluate('previewQA.pause(false)');await wait('previewQA.diagnostics().every(d=>d.playing)');
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await navigate('/tools/gallery-motion-qa.html');await wait("document.body.dataset.ready==='true'");
+  assert(await evaluate('previewQA.paused()'));
+  await evaluate("previewQA.show(['me-daba-miedo','sostenian-mis-mensajes'])");await wait('previewQA.diagnostics().length===2');
+  assert(await evaluate('previewQA.diagnostics().every(d=>!d.playing&&d.reduced)'));
+  await evaluate('previewQA.pause(false)');await wait('previewQA.diagnostics().every(d=>d.playing&&!d.reduced)');
+  await wait("previewQA.diagnostics().some(d=>d.id==='me-daba-miedo'&&d.phase!=='text')");await screenshot('gallery-emotional-playing');
+  await writeFile('tools/review/gallery-autoplay.json',JSON.stringify({report,unchanged,errors},null,2));
+  assert.deepEqual(unchanged,[],'Miniaturas sin cambio visual');assert.equal(errors.length,0,errors.join('\n'));
+  console.log(`OK: ${VISIBLE_ANIMATIONS.length} escenas animadas, frases y 3D en móvil, pausa/reproducción y explosión en miniatura.`);
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--header-effects')){
+  for(const [width,height] of [[390,844],[1365,900]]){
+   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
+   await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+   await navigate('/');await wait("document.querySelector('.site-header').headerParticles?.running && !!document.querySelector('#chips [data-category]')");
+   assert.equal(await evaluate("document.querySelectorAll('.site-header .header-particles').length"),1);
+   assert.equal(await evaluate("getComputedStyle(document.querySelector('.site-header')).backgroundColor"),'rgb(2, 2, 5)');
+   const frames=await evaluate("document.querySelector('.site-header').headerParticles.frames");await delay(200);
+   assert(await evaluate(`document.querySelector('.site-header').headerParticles.frames>${frames}`));
+   if(width<500){
+    await evaluate("document.querySelector('.header-menu-toggle').click()");assert(await evaluate("!document.querySelector('.mobile-nav').hidden"));
+    await screenshot('header-particles-mobile-menu');await evaluate("document.querySelector('.header-menu-toggle').click()");
+   }else{
+    await evaluate("window.scrollTo({top:document.getElementById('galeria').offsetTop+800,behavior:'instant'})");await wait("document.getElementById('category-rail').classList.contains('is-visible')");
+    await delay(100);await screenshot('category-rail-transition-enter');await delay(300);
+    assert.equal(await evaluate("getComputedStyle(document.getElementById('category-rail')).opacity"),'1');
+    assert(await evaluate("!document.getElementById('category-rail').inert"));
+    assert.equal(await evaluate("getComputedStyle(document.getElementById('back-to-gallery')).backgroundColor"),'rgb(2, 2, 5)');
+    await evaluate("window.scrollTo({top:0,behavior:'instant'})");await wait("!document.getElementById('category-rail').classList.contains('is-visible')");
+    assert(await evaluate("document.getElementById('category-rail').inert"));await delay(400);
+    assert.equal(await evaluate("getComputedStyle(document.getElementById('category-rail')).visibility"),'hidden');
+   }
+   await screenshot(`header-particles-${width}`);await overflow('barra '+width);
+   await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});await wait("!document.querySelector('.site-header').headerParticles.running");
+   assert.equal(await evaluate("document.querySelector('.site-header').headerParticles.running"),false);
+   const still=await evaluate("document.querySelector('.site-header').headerParticles.frames");await delay(200);
+   assert.equal(await evaluate("document.querySelector('.site-header').headerParticles.frames"),still);
+  }
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('OK: barra negra, partículas activas, menú móvil, transición lateral y movimiento reducido.');
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--home-append')){
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  for(const [width,height] of [[390,844],[1365,900],[1920,1080]]){
+   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
+   await navigate('/');await wait("document.querySelectorAll('#grid .card').length===40 && !!document.querySelector('#chips [data-category]')");
+   await evaluate("window.firstCard=document.querySelector('#grid .card');window.firstCanvas=window.firstCard.querySelector('canvas')");
+   for(const target of [80,VISIBLE_ANIMATIONS.length]){
+    await evaluate("document.getElementById('gallery-more').scrollIntoView({block:'center'})");await delay(200);
+    const before=await evaluate("scrollY");
+    const point=await evaluate("(()=>{const r=document.getElementById('gallery-more').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()");
+    await call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});
+    await call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
+    await wait(`document.querySelectorAll('#grid .card').length===${target} && document.getElementById('grid').getAttribute('aria-busy')==='false'`);
+    await delay(250);
+    const after=await evaluate("scrollY");assert(Math.abs(after-before)<3,`Scroll moved at ${width}: ${before} -> ${after}`);
+    assert(await evaluate("document.querySelector('#grid .card')===window.firstCard && window.firstCard.querySelector('canvas')===window.firstCanvas"));
+    assert.equal(await evaluate("new Set(Array.from(document.querySelectorAll('#grid .card')).map(c=>c.dataset.id)).size"),target);
+   }
+   assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.batch-ad')).map(a=>Number(a.dataset.afterAnimation))"),[40,80]);
+   assert(await evaluate("document.getElementById('gallery-more').hidden"));
+   assert(await evaluate("!document.getElementById('back-to-gallery').hidden && getComputedStyle(document.getElementById('back-to-gallery')).display!=='none'"));
+   await evaluate("document.querySelector('.batch-ad').scrollIntoView({block:'center'})");await delay(200);await overflow('carga acumulada '+width);await screenshot(`home-append-separator-${width}`);
+   await evaluate("document.getElementById('back-to-gallery').click()");await wait("document.getElementById('back-to-gallery').hidden");
+   await evaluate("document.querySelector('#chips [data-category=navidad]').click()");await wait(`document.querySelectorAll('#grid .card').length===${VISIBLE_ANIMATIONS.filter(a=>a.category==='navidad').length}`);
+   assert.equal(await evaluate("document.querySelectorAll('.batch-ad').length"),0);
+  }
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('OK: carga 40→80→105 sin saltos ni duplicados, conserva tarjetas/canvas, separadores y botón de subir en móvil y PC.');
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--home-discovery')){
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  for(const [width,height] of [[360,640],[390,844],[1365,900],[1600,900],[1920,1080]]){
+   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
+   await navigate('/');await wait("document.querySelectorAll('#grid .feed-ad').length===3 && document.querySelectorAll('#home-products .gift').length>0");
+   assert.equal(await evaluate("document.querySelectorAll('main .seo-category-list').length"),0);
+   assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('#grid .feed-ad')).map(ad=>{let n=0;for(let el=ad.previousElementSibling;el;el=el.previousElementSibling)if(el.classList.contains('card'))n++;return n})"),[10,20,30]);
+   const feedVisible=await evaluate("getComputedStyle(document.querySelector('.feed-ad')).display!=='none'");assert.equal(feedVisible,width<720);
+   await evaluate("window.scrollTo(0,0)");await delay(150);assert(await evaluate("!document.getElementById('category-rail').classList.contains('is-visible')"));
+   await evaluate("window.scrollTo(0,document.getElementById('galeria').offsetTop+800)");await delay(250);await overflow('laterales '+width);
+   if(width>=1280){
+    assert(await evaluate("document.getElementById('category-rail').classList.contains('is-visible')"));
+    const rects=await evaluate("(()=>{const n=document.getElementById('category-rail').getBoundingClientRect(),g=document.getElementById('galeria').getBoundingClientRect(),a=document.querySelector('.home-ad-rail .ad-slot').getBoundingClientRect();return {navRight:n.right,gridLeft:g.left,gridRight:g.right,adLeft:a.left,adTop:a.top,adWidth:a.width}})()");
+    assert(rects.navRight<rects.gridLeft&&rects.adLeft>rects.gridRight,JSON.stringify(rects));assert(rects.adWidth<=300);assert(rects.adTop>=99);
+   }else assert(await evaluate("getComputedStyle(document.getElementById('category-rail')).display==='none'"));
+   await screenshot(`home-discovery-rails-${width}`);
+   if(width>=1280){
+    await evaluate("document.querySelector('#side-categories [data-category=navidad]').click()");
+    await wait("document.querySelector('#chips [data-category=navidad]').getAttribute('aria-pressed')==='true'");
+    assert.equal(await evaluate("location.pathname"),'/');
+    assert.equal(await evaluate("document.querySelectorAll('#grid .card').length"),VISIBLE_ANIMATIONS.filter(a=>a.category==='navidad').length);
+    await evaluate("document.querySelector('#chips [data-category=todas]').click()");
+   }
+   if(width<500){await evaluate("document.querySelector('.feed-ad').scrollIntoView({block:'center'})");await delay(150);await screenshot(`home-discovery-feed-${width}`);assert(await evaluate("!!document.querySelector('#back-to-gallery canvas')"));}
+   await evaluate("document.getElementById('gallery-more').click()");await wait("document.querySelectorAll('#grid .card').length===80 && document.getElementById('grid').getAttribute('aria-busy')==='false'");
+   assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.feed-ad')).map(a=>Number(a.dataset.afterAnimation))"),[10,20,30,50,60,70]);
+   await evaluate("document.querySelector('#chips [data-category=halloween]').click()");await wait("document.querySelectorAll('#home-products .gift').length>0");
+   assert(await evaluate("Array.from(document.querySelectorAll('#home-products .gift')).every(a=>a.rel.includes('sponsored'))"));
+   assert.equal(await evaluate("document.querySelector('#home-products .gifts').scrollLeft"),0);
+   const related=await evaluate("import('/js/config.js').then(({GIFTS})=>{const urls=new Set(GIFTS.filter(g=>g.category==='halloween'||g.categories?.includes('halloween')).map(g=>g.url));return Array.from(document.querySelectorAll('#home-products .gift')).every(a=>urls.has(a.href))})");assert(related);
+   await evaluate("document.getElementById('home-products').scrollIntoView({block:'center'})");await delay(200);await screenshot(`home-discovery-products-${width}`);await overflow('productos '+width);
+   if(width>=1280)assert(await evaluate("document.getElementById('category-rail').classList.contains('is-visible')"));
+   if(width===390){
+    await evaluate("document.querySelector('#home-products .gifts-nav button').click();document.activeElement.blur()");
+    await wait("document.querySelector('#home-products .gifts').scrollLeft>20");
+    await evaluate("window.scrollTo(0,0)");await delay(1200);
+    const stopped=await evaluate("document.querySelector('#home-products .gifts').scrollLeft");await delay(4800);
+    assert.equal(await evaluate("document.querySelector('#home-products .gifts').scrollLeft"),stopped);
+   }
+  }
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('OK: laterales sin solapes, anuncios cada diez, paginación, afiliados relacionados, autoplay visible y pausa fuera de pantalla.');
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--home-layout')){
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  for(const [width,height] of [[360,640],[390,844],[1365,900]]){
+   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
+   await navigate('/');await wait("!!document.querySelector('#chips [data-category]')");
+   assert.equal(await evaluate("document.querySelectorAll('#categoryGuide,.seo-discovery').length"),0);
+   const categories=await evaluate("Array.from(document.querySelectorAll('#chips button')).map(b=>({count:parseInt(b.title),top:Math.round(b.getBoundingClientRect().top)}))");
+   assert.equal(new Set(categories.map(c=>c.top)).size,2);
+   assert(categories.slice(2).every((c,i)=>categories[i+1].count>=c.count));
+   assert(await evaluate("document.getElementById('chips').scrollWidth>document.getElementById('chips').clientWidth"));
+   assert(await evaluate("document.getElementById('back-to-gallery').hidden"));
+   await evaluate("document.getElementById('galeria').scrollIntoView()");await delay(200);await overflow('categorías '+width);await screenshot(`home-categories-${width}`);
+   await evaluate("document.querySelector('#chips button:last-child').click()");await wait("!!document.querySelector('#chips button:last-child[aria-pressed=true]')");
+   assert(await evaluate("document.getElementById('chips').scrollLeft>0"));
+   await evaluate("document.querySelector('#chips button:first-child').click()");
+   await evaluate("document.querySelector('.home-support-ad').scrollIntoView({block:'center'})");await delay(250);
+   const layout=await evaluate("(()=>{const s=document.getElementById('support').getBoundingClientRect(),a=document.getElementById('publicidad-final').getBoundingClientRect();return {support:{left:s.left,right:s.right,top:s.top,bottom:s.bottom},ad:{left:a.left,top:a.top,bottom:a.bottom}}})()");
+   assert(layout.ad.top>=layout.support.bottom+60,'La aportación y el anuncio deben estar separados');
+   await wait("!document.getElementById('back-to-gallery').hidden");await overflow('apoyo '+width);await screenshot(`home-support-ad-${width}`);
+   await evaluate("document.getElementById('back-to-gallery').click()");await wait("document.getElementById('back-to-gallery').hidden");
+   assert(await evaluate("document.getElementById('galeria').getBoundingClientRect().top>=0"));
+  }
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('OK: dos filas ordenadas, scroll lateral, filtros, anuncio adaptable y regreso a categorías en móvil y PC.');
+  await send('Browser.close');process.exit(0);
+ }
+ if(process.argv.includes('--ad-placements')){
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  const pages=[['/',['home-top','home-bottom']],['/crear.html?a=corazon-de-energia',[]],['/codigo.html?a=ramo-flores-amarillas',[]],['/v.html?a=corazon-de-energia',[]],['/v.html?s=roto',[]],['/codigo.html?a=me-daba-miedo',[]]];
+  for(const [width,height] of [[390,844],[1365,900]]){
+   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});
+   for(const [url,placements] of pages){
+    await navigate(url);await wait(`${JSON.stringify(placements)}.every(name=>document.querySelector('[data-ad-placement="'+name+'"]').dataset.adState==='preview')`);
+    assert.equal(await evaluate("document.querySelectorAll('script[src*=\"pagead2.googlesyndication\"]').length"),0);
+    if(!placements.length)assert.equal(await evaluate("document.querySelectorAll('[data-ad-placement]').length"),0);
+    for(const name of placements){
+     await evaluate(`document.querySelector('[data-ad-placement="${name}"]').scrollIntoView({block:'center'})`);
+     await delay(250);await overflow(url);
+     const rect=await evaluate(`(()=>{const r=document.querySelector('[data-ad-placement="${name}"]').getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right}})()`);
+     assert(rect.height>=120&&rect.left>=0&&rect.right<=width+1,JSON.stringify(rect));
+     await screenshot(`ad-preview-${name}-${width}`);
+    }
+   }
+  }
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('OK: espacios públicos y separación; utilidades, dedicatorias y errores sin anuncios; localhost sin solicitudes a Google.');
+  await send('Browser.close');process.exit(0);
+ }
  if(process.argv.includes('--home-christmas')||process.argv.includes('--final-trio')){
   const report=[];
   for(const [width,height] of [[390,844],[360,640],[430,932]]){
@@ -277,14 +516,13 @@ try {
  await evaluate('scrollTo(0,document.body.scrollHeight)');await delay(650);
  assert.deepEqual(await homeIds(),firstPage,'Llegar al pie no debe cargar más tarjetas');
  await screenshot('home-footer-desktop');
- await evaluate("document.getElementById('gallery-more').click()");const secondPage=await homeIds();assert.equal(secondPage.length,40);
- assert(secondPage.every(id=>!firstPage.includes(id)),'La segunda página no debe repetir tarjetas');
- await evaluate("document.getElementById('gallery-more').click()");const lastPage=await homeIds();
- assert.equal(lastPage.length,VISIBLE_ANIMATIONS.length-80);
- assert.equal(new Set([...firstPage,...secondPage,...lastPage]).size,VISIBLE_ANIMATIONS.length);
+ await evaluate("document.getElementById('gallery-more').click()");await wait("document.querySelectorAll('#grid .card').length===80");const secondPage=await homeIds();assert.deepEqual(secondPage.slice(0,40),firstPage);
+ assert.equal(new Set(secondPage).size,80,'La carga no debe repetir tarjetas');
+ await wait("!document.getElementById('gallery-more').disabled");
+ await evaluate("document.getElementById('gallery-more').click()");await wait(`document.querySelectorAll('#grid .card').length===${VISIBLE_ANIMATIONS.length}`);const lastPage=await homeIds();
+ assert.equal(new Set(lastPage).size,VISIBLE_ANIMATIONS.length);
+ await wait("document.getElementById('grid').getAttribute('aria-busy')==='false'");
  assert(await evaluate("document.getElementById('gallery-more').hidden"),'No debe ofrecer páginas vacías');
- await evaluate("document.getElementById('gallery-previous').click()");assert.deepEqual(await homeIds(),secondPage);
- await evaluate("document.getElementById('gallery-previous').click()");assert.deepEqual(await homeIds(),firstPage);
  await evaluate("document.querySelector('#chips button').click();scrollTo(0,0)");
  assert(await evaluate("document.querySelector('#grid .card-preview-link').getAttribute('href').startsWith('/animaciones/')"),'Portada no dirige a ficha');
  await overflow('portada escritorio');await screenshot('home-desktop');

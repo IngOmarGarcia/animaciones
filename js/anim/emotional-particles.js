@@ -97,16 +97,16 @@ export function emotionalExperience(id){
     }
     const speed=clamp(Number(card.speed)||1,.75,1.25),density=clamp(Number(card.density)||1,.65,1.2),glow=clamp(Number(card.glow)||1,.4,1.4);
     // Speed changes motion, never the minimum reading windows.
-    const time=stage.preview?8.5:calm?8.5:t;
-    const narrative=spec.narrative&&!stage.preview;
+    const time=calm?8.5:stage.preview?t+4.5:t;
+    const narrative=spec.narrative;
     const blockDuration=7.4;
     const block=narrative?Math.min(spec.blocks.length-1,Math.floor(Math.max(0,time-1)/blockDuration)):0;
     const local=narrative?time-block*blockDuration:time;
-    const layout=calm?stillLayout:scenes[stage.preview?0:block];
+    const layout=calm?stillLayout:scenes[block];
     const endRead=spec.narrative?.8+spec.blocks.length*blockDuration:spec.duration-5;
     let age=Math.max(0,time-endRead);
     if(burst>=0)age=Math.max(age,time-burst);
-    const resolving=!calm&&!stage.preview&&(time>=endRead||burst>=0);
+    const resolving=!calm&&(time>=endRead||burst>=0);
     const figureFlight=!freeFlow;
     const flightEnd=figureFlight?1.65:freeFlow?1.5:.85;
     const morph=resolving?smooth((age-(figureFlight?1.65:.9))/(figureFlight?3.4:3.8)):0;
@@ -121,14 +121,14 @@ export function emotionalExperience(id){
     pulse*=Math.exp(-Math.min(dt,.1)*3);
     enterPage=false;
     if(lastBlock!==block){
-      if(pageTurns&&!calm&&!stage.preview&&lastBlock>=0&&!resolving){
+      if(pageTurns&&!calm&&lastBlock>=0&&!resolving){
         pageAt=time;enterPage=true;
         const departingCount=Math.min(active,7000,24000-active);
         departing=Array.from({length:departingCount},(_,j)=>particles[Math.floor(j/departingCount*active)/active*count|0]).filter(p=>p.seed<.74).map(p=>({x:p.x,y:p.y,z:p.z,vx:-w*(.85+p.seed*.5),vy:Math.sin(p.phase)*85,seed:p.seed,phase:p.phase,size:p.size,color:lastBlock===1?1:0}));
       }
       lastBlock=block;stage.emotionalBlock=block;
     }
-    const instantaneous=calm||stage.preview||lastT<0&&time>4||t<lastT;
+    const instantaneous=calm||lastT<0&&time>4||t<lastT;
     const delta=clamp(dt||.016,.001,.04),substeps=Math.ceil(delta/.012),step=delta/substeps;
     active=Math.max(700,Math.min(count,Math.round(budget*density*quality)));
     painter.begin();
@@ -168,7 +168,7 @@ export function emotionalExperience(id){
     for(let i=0;i<active;i++){
       const p=particles[Math.floor(i/active*count)],q=layout.points[Math.floor(i/active*layout.points.length)]||{x:w/2,y:h/2,line:0};
       const delay=.7+q.line*.25+p.seed*.75+(spec.narrative&&q.key ? .3 : 0);
-      const build=calm||stage.preview?1:pageTurns&&block>0?smooth((local-.9-p.seed*.25)/1.6):smooth((local-delay)/2.5);
+      const build=calm?1:pageTurns&&block>0?smooth((local-.9-p.seed*.25)/1.6):smooth((local-delay)/2.5);
       const orbiting=p.seed>1-orbitShare;
       let tx=q.x,ty=q.y,tz=Math.sin(p.phase)*9;
       if(orbiting){
@@ -335,7 +335,7 @@ export function emotionalExperience(id){
       painter.point(p.x,p.y,p.z,alpha,drawPalette[freeFlow&&resolving&&p.seed>.83?2:colorIndex],size);
     }
     const pageAge=time-pageAt;
-    if(pageAge<1.8&&!calm&&!stage.preview)for(const p of departing){
+    if(pageAge<1.8&&!calm)for(const p of departing){
       const departure=smooth((pageAge-p.seed*.2)/.55);
       p.vx-=w*.8*delta*departure;
       p.x+=p.vx*delta;p.y+=(p.vy+Math.sin(time*3+p.phase)*30)*delta;
@@ -346,7 +346,7 @@ export function emotionalExperience(id){
     }
     else if(departing.length)departing=[];
     if(resolving)exploded=true;
-    const waveAge=Math.min(resolving?age:99,time-pulseAt),waveLife=calm||stage.preview?0:1-clamp(waveAge/1.55),radius=w*(.2+waveAge*.85);
+    const waveAge=Math.min(resolving?age:99,time-pulseAt),waveLife=calm?0:1-clamp(waveAge/1.55),radius=w*(.2+waveAge*.85);
     if(waveLife>0&&waveAge>=0)for(let j=0;j<waves.length*quality;j++){
       const p=waves[j];painter.point(w/2+p.x*radius,h*.47+p.y*radius*.75,p.z*radius,waveLife*waveLife*.19*glow,palette[j%7?1:2],5+p.seed*3);
     }
@@ -363,7 +363,6 @@ export function emotionalExperience(id){
   }
   return frame;
  };
- create.staticPreview=true;
  create.maxDpr=(typeof navigator!=='undefined'&&(navigator.hardwareConcurrency||4)<=4)?1:1.5;
  return create;
 }

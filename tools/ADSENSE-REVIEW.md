@@ -1,5 +1,7 @@
 # Revisión local de ViralCss — 30 de septiembre de 2026
 
+Documento histórico. La configuración y los pendientes vigentes del 19 de octubre están en [ADSENSE-ACTIVATION.md](ADSENSE-ACTIVATION.md). Los recuentos y la ausencia de integración publicitaria descritos más abajo corresponden a aquella revisión.
+
 Los cambios permanecen en el proyecto local. No se hizo push, despliegue ni solicitud de revisión a AdSense. Estas mejoras no garantizan aprobación. Las animaciones siguen siendo el producto; no se sustituyeron por artículos ni se eliminaron escenas del catálogo.
 
 ## Políticas oficiales consultadas

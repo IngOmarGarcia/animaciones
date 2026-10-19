@@ -18,7 +18,7 @@ export const EMOTIONAL_ANIMATIONS = EMOTIONAL_SCENES.map(scene=>({
   description:scene.description, defaultMessage:scene.phrase,
   emotional:true, ownMessage:true, nameInScene:true, noCode:true,
   featured:true, interactive:true, textPosition:'center', textDelay:5,
-  previewLoop:0, colorDefaults:scene.colors.slice(0,2),
+  previewLoop:scene.duration+8, colorDefaults:scene.colors.slice(0,2),
   duration:scene.duration, allowName:!!scene.name,
 }));
 

@@ -1,0 +1,22 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Captura de escenas de ViralCSS</title><style>body{margin:0;background:#050711}canvas{display:block;width:320px;height:426px}</style></head><body><canvas id="scene" width="320" height="426"></canvas><script type="module">
+import {getAnimation} from '/js/catalog.js';
+let dispose;
+window.captureScene=async id=>{
+ dispose?.();dispose=null;
+ const a=getAnimation(id),module=await a.load({preview:true});
+ const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');canvas.width=320;canvas.height=426;
+ const stage={preview:!a.emotional,forceMotion:true,pointer:{x:.5,y:.5},taps:[],holding:false,revealed:false,card:a.emotional?{a:id,p:'',m:a.defaultMessage}:null,requestRender(){}};
+ const frame=module.default(ctx,320,426,1,stage);dispose=()=>stage.onDispose?.();
+ const duration=8;
+ for(let i=0;i<=160;i++){
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,320,426);
+  frame(i*duration/160,duration/160);
+  if(i%20===0)await new Promise(requestAnimationFrame);
+ }
+ const small=document.createElement('canvas');small.width=32;small.height=42;const context=small.getContext('2d');context.drawImage(canvas,0,0,32,42);
+ const pixels=context.getImageData(0,0,32,42).data;let min=255,max=0,lit=0;
+ for(let i=0;i<pixels.length;i+=4){const v=Math.max(pixels[i],pixels[i+1],pixels[i+2]);min=Math.min(min,v);max=Math.max(max,v);if(v>45)lit++;}
+ return {data:canvas.toDataURL('image/webp',.82),min,max,lit};
+};
+document.body.dataset.ready='true';
+</script></body></html>

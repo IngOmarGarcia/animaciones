@@ -1,6 +1,6 @@
 import {AUTUMN_EXPERT_ANIMATIONS} from './autumn-expert-catalog.js';
 export const EXPERT_ANIMATIONS=[{
- id:'eternal-bloom',file:'eternal-bloom',previewFile:'eternal-bloom-preview',cinematic:true,premiumEligible:true,exportMode:'project',seasonalText:true,
+ id:'eternal-bloom',file:'eternal-bloom',previewFile:'eternal-bloom-preview',livePreview:true,cinematic:true,premiumEligible:true,exportMode:'project',seasonalText:true,
  title:'Eternal Bloom',description:'Una rosa de cristal nace de una espiral de oro y florece bajo una luz que recorre sus pétalos.',
  defaultMessage:'Para ti, que haces florecer mi mundo',nameInScene:true,ownMessage:true,
  interactive:true,textPosition:'below',textDelay:10.8,previewLoop:0,sourcePackage:'eternal-bloom',exampleTitle:'Para ti',phrases:['Para ti, que haces florecer mi mundo'],

@@ -4,12 +4,12 @@
 // `stage.taps` recibe los toques sobre el canvas ({ x, y } en píxeles CSS) y una escena
 // interactiva pone `stage.revealed = true` cuando ya debe aparecer el mensaje.
 // `stage.card` ({ p, m, d }) permite que una escena dibuje el nombre.
-export function createPlayer(canvas, create, { loop = 0, card = null, preview = false } = {}) {
+export function createPlayer(canvas, create, { loop = 0, card = null, preview = false, motion = null } = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('El navegador no pudo crear el lienzo de la animación.');
   const stage = { taps: [], pointer: { x: 0.5, y: 0.5 }, holding: false, preview, revealed: false, card };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let motionAllowed = !reduced.matches, snapshotReady = false, wantsPlayback=false;
+  let motionAllowed = motion ?? !reduced.matches, snapshotReady = false, wantsPlayback=false;
   stage.requestRender=()=>{if(!running&&!destroyed)render(0);};
   const DRAG_SCENES = new Set(['catrina-encaje','retrato-historias','eclipse-corona','guitarra-resonancia','jardin-de-lunas','universo-de-flores']);
   const listeners = new AbortController();
@@ -54,6 +54,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
   let dpr = 1;
   let t = 0;
   let last = 0;
+  let lastRender = 0;
   let raf = 0;
   let running = false;
   let destroyed = false;
@@ -123,7 +124,10 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
       t = 0;
       setup(true);
     }
-    render(dt);
+    const renderDelta=(now-lastRender)/1000;
+    if(!preview||renderDelta>=1/(matchMedia('(max-width:719px)').matches?18:24)){
+      lastRender=now;render(preview?Math.min(renderDelta,.1):dt);
+    }
     raf = requestAnimationFrame(tick);
   }
 
@@ -140,6 +144,7 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     if (!motionAllowed || preview && create.staticPreview) return;
     running = true;
     last = performance.now();
+    lastRender=last;
     raf = requestAnimationFrame(tick);
   }
 
@@ -187,5 +192,6 @@ export function createPlayer(canvas, create, { loop = 0, card = null, preview = 
     redraw() {if(!running&&!destroyed)render(0);},
     stage,
     get time() { return t; },
+    get playing() { return running; },
   };
 }

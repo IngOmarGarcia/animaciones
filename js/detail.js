@@ -24,6 +24,7 @@ async function load() {
   const card={a:anim.id,p:anim.emotional?'':anim.exampleTitle || 'Tu nombre',m:anim.defaultMessage,d:anim.emotional?'':'Tu firma',f:anim.cinematic?'classic':'clear',...(anim.seasonalText?{tm:'suggest'}:{})};
   fillOverlay(overlay,card,anim);
   player=createPlayer($('detail-canvas'),mod.default,{card});player.restart();resume();failed=false;
+  document.querySelector('.detail-scene .scene-poster')?.setAttribute('hidden','');
   setGalleryPaused(true);button.hidden=true;pause.hidden=false;replay.hidden=false;
   status.textContent='Vista previa en reproducción. Prueba la interacción indicada abajo.';
   pause.textContent=player.motionReduced?'Reproducir con movimiento':'Pausar';

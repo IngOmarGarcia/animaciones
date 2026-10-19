@@ -7,12 +7,9 @@ const visible = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let paused = reduced.matches;
 let motionRequested=false;
-let preferredLiveCard=null;
 const enhanced=new WeakSet();
 function activeCards(){
- const candidates=[...visible].filter(c=>c.isConnected&&!c.hidden);
- const live=candidates.includes(preferredLiveCard)?preferredLiveCard:candidates.find(c=>getAnimation(c.dataset.id)?.livePreview);
- return [...(live?[live]:[]),...candidates.filter(c=>!getAnimation(c.dataset.id)?.livePreview)].slice(0,matchMedia('(max-width:719px)').matches?2:4);
+ return [...visible].filter(c=>c.isConnected&&!c.hidden);
 }
 const observer = new IntersectionObserver(entries => {
   for (const e of entries) e.isIntersecting && !e.target.hidden ? visible.add(e.target) : visible.delete(e.target);
@@ -20,8 +17,7 @@ const observer = new IntersectionObserver(entries => {
 }, {rootMargin:'0px'});
 function schedule() {
   const active = activeCards();
-  // Only one new WebGL miniature is alive at once. Other thumbnails retain a
-  // representative poster; hover or keyboard focus chooses the live artwork.
+  // All visible cards animate; GPU resources are released off screen.
   for(const [card,player]of players)if(getAnimation(card.dataset.id)?.livePreview&&!active.includes(card)){player.destroy();players.delete(card);}
   for(const [card,player] of players) if(paused||document.hidden||!active.includes(card)) player.pause();
   for(const card of visible) if(card.isConnected&&!card.hidden) activate(card);
@@ -37,10 +33,9 @@ async function activate(card) {
     card.dataset.loading='1';
     try {
       const anim=getAnimation(card.dataset.id), mod=await anim.load({preview:true});
-      if(!card.isConnected||(anim.livePreview&&!activeCards().includes(card))) return;
-      player=createPlayer(card.querySelector('canvas'),mod.default,{loop:anim.previewLoop,preview:true});
+      if(!card.isConnected||!visible.has(card)) return;
+      player=createPlayer(card.querySelector('canvas'),mod.default,{loop:anim.previewLoop,preview:true,motion:motionRequested?true:null});
       players.set(card,player);
-      if(motionRequested&&player.motionReduced)player.enableMotion();
       player.restart();
     } catch(error) {
       card.dataset.failed='1';
@@ -53,10 +48,9 @@ async function activate(card) {
 }
 export function setGalleryPaused(value,{userInitiated=false}={}) {paused=value;if(userInitiated&&!value){motionRequested=true;for(const player of players.values())if(player.motionReduced)player.enableMotion();}schedule();}
 export function galleryPaused() {return paused;}
-export function enhanceGallery(container) {for(const card of container.querySelectorAll('.card[data-id]')) {
+export function enhanceGallery(container,cards=container.querySelectorAll('.card[data-id]')) {for(const card of cards) {
  if(getAnimation(card.dataset.id)?.livePreview&&!enhanced.has(card)){
   enhanced.add(card);card.querySelector('.thumb').style.background=`#010106 url('/img/${card.dataset.id}.webp') center 30% / cover no-repeat`;
-  const prefer=()=>{preferredLiveCard=card;schedule();};card.addEventListener('pointerenter',prefer);card.addEventListener('focusin',prefer);
  }
  observer.observe(card);
 }}
@@ -73,6 +67,7 @@ function createCard(anim) {
  const card=document.createElement('article'); card.className='card'; card.dataset.id=anim.id;
  const preview=document.createElement('a'); preview.className='card-preview-link'; preview.href=`/animaciones/${anim.id}.html`; preview.setAttribute('aria-label',`Ver ${anim.title}`);
  const thumb=document.createElement('div');thumb.className='thumb';
+ const poster=document.createElement('img');poster.className='scene-poster';poster.src=`/img/previews/${anim.id}.webp`;poster.alt=`Vista de ${anim.title}`;poster.width=320;poster.height=426;poster.loading='lazy';poster.decoding='async';thumb.append(poster);
  const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');
  const badge=document.createElement('span');badge.className='badge';badge.textContent=modeLabelFor(anim);thumb.append(canvas,badge);preview.append(thumb);
  const body=document.createElement('div');body.className='card-body';
@@ -87,5 +82,6 @@ export function clearGallery(container) {
  for(const card of container.querySelectorAll('.card')) {observer.unobserve(card);visible.delete(card);players.get(card)?.destroy();players.delete(card);}
  container.replaceChildren();schedule();
 }
-export function appendGallery(container,animations) {container.append(...animations.map(createCard));enhanceGallery(container);}
+export function appendGallery(container,animations) {const cards=animations.map(createCard);container.append(...cards);enhanceGallery(container,cards);}
 export function renderGallery(container,animations) {clearGallery(container);appendGallery(container,animations);}
+export function galleryDiagnostics(){return [...players].map(([card,player])=>({id:card.dataset.id,time:player.time,playing:player.playing,reduced:player.motionReduced,visible:visible.has(card),renderer:player.stage.diagnostics?.renderer,phase:player.stage.emotionalStats?.transitionPhase}));}
